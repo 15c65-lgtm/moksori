@@ -148,3 +148,4 @@ footer { color: var(--muted); font-size: 12.5px; }
 .ai-sub { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
 .ai-sub.err, .ai-sub .err { color: var(--bad); }
 .lvl.wide { width: 100%; margin: 0; }
+.cap a, .err a { color: inherit; font-weight: 700; overflow-wrap: anywhere; }

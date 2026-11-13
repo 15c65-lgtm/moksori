@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>성대모사 싱크로율 · 목소리 연습실</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -289,12 +290,14 @@ function drawWave(s) {
   const t0 = d.feat.startSec * SR, t1 = t0 + (d.feat.dur + 0.06) * SR;
   g.fillStyle = col; g.globalAlpha = 0.08; g.fillRect(t0 / x.length * W, 0, (t1 - t0) / x.length * W, H); g.globalAlpha = 1;
   const step = x.length / W;
+  let pk = 1e-6; for (let i = 0; i < x.length; i += 7) pk = Math.max(pk, Math.abs(x[i]));
+  const gain = 0.48 / pk;
   for (let px = 0; px < W; px++) {
     let mn = 0, mx = 0; const a = Math.floor(px * step), b = Math.floor((px + 1) * step);
     for (let i = a; i < b; i++) { if (x[i] < mn) mn = x[i]; if (x[i] > mx) mx = x[i]; }
     const inside = a >= t0 && a <= t1;
     g.fillStyle = inside ? col : css('--muted'); g.globalAlpha = inside ? 1 : 0.35;
-    g.fillRect(px, H / 2 - mx * H * 0.48, 1, Math.max(1, (mx - mn) * H * 0.48));
+    g.fillRect(px, H / 2 - mx * H * gain, 1, Math.max(1, (mx - mn) * H * gain));
   }
   g.globalAlpha = 1;
 }
@@ -457,6 +460,7 @@ function setTab(yt) {
   $('tabFile').classList.toggle('on', !yt); $('tabYt').classList.toggle('on', yt);
   $('tabFile').setAttribute('aria-selected', String(!yt)); $('tabYt').setAttribute('aria-selected', String(yt));
   $('ytPane').hidden = !yt; $('filePane').hidden = yt;
+  if (yt && location.protocol === 'file:') ytMsg(FILE_MSG, true);
 }
 $('tabFile').addEventListener('click', () => setTab(false));
 $('tabYt').addEventListener('click', () => setTab(true));
@@ -485,15 +489,18 @@ function ytLoadApi() {
   });
   return ytApi;
 }
+const SITE = 'https://15c65-lgtm.github.io/moksori/mimic.html';
+const FILE_MSG = `내 컴퓨터에 받은 파일로 연 페이지에서는 유튜브가 재생을 막아요(오류 153). 사이트 주소 <a href="${SITE}">${SITE}</a> 로 열어서 써 주세요.`;
 async function ytOpen() {
+  if (location.protocol === 'file:') { ytMsg(FILE_MSG, true); return; }
   const v = ytParse($('ytUrl').value);
   if (!v) { ytMsg('유튜브 주소를 알아보지 못했어요. 영상 페이지 주소나 공유 링크를 그대로 붙여 넣어 주세요.', true); return; }
   try { await ytLoadApi(); } catch (_) { ytMsg('유튜브 플레이어를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.', true); return; }
   ytCur = v; $('ytBox').hidden = false; $('ytCtl').hidden = false;
   $('ytStart').value = fmtTime(v.t); $('ytEnd').value = fmtTime(v.t + 8);
   if (ytPlayer) ytPlayer.cueVideoById({ videoId: v.id, startSeconds: v.t });
-  else ytPlayer = new YT.Player('ytPlayer', { videoId: v.id, playerVars: { start: Math.floor(v.t), playsinline: 1, rel: 0 },
-    events: { onError: e => ytMsg(e.data === 101 || e.data === 150 ? '이 영상은 다른 사이트에서 재생하지 못하게 막혀 있어요. 다른 영상을 쓰거나 파일로 올려 주세요.' : '영상을 재생하지 못했어요. 주소를 확인해 주세요.', true) } });
+  else ytPlayer = new YT.Player('ytPlayer', { videoId: v.id, playerVars: { start: Math.floor(v.t), playsinline: 1, rel: 0, origin: location.origin },
+    events: { onError: e => ytMsg(e.data === 153 ? FILE_MSG : e.data === 101 || e.data === 150 ? '이 영상은 다른 사이트에서 재생하지 못하게 막혀 있어요. 다른 영상을 쓰거나 파일로 올려 주세요.' : '영상을 재생하지 못했어요. 주소를 확인해 주세요.', true) } });
   ytMsg('영상을 재생하면서 따라 할 대사의 시작과 끝에서 <b>지금</b>을 누르세요. 정해지면 <b>● 구간 캡처</b>.');
 }
 $('ytLoad').addEventListener('click', ytOpen);
