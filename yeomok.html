@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>여목 연습 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>여목 연습</h1>
+      <p class="sub">소리를 내는 동안 음높이, 공명, 진성·가성 상태를 실시간으로 보여 줘요. 목표 영역 안에 점을 머물게 하는 연습을 해 보세요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="panel ym-bar">
+    <button type="button" class="primary-sm ym-mic" id="micBtn">● 마이크 시작</button>
+    <label class="ym-field">연습 모음
+      <select id="vowel"><option value="a">아</option><option value="e">에</option><option value="i">이</option></select>
+    </label>
+    <span class="ym-timer" id="timer">00:00</span>
+    <span class="ym-calib" id="calibState"></span>
+    <span class="ym-msg" id="micMsg">마이크 시작을 누르고 편하게 "아~" 해 보세요. 분석은 모두 이 기기 안에서만 해요.</span>
+  </section>
+
+  <div class="ym-rest" id="rest" hidden>15분 연습했어요. 목이 무겁거나 따끔하면 물 한 모금 마시고 5분 쉬어 주세요. <button type="button" id="restOk">계속하기</button></div>
+
+  <section class="ym-main">
+    <div class="panel">
+      <div class="chart-head">
+        <h2>목소리 지도</h2>
+        <div class="legend"><span style="--c: var(--good)">목표 안</span><span style="--c: var(--imi)">목표 밖</span></div>
+      </div>
+      <canvas class="ym-map" id="map"></canvas>
+      <p class="cap">가로는 음높이, 세로는 공명(F1~F3 평균 주파수)이에요. 같은 모음으로 비교해야 공명 위치가 의미 있어요. 테두리 상자가 내 목표예요.</p>
+    </div>
+    <div class="ym-tiles">
+      <div class="panel ym-tile">
+        <div class="ym-lab">음높이</div>
+        <div class="ym-num"><span id="f0Num">–</span><small> Hz</small></div>
+        <div class="ym-sub"><span id="f0Note"></span> <span class="pill-z" id="f0Zone"></span></div>
+      </div>
+      <div class="panel ym-tile">
+        <div class="ym-lab">공명</div>
+        <div class="ym-num"><span id="resNum">–</span><small> Hz</small></div>
+        <div class="ym-sub" id="resRel">기준 녹음을 하면 평소 대비 변화가 보여요</div>
+      </div>
+      <div class="panel ym-tile ym-reg">
+        <div class="ym-lab">진성 · 가성</div>
+        <div class="ym-scale"><i id="regDot"></i></div>
+        <div class="ym-ticks"><span>진성</span><span>믹스</span><span>가성</span></div>
+        <div class="ym-sub"><span id="regTxt">–</span> <span class="pill-z warn" id="breath" hidden>숨이 새요</span></div>
+      </div>
+      <div class="panel ym-tile">
+        <div class="ym-lab">목표 안에 머문 비율</div>
+        <div class="ym-num"><span id="inPct">–</span><small> %</small></div>
+        <div class="ym-sub" id="voicedTime">소리 낸 시간 0초</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>음높이 흐름 (최근 12초)</h2><span class="cap" style="margin:0">색 띠가 목표 음역이에요</span></div>
+    <canvas class="ym-line" id="line"></canvas>
+  </section>
+
+  <section class="ym-two">
+    <div class="panel">
+      <h2>기준 녹음</h2>
+      <p class="cap">마이크와 목소리는 사람마다 달라서, 내 소리를 기준으로 진성·가성 위치와 평소 공명을 맞춰요. 지금 고른 모음으로 각각 3초씩 소리 내세요.</p>
+      <div class="ym-steps">
+        <div class="ym-step"><b>1. 평소 목소리 (진성)</b><span>편한 높이로 "아~" 3초</span><button type="button" data-cal="modal">녹음</button><em id="calModal">–</em></div>
+        <div class="ym-step"><b>2. 가성</b><span>힘 빼고 부드러운 "후~" 느낌의 "아~" 3초</span><button type="button" data-cal="fals">녹음</button><em id="calFals">–</em></div>
+      </div>
+      <p class="cap" id="calMsg">기준 녹음 전에는 연구에서 쓰는 대략값으로 진성·가성 위치를 보여 줘요.</p>
+    </div>
+    <div class="panel">
+      <h2>목표 설정</h2>
+      <div class="ym-form">
+        <label>목표 음높이 <input type="number" id="tMin" min="80" max="500" step="5"> ~ <input type="number" id="tMax" min="80" max="600" step="5"> Hz</label>
+        <label>공명 올리기 <input type="number" id="rMin" min="0" max="60" step="1"> ~ <input type="number" id="rMax" min="0" max="80" step="1"> % (평소 대비)</label>
+        <div class="ym-presets">
+          <button type="button" data-pre="165,255">여성 평균 165~255</button>
+          <button type="button" data-pre="145,185">중성~여성 시작 145~185</button>
+          <button type="button" data-pre="190,280">높은 여목 190~280</button>
+        </div>
+      </div>
+      <p class="cap">여성 평균 음역은 대략 196~224 Hz(범위 145~275 Hz), 남녀 어느 쪽으로도 들리는 중성 구간은 140~165 Hz로 알려져 있어요. 처음엔 낮게 잡고 천천히 올리세요.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>사이렌 테스트: 내 전환점 찾기</h2><button type="button" id="sirenBtn">● 테스트 시작 (8초)</button></div>
+    <p class="cap" style="margin-top:0">시작을 누르고 낮은음에서 높은음까지 "우~" 하고 미끄러지듯 천천히 올라가세요. 진성에서 가성으로 넘어가는 지점을 찾아요.</p>
+    <canvas class="ym-siren" id="siren"></canvas>
+    <p class="ym-result" id="sirenTxt">아직 테스트하지 않았어요.</p>
+  </section>
+
+  <section class="ym-two">
+    <div class="panel">
+      <div class="chart-head"><h2>최근 연습</h2><button type="button" id="clearSess">기록 지우기</button></div>
+      <div class="histwrap"><table class="hist"><thead><tr><th>날짜</th><th>모음</th><th>소리 낸 시간</th><th>평균 음높이</th><th>공명 변화</th><th>가성 쪽</th><th>목표 안</th></tr></thead><tbody id="sessBody"></tbody></table></div>
+      <p class="cap">마이크를 멈추면 3초 이상 소리 낸 연습이 이 브라우저에 저장돼요.</p>
+    </div>
+    <div class="panel ym-ai">
+      <span class="pill soon">준비 중</span>
+      <h2>AI 코치</h2>
+      <p class="cap">연습이 끝나면 AI가 기록을 보고 "음높이는 목표에 들어왔는데 공명이 평소와 같아요. '이' 모음으로 입꼬리를 옆으로 당기는 연습을 해 보세요"처럼 다음 연습을 짚어 줄 예정이에요.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:12px">연습 요령과 목 보호</h2>
+    <div class="tips">
+      <div><b>음높이와 공명을 같이</b>음높이만 올리면 여성스럽게 들리지 않을 수 있어요. 점을 오른쪽(높이)과 위(공명)로 함께 옮기는 게 목표예요.</div>
+      <div><b>가성보다 가벼운 진성</b>진성·가성 미터가 너무 가성 쪽이면 숨 섞인 소리가 되기 쉬워요. 성대를 닫은 채 얇고 가볍게 쓰는 믹스 근처를 노려 보세요.</div>
+      <div><b>공명 올리기 감각</b>'이' 모음에서 혀를 앞으로, 입꼬리를 살짝 옆으로 당기면 공명이 올라가요. 지도에서 점이 위로 가는지 보세요.</div>
+      <div><b>아프면 멈추기</b>목이 따끔하거나 쉰 소리가 나면 그날은 쉬세요. 15분마다 쉬라고 알려 드려요. 이 도구는 연습용 거울이고 전문가의 지도를 대신하지 않아요.</div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/voicefeat.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const KEY = 'moksori.yeomok';
+const DEF = { target: { fmin: 165, fmax: 255, rmin: 10, rmax: 40 }, calib: {}, sessions: [] };
+let S = DEF; try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} };
+const med = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const pct = v => { const r = Math.round(v); return (r > 0 ? '+' : '') + r + '%'; };
+const zoneOf = f => f < 140 ? ['남성 음역', 'm'] : f < 165 ? ['중성 구간', 'n'] : f <= 275 ? ['여성 음역', 'f'] : ['높은 음역', 'h'];
+
+// ---- 기준값 ----
+const vowel = () => $('vowel').value;
+const cal = () => S.calib[vowel()] || {};
+function regPos(h) { // 0 = 진성, 1 = 가성
+  const c = cal(), M = c.modal ? c.modal.h1h2 : 3, F = c.fals ? c.fals.h1h2 : 12;
+  const span = Math.max(3, F - M);
+  return Math.max(-0.15, Math.min(1.15, (h - M) / span));
+}
+const regLabel = p => p < 0.3 ? '진성' : p < 0.7 ? '믹스' : '가성';
+function baseRes() { const c = cal(); return c.modal && c.modal.res ? c.modal.res : NaN; }
+function inTarget(f0, res) {
+  const t = S.target; if (f0 < t.fmin || f0 > t.fmax) return false;
+  const b = baseRes(); if (isNaN(b) || isNaN(res)) return true;
+  const r = (res / b - 1) * 100; return r >= t.rmin && r <= t.rmax;
+}
+function renderCalib() {
+  const c = cal(), f = v => v ? `${Math.round(v.f0)} Hz · H1–H2 ${v.h1h2.toFixed(1)} dB${v.res ? ` · 공명 ${Math.round(v.res)} Hz` : ''}` : '–';
+  $('calModal').textContent = f(c.modal); $('calFals').textContent = f(c.fals);
+  const done = c.modal && c.fals;
+  $('calibState').innerHTML = done ? `<span class="pill-z ok">'${$('vowel').selectedOptions[0].text}' 기준 녹음 완료</span>` : `<span class="pill-z">기준 녹음 전</span>`;
+  $('calMsg').textContent = done ? '기준 녹음이 끝났어요. 진성·가성 위치와 공명 변화가 내 목소리 기준으로 보여요. 다른 모음은 따로 녹음해 주세요.' : '기준 녹음 전에는 연구에서 쓰는 대략값으로 진성·가성 위치를 보여 줘요.';
+}
+
+// ---- 목표 설정 ----
+function renderTarget() { const t = S.target; $('tMin').value = t.fmin; $('tMax').value = t.fmax; $('rMin').value = t.rmin; $('rMax').value = t.rmax; }
+for (const id of ['tMin', 'tMax', 'rMin', 'rMax']) $(id).addEventListener('change', () => {
+  const t = S.target, n = v => parseFloat(v);
+  t.fmin = Math.max(60, n($('tMin').value) || t.fmin); t.fmax = Math.max(t.fmin + 5, n($('tMax').value) || t.fmax);
+  t.rmin = Math.max(0, n($('rMin').value) || 0); t.rmax = Math.max(t.rmin + 1, n($('rMax').value) || t.rmax);
+  save(); renderTarget(); drawAll();
+});
+document.querySelectorAll('[data-pre]').forEach(b => b.addEventListener('click', () => { const [a, c] = b.dataset.pre.split(',').map(Number); S.target.fmin = a; S.target.fmax = c; save(); renderTarget(); drawAll(); }));
+$('vowel').addEventListener('change', () => { renderCalib(); drawAll(); });
+
+// ---- 마이크 + 실시간 분석 ----
+let actx = null, mic = null, frames = [], floorDb = -60, sess = null, mode = 'live', collect = null;
+const recent = []; // 표시용 최근 유성 프레임
+async function startMic() {
+  if (mic) return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('micMsg').innerHTML = '<span class="err">이 브라우저에서는 마이크를 쓸 수 없어요.</span>'; return false; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch (_) { $('micMsg').innerHTML = `<span class="err">마이크 권한이 없어요. ${location.protocol === 'file:' ? '사이트 주소(https://15c65-lgtm.github.io/moksori/yeomok.html)로 열어 주세요.' : '주소창 자물쇠 아이콘에서 마이크를 허용해 주세요.'}</span>`; return false; }
+  const C = window.AudioContext || window.webkitAudioContext; actx = actx || new C();
+  if (actx.state === 'suspended') await actx.resume();
+  const src = actx.createMediaStreamSource(stream), proc = actx.createScriptProcessor(2048, 1, 1), mute = actx.createGain(); mute.gain.value = 0;
+  const st = new VF.Stream16k(actx.sampleRate);
+  proc.onaudioprocess = e => { st.push(e.inputBuffer.getChannelData(0)); onFrame(VF.analyze(st.last(VF.N))); };
+  src.connect(proc); proc.connect(mute); mute.connect(actx.destination);
+  mic = { stream, src, proc, mute };
+  sess = { t0: Date.now(), voiced: 0, inT: 0, f0: [], res: [], reg: [], vowel: vowel() };
+  frames = []; recent.length = 0; floorDb = -60; restShown = false;
+  $('micBtn').textContent = '■ 마이크 멈춤'; $('micBtn').classList.add('on');
+  $('tally').classList.add('on'); $('tally').textContent = 'ON AIR';
+  $('micMsg').textContent = '듣고 있어요. 모음을 길게 끌면 점이 또렷하게 찍혀요.';
+  tick();
+  return true;
+}
+function stopMic() {
+  if (!mic) return;
+  mic.proc.onaudioprocess = null; try { mic.src.disconnect(); mic.proc.disconnect(); mic.mute.disconnect(); } catch (_) {}
+  mic.stream.getTracks().forEach(t => t.stop()); mic = null;
+  $('micBtn').textContent = '● 마이크 시작'; $('micBtn').classList.remove('on');
+  $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY';
+  if (collect) finishCollect(true);
+  if (sess && sess.voiced * FRAME_SEC >= 3) {
+    const b = baseRes(), r = med(sess.res);
+    S.sessions.push({ at: Date.now(), vowel: sess.vowel, sec: Math.round(sess.voiced * FRAME_SEC), f0: med(sess.f0), resRel: isNaN(b) || isNaN(r) ? null : (r / b - 1) * 100, reg: med(sess.reg), inPct: sess.inT / sess.voiced * 100 });
+    S.sessions = S.sessions.slice(-100); save(); renderSess();
+    $('micMsg').textContent = '연습을 기록했어요. 아래 최근 연습에서 확인하세요.';
+  } else $('micMsg').textContent = '멈췄어요.';
+  sess = null;
+}
+$('micBtn').addEventListener('click', () => mic ? stopMic() : startMic());
+
+let FRAME_SEC = 2048 / 48000;
+function onFrame(fr) {
+  if (actx) FRAME_SEC = 2048 / actx.sampleRate;
+  floorDb = Math.min(floorDb + 0.03, fr.db);
+  const voiced = fr.f0 > 0 && fr.db > floorDb + 12 && fr.clarity > 0.5;
+  const now = performance.now();
+  const item = { t: now, voiced, f0: fr.f0, res: fr.res, h1h2: fr.h1h2, clar: fr.clarity };
+  frames.push(item); while (frames.length && now - frames[0].t > 12500) frames.shift();
+  if (!voiced) return;
+  recent.push(item); while (recent.length > 7) recent.shift();
+  if (collect) { collect.items.push(item); }
+  if (sess) {
+    sess.voiced++; const ok = inTarget(fr.f0, fr.res); if (ok) sess.inT++;
+    sess.f0.push(fr.f0); if (!isNaN(fr.res)) sess.res.push(fr.res); if (!isNaN(fr.h1h2)) sess.reg.push(regPos(fr.h1h2));
+    if (sess.f0.length > 20000) { sess.f0.splice(0, 5000); sess.res.splice(0, 5000); sess.reg.splice(0, 5000); }
+  }
+}
+
+// ---- 표시 ----
+let restShown = false, raf = 0;
+function tick() {
+  cancelAnimationFrame(raf);
+  const loop = () => { updateTiles(); drawAll(); if (sess) { const s = Math.floor((Date.now() - sess.t0) / 1000); $('timer').textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; if (s >= 900 && !restShown) { restShown = true; $('rest').hidden = false; } } if (mic) raf = requestAnimationFrame(loop); };
+  raf = requestAnimationFrame(loop);
+}
+$('restOk').addEventListener('click', () => { $('rest').hidden = true; });
+function current() {
+  const fresh = recent.filter(r => performance.now() - r.t < 300);
+  if (fresh.length < 2) return null;
+  return { f0: med(fresh.map(r => r.f0)), res: med(fresh.map(r => r.res).filter(v => !isNaN(v))), h1h2: med(fresh.map(r => r.h1h2).filter(v => !isNaN(v))), clar: med(fresh.map(r => r.clar)) };
+}
+function updateTiles() {
+  const c = current();
+  if (!c) { $('f0Num').textContent = '–'; $('f0Note').textContent = ''; $('f0Zone').textContent = ''; $('regDot').style.opacity = 0.25; $('breath').hidden = true; }
+  else {
+    $('f0Num').textContent = Math.round(c.f0); $('f0Note').textContent = VF.note(c.f0);
+    const [zn, zc] = zoneOf(c.f0); $('f0Zone').textContent = zn; $('f0Zone').className = 'pill-z z-' + zc;
+    if (!isNaN(c.res)) {
+      $('resNum').textContent = Math.round(c.res);
+      const b = baseRes(); $('resRel').textContent = isNaN(b) ? '기준 녹음을 하면 평소 대비 변화가 보여요' : `평소보다 ${pct((c.res / b - 1) * 100)}`;
+    }
+    if (!isNaN(c.h1h2)) { const p = regPos(c.h1h2); $('regDot').style.left = `${(Math.max(-0.1, Math.min(1.1, p)) + 0.1) / 1.2 * 100}%`; $('regDot').style.opacity = 1; $('regTxt').textContent = `${regLabel(p)} (H1–H2 ${c.h1h2.toFixed(1)} dB)`; }
+    const cm = cal().modal, lim = cm ? Math.min(0.9, cm.clar - 0.1) : 0.8;
+    $('breath').hidden = !(c.clar < lim);
+  }
+  if (sess && sess.voiced) { $('inPct').textContent = Math.round(sess.inT / sess.voiced * 100); $('voicedTime').textContent = `소리 낸 시간 ${Math.round(sess.voiced * FRAME_SEC)}초`; }
+}
+
+// 지도
+const XMIN = 70, XMAX = 450, lx = f => Math.log(f);
+function fit(cv) { const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = Math.max(1, r.width * d); cv.height = Math.max(1, r.height * d); const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return [g, r.width, r.height]; }
+function resRange() { const b = baseRes(); return isNaN(b) ? [600, 2400] : [b * 0.8, b * 1.6]; }
+function drawMap() {
+  const [g, W, H] = fit($('map')), L = 46, R = 12, T = 22, B = 30;
+  const X = f => L + (lx(f) - lx(XMIN)) / (lx(XMAX) - lx(XMIN)) * (W - L - R);
+  const [y0, y1] = resRange(), Y = v => T + (y1 - v) / (y1 - y0) * (H - T - B);
+  g.clearRect(0, 0, W, H);
+  const zones = [[XMIN, 140, '--ref', '남성'], [140, 165, '--muted', '중성'], [165, 275, '--imi', '여성']];
+  g.font = '11px ' + css('--font-body'); g.textAlign = 'center'; g.textBaseline = 'top';
+  for (const [a, b, c, n] of zones) { g.fillStyle = css(c); g.globalAlpha = 0.07; g.fillRect(X(a), T, X(b) - X(a), H - T - B); g.globalAlpha = 0.8; g.fillText(n, (X(a) + X(b)) / 2, 4); }
+  g.globalAlpha = 1;
+  // 격자
+  g.strokeStyle = css('--line'); g.fillStyle = css('--muted'); g.lineWidth = 1; g.font = '11px ' + css('--font-mono');
+  for (const f of [100, 140, 165, 200, 255, 300, 400]) { g.beginPath(); g.moveTo(X(f), T); g.lineTo(X(f), H - B); g.stroke(); g.textBaseline = 'top'; g.fillText(f, X(f), H - B + 6); }
+  g.textAlign = 'right'; g.textBaseline = 'middle';
+  const step = (y1 - y0) > 1200 ? 400 : 200;
+  for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) { g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - R, Y(v)); g.stroke(); g.fillText(v, L - 6, Y(v)); }
+  g.textAlign = 'left'; g.fillText('Hz', W - R - 18, H - B + 12);
+  // 목표 상자
+  const t = S.target, b = baseRes();
+  const ty0 = isNaN(b) ? y0 : b * (1 + t.rmin / 100), ty1 = isNaN(b) ? y1 : b * (1 + t.rmax / 100);
+  g.strokeStyle = css('--good'); g.lineWidth = 2; g.setLineDash([6, 4]);
+  g.strokeRect(X(t.fmin), Y(Math.min(ty1, y1)), X(t.fmax) - X(t.fmin), Y(Math.max(ty0, y0)) - Y(Math.min(ty1, y1))); g.setLineDash([]);
+  if (!isNaN(b)) { g.strokeStyle = css('--muted'); g.lineWidth = 1; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(L, Y(b)); g.lineTo(W - R, Y(b)); g.stroke(); g.setLineDash([]); g.fillStyle = css('--muted'); g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText('평소 공명', L + 4, Y(b) - 2); }
+  const cm = cal().modal;
+  if (cm && cm.res) { g.fillStyle = css('--muted'); g.beginPath(); g.arc(X(cm.f0), Y(cm.res), 4, 0, 7); g.fill(); g.textBaseline = 'top'; g.fillText('평소 목소리', X(cm.f0) + 6, Y(cm.res) + 2); }
+  // 궤적
+  const now = performance.now();
+  const pts = frames.filter(f => f.voiced && !isNaN(f.res) && now - f.t < 3000);
+  for (const p of pts) { const a = 1 - (now - p.t) / 3000; g.fillStyle = css(inTarget(p.f0, p.res) ? '--good' : '--imi'); g.globalAlpha = 0.15 + 0.5 * a; g.beginPath(); g.arc(X(Math.min(XMAX, Math.max(XMIN, p.f0))), Y(Math.min(y1, Math.max(y0, p.res))), 2.5, 0, 7); g.fill(); }
+  g.globalAlpha = 1;
+  const c = current();
+  if (c && !isNaN(c.res)) { const ok = inTarget(c.f0, c.res); g.fillStyle = css(ok ? '--good' : '--imi'); g.strokeStyle = css('--panel'); g.lineWidth = 3; g.beginPath(); g.arc(X(Math.min(XMAX, Math.max(XMIN, c.f0))), Y(Math.min(y1, Math.max(y0, c.res))), 9, 0, 7); g.fill(); g.stroke(); }
+  if (!mic) { g.fillStyle = css('--muted'); g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '14px ' + css('--font-body'); g.fillText('마이크 시작을 누르고 "아~" 해 보세요', (L + W - R) / 2, (T + H - B) / 2); }
+}
+function drawLine() {
+  const [g, W, H] = fit($('line')), L = 46, R = 12, T = 8, B = 22, now = performance.now();
+  const Y = f => T + (lx(XMAX) - lx(f)) / (lx(XMAX) - lx(XMIN)) * (H - T - B), X = t => L + (1 - (now - t) / 12000) * (W - L - R);
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = css('--good'); g.globalAlpha = 0.12; g.fillRect(L, Y(S.target.fmax), W - L - R, Y(S.target.fmin) - Y(S.target.fmax)); g.globalAlpha = 1;
+  g.strokeStyle = css('--line'); g.fillStyle = css('--muted'); g.font = '11px ' + css('--font-mono'); g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (const f of [100, 165, 255, 400]) { g.beginPath(); g.moveTo(L, Y(f)); g.lineTo(W - R, Y(f)); g.stroke(); g.fillText(f, L - 6, Y(f)); }
+  g.textAlign = 'center'; g.textBaseline = 'top'; for (let s = 0; s <= 12; s += 3) g.fillText(s ? `-${s}s` : '지금', X(now - s * 1000), H - B + 5);
+  g.strokeStyle = css('--imi'); g.lineWidth = 2.5; g.lineJoin = 'round'; g.beginPath(); let pen = false, prev = 0;
+  for (const f of frames) { if (!f.voiced || f.t - prev > 150) pen = false; if (f.voiced) { const x = X(f.t), y = Y(Math.min(XMAX, Math.max(XMIN, f.f0))); pen ? g.lineTo(x, y) : g.moveTo(x, y); pen = true; prev = f.t; } }
+  g.stroke();
+}
+function drawAll() { drawMap(); drawLine(); }
+
+// ---- 소리 모으기 (기준 녹음 · 사이렌) ----
+function collectFor(kind, ms, btn, label) {
+  return new Promise(async resolve => {
+    if (!(await startMic())) return resolve(null);
+    if (collect) finishCollect(true);
+    collect = { kind, items: [], t0: performance.now(), btn, label, resolve, ms };
+    btn.classList.add('on'); btn.disabled = true;
+    const iv = setInterval(() => {
+      if (!collect || collect.kind !== kind) { clearInterval(iv); return; }
+      const voicedMs = collect.items.length * FRAME_SEC * 1000, el = performance.now() - collect.t0;
+      btn.textContent = collect.items.length ? `녹음 중 ${(voicedMs / 1000).toFixed(1)}초` : '소리를 내세요…';
+      if (voicedMs >= ms || el > ms + 5000) { clearInterval(iv); finishCollect(false); }
+    }, 100);
+  });
+}
+function finishCollect(cancel) {
+  const c = collect; if (!c) return; collect = null;
+  c.btn.classList.remove('on'); c.btn.disabled = false; c.btn.textContent = c.label;
+  c.resolve(cancel ? null : c.items);
+}
+document.querySelectorAll('[data-cal]').forEach(btn => btn.addEventListener('click', async () => {
+  const kind = btn.dataset.cal, items = await collectFor(kind, 3000, btn, '녹음');
+  if (!items || items.length < 20) { $('calMsg').innerHTML = '<span class="err">소리가 충분히 잡히지 않았어요. 마이크 가까이에서 3초 동안 길게 소리 내 주세요.</span>'; return; }
+  const v = { f0: med(items.map(i => i.f0)), res: med(items.map(i => i.res).filter(x => !isNaN(x))), h1h2: med(items.map(i => i.h1h2).filter(x => !isNaN(x))), clar: med(items.map(i => i.clar)) };
+  if (isNaN(v.res)) v.res = null;
+  S.calib[vowel()] = Object.assign({}, S.calib[vowel()], { [kind]: v, at: Date.now() }); save(); renderCalib(); drawAll();
+  const c = cal();
+  if (c.modal && c.fals && c.fals.h1h2 - c.modal.h1h2 < 3) $('calMsg').innerHTML = '<span class="err">진성과 가성의 차이가 작게 나왔어요(3 dB 미만). 가성은 힘을 완전히 빼고 다시 녹음해 보세요.</span>';
+}));
+
+// 사이렌
+let sirenData = null;
+$('sirenBtn').addEventListener('click', async () => {
+  const items = await collectFor('siren', 8000, $('sirenBtn'), '● 테스트 시작 (8초)');
+  if (!items || items.length < 30) { $('sirenTxt').innerHTML = '<span class="err">소리가 충분히 잡히지 않았어요. 8초 동안 끊지 말고 천천히 올라가 보세요.</span>'; return; }
+  sirenData = items.filter(i => !isNaN(i.h1h2)); analyzeSiren(); drawSiren();
+});
+function analyzeSiren() {
+  const d = sirenData, n = d.length, w = 6, c = cal();
+  const M = c.modal ? c.modal.h1h2 : 3, F = c.fals ? c.fals.h1h2 : 12, need = Math.max(4, (F - M) * 0.45);
+  const sm = d.map((_, i) => med(d.slice(Math.max(0, i - 2), i + 3).map(x => x.h1h2)));
+  let best = 0, at = -1;
+  for (let i = w; i < n - w; i++) {
+    const a = sm.slice(i - w, i).reduce((s, v) => s + v, 0) / w, b = sm.slice(i, i + w).reduce((s, v) => s + v, 0) / w;
+    if (Math.abs(b - a) > Math.abs(best)) { best = b - a; at = i; }
+  }
+  const lo = Math.min(...d.map(x => x.f0)), hi = Math.max(...d.map(x => x.f0));
+  const up = best > 0; best = Math.abs(best);
+  sirenData.break = best >= need ? at : -1;
+  if (hi / lo < 1.3) $('sirenTxt').textContent = `음높이 변화가 작았어요(${Math.round(lo)}~${Math.round(hi)} Hz). 더 낮은 곳에서 시작해 높은 곳까지 크게 올라가 보세요.`;
+  else if (sirenData.break >= 0) { const f = d[at].f0; $('sirenTxt').innerHTML = `<b>약 ${Math.round(f)} Hz (${VF.note(f)})</b>에서 ${up ? '가성 쪽으로 넘어가요' : '진성 쪽으로 돌아와요'}. H1–H2가 ${best.toFixed(1)} dB ${up ? '뛰었어요' : '떨어졌어요'}. 이 근처를 부드럽게 잇는 연습(작게 "우~" 사이렌)을 하면 전환이 매끄러워져요.`; }
+  else $('sirenTxt').innerHTML = `<b>뚜렷한 전환점이 없어요</b> (${Math.round(lo)}~${Math.round(hi)} Hz, 가장 큰 변화 ${best.toFixed(1)} dB). 한 가지 상태로 쭉 이어졌거나 믹스로 부드럽게 넘어갔다는 뜻이에요. 진성·가성 미터에서 어느 쪽이었는지 확인해 보세요.`;
+}
+function drawSiren() {
+  const [g, W, H] = fit($('siren')), L = 46, R = 12, T = 10, B = 24; g.clearRect(0, 0, W, H);
+  if (!sirenData) { g.fillStyle = css('--muted'); g.font = '13px ' + css('--font-body'); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('테스트하면 음높이에 따른 진성·가성 변화가 여기 그려져요', W / 2, H / 2); return; }
+  const d = sirenData, n = d.length, hs = d.map(x => x.h1h2);
+  const hmin = Math.min(-5, ...hs) - 2, hmax = Math.max(15, ...hs) + 2;
+  const X = i => L + i / (n - 1) * (W - L - R), Yh = v => T + (hmax - v) / (hmax - hmin) * (H - T - B);
+  const fl = Math.min(...d.map(x => x.f0)), fh = Math.max(...d.map(x => x.f0)), Yf = f => T + (lx(fh * 1.05) - lx(f)) / (lx(fh * 1.05) - lx(fl * 0.95)) * (H - T - B);
+  g.strokeStyle = css('--line'); g.fillStyle = css('--muted'); g.font = '11px ' + css('--font-mono'); g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let v = Math.ceil(hmin / 5) * 5; v <= hmax; v += 5) { g.beginPath(); g.moveTo(L, Yh(v)); g.lineTo(W - R, Yh(v)); g.stroke(); g.fillText(v + 'dB', L - 4, Yh(v)); }
+  if (d.break >= 0) { g.fillStyle = css('--warn'); g.globalAlpha = 0.15; g.fillRect(X(d.break) - 6, T, 12, H - T - B); g.globalAlpha = 1; }
+  g.lineWidth = 2; g.strokeStyle = css('--ref'); g.beginPath(); d.forEach((p, i) => i ? g.lineTo(X(i), Yf(p.f0)) : g.moveTo(X(i), Yf(p.f0))); g.stroke();
+  g.strokeStyle = css('--imi'); g.beginPath(); d.forEach((p, i) => i ? g.lineTo(X(i), Yh(p.h1h2)) : g.moveTo(X(i), Yh(p.h1h2))); g.stroke();
+  g.textAlign = 'left'; g.textBaseline = 'top'; g.font = '12px ' + css('--font-body');
+  g.fillStyle = css('--ref'); g.fillText(`음높이 ${Math.round(fl)}→${Math.round(fh)} Hz`, L + 6, H - B + 4);
+  g.fillStyle = css('--imi'); g.fillText('H1–H2 (위로 갈수록 가성 쪽)', L + 170, H - B + 4);
+}
+
+// ---- 최근 연습 ----
+function renderSess() {
+  const s = S.sessions.slice().reverse(), p = n => String(n).padStart(2, '0');
+  $('sessBody').innerHTML = s.length ? s.slice(0, 20).map(x => { const d = new Date(x.at); return `<tr><td>${d.getMonth() + 1}.${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</td><td>${{ a: '아', e: '에', i: '이' }[x.vowel] || x.vowel}</td><td>${x.sec}초</td><td>${Math.round(x.f0)} Hz</td><td>${x.resRel == null ? '–' : pct(x.resRel)}</td><td>${isNaN(x.reg) || x.reg == null ? '–' : regLabel(x.reg)}</td><td>${Math.round(x.inPct)}%</td></tr>`; }).join('')
+    : '<tr><td colspan="7" style="text-align:left;color:var(--muted)">아직 기록이 없어요.</td></tr>';
+}
+$('clearSess').addEventListener('click', () => { S.sessions = []; save(); renderSess(); });
+
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawAll(); drawSiren(); }, 120); });
+new MutationObserver(() => { drawAll(); drawSiren(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+renderTarget(); renderCalib(); renderSess();
+const go = () => { drawAll(); drawSiren(); };
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
+})();
+</script>
+</body>
+</html>
