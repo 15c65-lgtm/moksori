@@ -109,10 +109,29 @@
       <div class="histwrap"><table class="hist"><thead><tr><th>날짜</th><th>모음</th><th>소리 낸 시간</th><th>평균 음높이</th><th>공명 변화</th><th>가성 쪽</th><th>목표 안</th></tr></thead><tbody id="sessBody"></tbody></table></div>
       <p class="cap">마이크를 멈추면 3초 이상 소리 낸 연습이 이 브라우저에 저장돼요.</p>
     </div>
-    <div class="panel ym-ai">
-      <span class="pill soon">준비 중</span>
-      <h2>AI 코치</h2>
-      <p class="cap">연습이 끝나면 AI가 기록을 보고 "음높이는 목표에 들어왔는데 공명이 평소와 같아요. '이' 모음으로 입꼬리를 옆으로 당기는 연습을 해 보세요"처럼 다음 연습을 짚어 줄 예정이에요.</p>
+    <div class="panel ym-ai" id="coach">
+      <div class="chart-head"><h2>AI 코치</h2><button type="button" class="primary-sm" id="coachBtn">코칭 받기</button></div>
+      <p class="cap" id="coachFor">가장 최근 연습 기록을 보고 진단과 다음 연습을 짚어 줘요.</p>
+      <ol class="coach-list" id="coachList"></ol>
+      <details class="coach-ai" id="aiWrap">
+        <summary>Claude AI로 더 자세히 코칭받기 <span class="pill-z">선택</span></summary>
+        <div class="coach-ai-body">
+          <p class="cap">내 Anthropic API 키로 Claude를 불러요. 키는 이 브라우저에만 저장되고, 연습 숫자 요약만 보내요(녹음 소리는 안 보내요). 사용한 만큼 내 API 계정에 요금이 나가요.</p>
+          <div class="yt-row">
+            <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" aria-label="Anthropic API 키">
+            <select id="aiModel" aria-label="모델">
+              <option value="claude-haiku-5-5">Haiku 5.5 (빠르고 저렴)</option>
+              <option value="claude-sonnet-5-5">Sonnet 5.5 (더 꼼꼼)</option>
+            </select>
+          </div>
+          <div class="yt-row">
+            <input type="text" id="aiQ" placeholder="궁금한 점 (선택) 예: 공명을 올리면 목이 조이는 느낌이 들어요" aria-label="질문">
+            <button type="button" id="aiAsk">AI에게 묻기</button>
+            <button type="button" id="aiForget">키 지우기</button>
+          </div>
+          <div class="coach-out" id="aiOut"></div>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -128,6 +147,7 @@
 </div>
 
 <script src="assets/voicefeat.js"></script>
+<script src="assets/coach.js"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -190,7 +210,7 @@ async function startMic() {
   proc.onaudioprocess = e => { st.push(e.inputBuffer.getChannelData(0)); onFrame(VF.analyze(st.last(VF.N))); };
   src.connect(proc); proc.connect(mute); mute.connect(actx.destination);
   mic = { stream, src, proc, mute };
-  sess = { t0: Date.now(), voiced: 0, inT: 0, f0: [], res: [], reg: [], vowel: vowel() };
+  sess = { t0: Date.now(), voiced: 0, inT: 0, pOk: 0, breath: 0, f0: [], res: [], reg: [], vowel: vowel() };
   frames = []; recent.length = 0; floorDb = -60; restShown = false;
   $('micBtn').textContent = '■ 마이크 멈춤'; $('micBtn').classList.add('on');
   $('tally').classList.add('on'); $('tally').textContent = 'ON AIR';
@@ -207,7 +227,12 @@ function stopMic() {
   if (collect) finishCollect(true);
   if (sess && sess.voiced * FRAME_SEC >= 3) {
     const b = baseRes(), r = med(sess.res);
-    S.sessions.push({ at: Date.now(), vowel: sess.vowel, sec: Math.round(sess.voiced * FRAME_SEC), f0: med(sess.f0), resRel: isNaN(b) || isNaN(r) ? null : (r / b - 1) * 100, reg: med(sess.reg), inPct: sess.inT / sess.voiced * 100 });
+    const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
+    const rg = sess.reg, rn = Math.max(1, rg.length);
+    S.sessions.push({ at: Date.now(), vowel: sess.vowel, sec: Math.round(sess.voiced * FRAME_SEC), f0: med(sess.f0), f0lo: q(sess.f0, 0.1), f0hi: q(sess.f0, 0.9),
+      resRel: isNaN(b) || isNaN(r) ? null : (r / b - 1) * 100, reg: med(rg), inPct: sess.inT / sess.voiced * 100, pitchOk: sess.pOk / sess.voiced, breath: sess.breath / sess.voiced,
+      regMix: rg.length ? { modal: rg.filter(v => v < 0.3).length / rn, mix: rg.filter(v => v >= 0.3 && v < 0.7).length / rn, fals: rg.filter(v => v >= 0.7).length / rn } : null,
+      target: { ...S.target }, calibrated: !!(cal().modal && cal().fals) });
     S.sessions = S.sessions.slice(-100); save(); renderSess();
     $('micMsg').textContent = '연습을 기록했어요. 아래 최근 연습에서 확인하세요.';
   } else $('micMsg').textContent = '멈췄어요.';
@@ -228,6 +253,8 @@ function onFrame(fr) {
   if (collect) { collect.items.push(item); }
   if (sess) {
     sess.voiced++; const ok = inTarget(fr.f0, fr.res); if (ok) sess.inT++;
+    if (fr.f0 >= S.target.fmin && fr.f0 <= S.target.fmax) sess.pOk++;
+    { const cm = cal().modal, lim = cm ? Math.min(0.9, cm.clar - 0.1) : 0.8; if (fr.clarity < lim) sess.breath++; }
     sess.f0.push(fr.f0); if (!isNaN(fr.res)) sess.res.push(fr.res); if (!isNaN(fr.h1h2)) sess.reg.push(regPos(fr.h1h2));
     if (sess.f0.length > 20000) { sess.f0.splice(0, 5000); sess.res.splice(0, 5000); sess.reg.splice(0, 5000); }
   }
@@ -392,9 +419,45 @@ function renderSess() {
 }
 $('clearSess').addEventListener('click', () => { S.sessions = []; save(); renderSess(); });
 
+// ---- AI 코치 ----
+const AKEY = 'moksori.anthropicKey';
+try { $('apiKey').value = localStorage.getItem(AKEY) || ''; $('aiModel').value = localStorage.getItem(AKEY + '.model') || 'claude-haiku-5-5'; } catch (_) {}
+$('apiKey').addEventListener('change', () => { try { localStorage.setItem(AKEY, $('apiKey').value.trim()); } catch (_) {} });
+$('aiModel').addEventListener('change', () => { try { localStorage.setItem(AKEY + '.model', $('aiModel').value); } catch (_) {} });
+$('aiForget').addEventListener('click', () => { $('apiKey').value = ''; try { localStorage.removeItem(AKEY); } catch (_) {} $('aiOut').textContent = '키를 지웠어요.'; });
+const escH = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function latest() { if (mic && sess && sess.voiced * FRAME_SEC >= 10) { stopMic(); startMic(); } const all = S.sessions; return { s: all[all.length - 1] || null, prev: all.slice(-6, -1) }; }
+function coachData(s, prev) {
+  const c = cal(), r1 = v => v == null || isNaN(v) ? null : Math.round(v * 10) / 10;
+  const sum = x => ({ 날짜: new Date(x.at).toLocaleString('ko-KR'), 모음: x.vowel, 소리낸초: x.sec, 평균F0_Hz: r1(x.f0), F0_하위10_상위10: x.f0lo ? [r1(x.f0lo), r1(x.f0hi)] : null,
+    공명_평소대비_퍼센트: r1(x.resRel), 목표안_퍼센트: r1(x.inPct), 음높이목표안_비율: r1(x.pitchOk), 숨섞임_비율: r1(x.breath),
+    진성믹스가성_비율: x.regMix ? { 진성: r1(x.regMix.modal), 믹스: r1(x.regMix.mix), 가성: r1(x.regMix.fals) } : null });
+  return { 목표: { 음높이_Hz: [S.target.fmin, S.target.fmax], 공명_평소대비_퍼센트: [S.target.rmin, S.target.rmax] },
+    기준녹음: { 완료: !!(c.modal && c.fals), 평소진성: c.modal ? { F0: r1(c.modal.f0), H1H2_dB: r1(c.modal.h1h2), 공명_Hz: r1(c.modal.res) } : null, 가성: c.fals ? { F0: r1(c.fals.f0), H1H2_dB: r1(c.fals.h1h2) } : null },
+    이번연습: s ? sum(s) : null, 이전연습들: prev.map(sum) };
+}
+$('coachBtn').addEventListener('click', () => {
+  const { s, prev } = latest();
+  if (s) { const d = new Date(s.at); $('coachFor').textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')} 연습(소리 낸 시간 ${s.sec}초) 기준이에요.`; }
+  const tips = Coach.rules(s, prev, S.target, cal());
+  $('coachList').innerHTML = tips.map(x => `<li class="tip-${x.k}"><b>${escH(x.title)}</b><span>${escH(x.body)}</span></li>`).join('');
+});
+$('aiAsk').addEventListener('click', async () => {
+  const key = $('apiKey').value.trim();
+  if (!key) { $('aiOut').innerHTML = '<span class="err">API 키를 넣어 주세요. Claude Console(console.anthropic.com)에서 만들 수 있어요.</span>'; $('apiKey').focus(); return; }
+  try { localStorage.setItem(AKEY, key); } catch (_) {}
+  const { s, prev } = latest();
+  if (!s) { $('aiOut').innerHTML = '<span class="err">먼저 마이크를 켜고 연습한 뒤 멈춰 주세요. 그 기록을 AI가 읽어요.</span>'; return; }
+  $('aiAsk').disabled = true; $('aiOut').textContent = 'Claude가 기록을 읽는 중…';
+  try { const txt = await Coach.ai({ key, model: $('aiModel').value, data: coachData(s, prev), question: $('aiQ').value.trim() }); $('aiOut').innerHTML = escH(txt).replace(/\n/g, '<br>'); }
+  catch (e) { $('aiOut').innerHTML = `<span class="err">${escH(e.message)}</span>`; }
+  $('aiAsk').disabled = false;
+});
+
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawAll(); drawSiren(); }, 120); });
 new MutationObserver(() => { drawAll(); drawSiren(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 renderTarget(); renderCalib(); renderSess();
+$('coachList').innerHTML = Coach.rules(S.sessions[S.sessions.length - 1] || null, S.sessions.slice(-6, -1), S.target, cal()).map(x => `<li class="tip-${x.k}"><b>${escH(x.title)}</b><span>${escH(x.body)}</span></li>`).join('');
 const go = () => { drawAll(); drawSiren(); };
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
 })();

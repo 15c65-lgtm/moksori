@@ -233,3 +233,18 @@ canvas.ym-siren { width: 100%; height: 200px; display: block; }
 #sirenBtn.on { background: var(--imi); color: #fff; border-color: var(--imi); }
 .ym-result { margin: 10px 0 0; font-size: 14px; }
 .ym-ai { display: grid; gap: 8px; align-content: start; }
+
+/* ---- AI 코치 ---- */
+.coach-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: c; }
+.coach-list li { display: grid; gap: 2px; padding: 10px 12px 10px 40px; position: relative; border-radius: 8px; background: color-mix(in srgb, var(--ink) 3%, transparent); border-left: 3px solid var(--warn); font-size: 14px; }
+.coach-list li::before { counter-increment: c; content: counter(c); position: absolute; left: 12px; top: 10px; font-family: var(--font-mono); font-weight: 600; color: var(--muted); }
+.coach-list li span { color: var(--muted); font-size: 13.5px; }
+.coach-list li.tip-reg-good, .coach-list li.tip-next, .coach-list li.tip-ok { border-left-color: var(--good); }
+.coach-list li.tip-calib, .coach-list li.tip-start, .coach-list li.tip-short { border-left-color: var(--ref); }
+.coach-ai { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.coach-ai summary { cursor: pointer; font-weight: 700; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+.coach-ai-body { display: grid; gap: 8px; margin-top: 8px; }
+.coach-ai-body input[type="password"], #aiQ { flex: 1 1 200px; min-width: 0; }
+.coach-ai-body select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.coach-out { font-size: 14px; line-height: 1.65; white-space: normal; }
+.coach-out:empty { display: none; }
