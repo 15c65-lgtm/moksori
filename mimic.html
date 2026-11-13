@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>성대모사 싱크로율 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>성대모사 싱크로율</h1>
+      <p class="sub">원본 목소리와 내 성대모사를 올리면 음색, 음높이, 억양, 발음, 리듬, 강세를 따로 재서 얼마나 닮았는지 알려 줘요. 같은 대사를 녹음해서 비교하세요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="channels">
+    <div class="panel ch" style="--c: var(--ref)" id="chA">
+      <div class="ch-head"><span class="ch-tag">A</span><h2>원본 목소리</h2></div>
+      <div class="drop" data-slot="A">
+        <label class="filebtn">파일 선택<input type="file" id="fileA" accept="audio/*,video/*"></label>
+        <div class="name" id="nameA">예시 합성음이 들어 있어요. 따라 할 원본 클립을 올리거나 녹음하세요.</div>
+        <button type="button" class="rec" id="recA">● 녹음</button>
+        <button type="button" id="playA">▶ 듣기</button>
+      </div>
+      <canvas class="wave" id="waveA"></canvas>
+      <div class="meta" id="metaA"></div>
+    </div>
+    <div class="panel ch" style="--c: var(--imi)" id="chB">
+      <div class="ch-head"><span class="ch-tag">B</span><h2>내 성대모사</h2></div>
+      <div class="drop" data-slot="B">
+        <label class="filebtn">파일 선택<input type="file" id="fileB" accept="audio/*,video/*"></label>
+        <div class="name" id="nameB">예시 합성음이 들어 있어요. 녹음 버튼을 누르고 같은 대사를 따라 해 보세요.</div>
+        <button type="button" class="rec" id="recB">● 녹음</button>
+        <button type="button" id="playB">▶ 듣기</button>
+      </div>
+      <canvas class="wave" id="waveB"></canvas>
+      <div class="meta" id="metaB"></div>
+    </div>
+  </section>
+
+  <div class="go">
+    <button type="button" class="primary" id="run">비교하기</button>
+    <span class="hint" id="hint">녹음은 최대 20초, 파일은 끌어다 놓아도 돼요(m4a, mp3, wav, mp4). 앞뒤 무음은 자동으로 잘라요. 원본과 녹음이 둘 다 준비되면 자동으로 비교해요.</span>
+  </div>
+
+  <section class="panel result" id="result">
+    <div class="score">
+      <svg viewBox="0 0 200 200" aria-label="종합 점수">
+        <circle cx="100" cy="100" r="82" fill="none" stroke="var(--line)" stroke-width="14"></circle>
+        <circle id="ring" cx="100" cy="100" r="82" fill="none" stroke="var(--imi)" stroke-width="14" stroke-linecap="butt" transform="rotate(-90 100 100)" stroke-dasharray="0 999"></circle>
+        <text id="scoreTxt" x="100" y="108" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="52" fill="var(--ink)">–</text>
+        <text x="100" y="136" text-anchor="middle" font-size="13" fill="var(--muted)">/ 100 싱크로율</text>
+      </svg>
+      <div class="grade" id="grade"></div>
+      <div class="demo" id="demoNote">예시 합성음끼리 비교한 결과예요</div>
+    </div>
+    <div style="display:grid; gap:18px;">
+      <div class="meters" id="meters"></div>
+      <ul class="fb" id="fb"></ul>
+    </div>
+  </section>
+
+  <section class="charts">
+    <div class="panel">
+      <div class="chart-head">
+        <h2>억양 곡선 (피치)</h2>
+        <div class="legend"><span style="--c: var(--ref)">원본</span><span style="--c: var(--imi)">내 모사</span></div>
+      </div>
+      <canvas class="chart" id="pitchChart"></canvas>
+      <div class="chart-head" style="margin:8px 0 0">
+        <label class="tog"><input type="checkbox" id="alignPitch"> 내 모사를 원본 높이로 옮겨서 모양만 비교</label>
+      </div>
+      <p class="cap">가로축은 원본 기준 시간이에요. 내 모사는 말소리를 맞춰 정렬했기 때문에 빠르기가 달라도 같은 음절끼리 겹쳐 보여요.</p>
+    </div>
+    <div class="panel">
+      <div class="chart-head">
+        <h2>음색 (평균 스펙트럼)</h2>
+        <div class="legend"><span style="--c: var(--ref)">원본</span><span style="--c: var(--imi)">내 모사</span></div>
+      </div>
+      <canvas class="chart" id="specChart"></canvas>
+      <p class="cap">유성음 구간의 평균 주파수 분포예요. 300~3000 Hz 부근 봉우리 모양이 공명(입·코 울림) 특징을 보여 줘요.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>연습 기록</h2><button type="button" id="clearHist">기록 지우기</button></div>
+    <div class="histwrap"><table class="hist"><thead><tr><th>#</th><th>모사</th><th>종합</th><th>음색</th><th>음높이</th><th>억양</th><th>발음</th><th>리듬</th><th>강세</th></tr></thead><tbody id="histBody"></tbody></table></div>
+    <p class="cap">원본은 그대로 두고 내 모사 파일만 바꿔 가며 비교하면 회차별 점수가 쌓여요. 기록은 이 브라우저에 저장돼요.</p>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:12px">정확하게 재는 요령</h2>
+    <div class="tips">
+      <div><b>같은 대사, 같은 길이</b>발음·리듬 점수는 원본과 같은 문장을 말했다고 보고 계산해요. 3~10초 정도 한두 문장이 가장 잘 맞아요.</div>
+      <div><b>배경음 없는 원본</b>원본에 음악이나 효과음이 섞이면 음색과 피치가 흔들려요. 대사만 또렷한 구간을 잘라 쓰세요.</div>
+      <div><b>조용한 곳, 같은 기기</b>마이크마다 소리 색이 달라서 음색 점수에 영향을 줘요. 매번 같은 폰, 같은 거리에서 녹음하면 회차 비교가 정확해져요.</div>
+      <div><b>점수 읽는 법</b>음높이·억양·리듬은 수치가 꽤 정확하고, 음색·발음은 녹음 환경을 타는 참고값이에요. 원본끼리(같은 파일 두 번) 넣으면 100점이 나와요.</div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/core.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const MAX_SEC = 20;
+const slots = { A: null, B: null }; // {name, buf(AudioBuffer|null), x(Float32Array 16k), feat, demo, cut}
+let actx = null, playing = null, last = null;
+const HKEY = 'moksori.mimic.history';
+let history = []; try { history = JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (_) {}
+const saveHist = () => { try { localStorage.setItem(HKEY, JSON.stringify(history.slice(-200))); } catch (_) {} };
+let attemptInit = history.length ? Math.max(...history.map(h => h.n)) : 0;
+
+function ctx() { if (!actx) { const C = window.AudioContext || window.webkitAudioContext; actx = new C(); } return actx; }
+
+// ---- 예시 합성음 (모음 + 포먼트) ----
+const VOW = { a: [800, 1200, 2500], i: [300, 2300, 3000], u: [350, 800, 2400], e: [500, 1900, 2600], o: [500, 900, 2500] };
+function synth(seq, { pitch = 1, tempo = 1, fscale = 1, flat = 0 } = {}) {
+  const out = []; let ph = 0; const env = (f, F) => { let a = 0; F.forEach((fc, k) => { const c = fc * fscale, bw = 80 + k * 40; a += (k ? 0.5 : 1) / (1 + ((f - c) / bw) ** 2); }); return a * Math.exp(-f / 3000); };
+  const pad = () => { for (let i = 0; i < 0.35 * SR; i++) out.push(0); };
+  pad();
+  for (const [v, dur, a0, b0] of seq) {
+    const n = Math.round(dur * tempo * SR);
+    if (v === '_') { for (let i = 0; i < n; i++) out.push(0); continue; }
+    const mid = (a0 + b0) / 2, f0a = a0 + (mid - a0) * flat, f0b = b0 + (mid - b0) * flat;
+    for (let i = 0; i < n; i++) {
+      const t = i / n, f0 = (f0a + (f0b - f0a) * t) * pitch * (1 + 0.006 * Math.sin(2 * Math.PI * 5.5 * i / SR)); ph += 2 * Math.PI * f0 / SR;
+      let s = 0; for (let h = 1; h * f0 < 7000; h++) s += env(h * f0, VOW[v]) * Math.sin(h * ph);
+      out.push(0.12 * s * Math.min(1, t * 10, (1 - t) * 10) + (Math.random() * 2 - 1) * 0.002);
+    }
+  }
+  pad();
+  return Float32Array.from(out);
+}
+const SEQ = [['a', .25, 180, 225], ['_', .05], ['i', .2, 225, 205], ['u', .3, 205, 150], ['_', .14], ['e', .25, 160, 195], ['o', .38, 195, 140]];
+
+// ---- 파일 로드 ----
+async function toMono16k(buf) {
+  const dur = Math.min(buf.duration, MAX_SEC);
+  const off = new OfflineAudioContext(1, Math.ceil(dur * SR), SR);
+  const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start();
+  const r = await off.startRendering();
+  return Float32Array.from(r.getChannelData(0));
+}
+async function loadFile(slot, file) {
+  const nameEl = $('name' + slot);
+  nameEl.innerHTML = `<b>${esc(file.name)}</b> 불러오는 중…`;
+  try {
+    const ab = await file.arrayBuffer();
+    const buf = await new Promise((res, rej) => { const p = ctx().decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); });
+    await loadBuffer(slot, file.name, buf);
+  } catch (e) {
+    nameEl.innerHTML = `<span class="err">${esc(file.name)}을(를) 읽지 못했어요. ${e && e.message === 'silent' ? '소리가 거의 없는 파일이에요.' : '이 브라우저가 지원하지 않는 형식일 수 있어요. wav나 mp3로 바꿔서 올려 보세요.'}</span>`;
+  }
+}
+async function loadBuffer(slot, name, buf) {
+  const x = await toMono16k(buf);
+  let peak = 0; for (const v of x) peak = Math.max(peak, Math.abs(v));
+  if (peak < 1e-4) throw new Error('silent');
+  if (peak < 0.3) for (let i = 0; i < x.length; i++) x[i] *= 0.3 / peak; // 너무 작은 녹음은 키워서 분석
+  slots[slot] = { name, buf, x, feat: extract(x), demo: false, cut: buf.duration > MAX_SEC };
+  $('name' + slot).innerHTML = `<b>${esc(name)}</b>`;
+  drawWave(slot); writeMeta(slot);
+  $('run').disabled = false;
+  $('hint').textContent = slots.A.demo || slots.B.demo ? (slots.A.demo ? '이제 원본 목소리도 올리거나 녹음해 주세요.' : '이제 내 성대모사를 녹음해 주세요.') : '준비됐어요. 비교 결과를 확인하세요.';
+  if (!slots.A.demo && !slots.B.demo) run();
+}
+
+// ---- 마이크 녹음 ----
+let rec = null, takeNo = { A: 0, B: 0 };
+async function startRec(slot) {
+  if (rec) { stopRec(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('hint').textContent = '이 브라우저에서는 마이크를 쓸 수 없어요. 파일로 올려 주세요.'; return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch (e) { $('hint').textContent = '마이크 권한이 없어요. 주소창 왼쪽 자물쇠 아이콘에서 마이크를 허용한 뒤 다시 눌러 주세요.'; return; }
+  if (playing) { try { playing.node.stop(); } catch (_) {} playing = null; resetPlay(); }
+  const c = ctx(); if (c.state === 'suspended') await c.resume();
+  const src = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(4096, 1, 1), mute = c.createGain(); mute.gain.value = 0;
+  const chunks = []; let n = 0;
+  proc.onaudioprocess = e => {
+    const d = e.inputBuffer.getChannelData(0); chunks.push(new Float32Array(d)); n += d.length;
+    let pk = 0; for (let i = 0; i < d.length; i += 4) pk = Math.max(pk, Math.abs(d[i]));
+    const sec = n / c.sampleRate;
+    $('name' + slot).innerHTML = `<b>녹음 중 ${sec.toFixed(1)}초</b> <span class="lvl"><i style="width:${Math.min(100, pk * 140)}%"></i></span>`;
+    if (sec >= MAX_SEC) stopRec();
+  };
+  src.connect(proc); proc.connect(mute); mute.connect(c.destination);
+  rec = { slot, stream, src, proc, mute, chunks, rate: c.sampleRate };
+  $('rec' + slot).textContent = '■ 녹음 끝'; $('rec' + slot).classList.add('on');
+  $('tally').classList.add('on'); $('tally').textContent = 'REC';
+  for (const s of ['A', 'B']) if (s !== slot) $('rec' + s).disabled = true;
+}
+async function stopRec() {
+  if (!rec) return;
+  const r = rec; rec = null;
+  r.proc.onaudioprocess = null; try { r.src.disconnect(); r.proc.disconnect(); r.mute.disconnect(); } catch (_) {}
+  r.stream.getTracks().forEach(tr => tr.stop());
+  $('rec' + r.slot).textContent = '● 녹음'; $('rec' + r.slot).classList.remove('on');
+  for (const s of ['A', 'B']) $('rec' + s).disabled = false;
+  $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY';
+  const len = r.chunks.reduce((a, b) => a + b.length, 0);
+  if (len < r.rate * 0.5) { $('name' + r.slot).innerHTML = '<span class="err">너무 짧아요. 1초 이상 녹음해 주세요.</span>'; return; }
+  const buf = ctx().createBuffer(1, len, r.rate), ch = buf.getChannelData(0); let o = 0;
+  for (const k of r.chunks) { ch.set(k, o); o += k.length; }
+  takeNo[r.slot]++;
+  try { await loadBuffer(r.slot, `${r.slot === 'A' ? '원본' : '모사'} 녹음 ${takeNo[r.slot]}`, buf); }
+  catch (e) { $('name' + r.slot).innerHTML = '<span class="err">소리가 거의 녹음되지 않았어요. 마이크를 확인해 주세요.</span>'; }
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+for (const s of ['A', 'B']) {
+  $('file' + s).addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(s, f); e.target.value = ''; });
+  const dz = document.querySelector(`.drop[data-slot="${s}"]`);
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) loadFile(s, f); });
+  $('play' + s).addEventListener('click', () => play(s));
+  $('rec' + s).addEventListener('click', () => startRec(s));
+}
+
+function play(s) {
+  try {
+    const c = ctx(); if (c.state === 'suspended') c.resume();
+    if (playing) { try { playing.node.stop(); } catch (_) {} const was = playing.slot; playing = null; resetPlay(); if (was === s) return; }
+    let buf = slots[s].buf;
+    if (!buf) { const x = slots[s].x; buf = c.createBuffer(1, x.length, SR); buf.copyToChannel(x, 0); }
+    const n = c.createBufferSource(); n.buffer = buf; n.connect(c.destination); n.start();
+    playing = { node: n, slot: s }; $('play' + s).textContent = '■ 멈춤'; $('tally').classList.add('on'); $('tally').textContent = 'ON AIR';
+    n.onended = () => { if (playing && playing.node === n) { playing = null; resetPlay(); } };
+  } catch (e) { $('hint').textContent = '이 화면에서는 소리를 재생할 수 없어요.'; }
+}
+function resetPlay() { $('playA').textContent = '▶ 듣기'; $('playB').textContent = '▶ 듣기'; $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; }
+
+function writeMeta(s) {
+  const d = slots[s], f = d.feat, out = [];
+  out.push(`음성 구간 ${f.dur.toFixed(1)}초`);
+  const v = f.frames.filter(x => x.f0 > 0).map(x => x.f0);
+  if (v.length > 5) { const m = [...v].sort((a, b) => a - b)[v.length >> 1]; out.push(`평균 음높이 ${Math.round(m)} Hz`); }
+  if (f.snr < 22) out.push(`<span class="w">잡음이 많아요 (신호 대 잡음 ${f.snr.toFixed(0)} dB)</span>`);
+  if (d.cut) out.push(`<span class="w">앞 ${MAX_SEC}초만 분석해요</span>`);
+  if (f.dur < 0.8) out.push(`<span class="w">너무 짧아요. 1초 이상 녹음하세요</span>`);
+  $('meta' + s).innerHTML = out.map(t => `<span>${t}</span>`).join('');
+}
+
+// ---- 캔버스 ----
+function fit(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return [g, r.width, r.height];
+}
+function drawWave(s) {
+  const cv = $('wave' + s), [g, W, H] = fit(cv), d = slots[s]; if (!d) return;
+  const x = d.x, col = css(s === 'A' ? '--ref' : '--imi');
+  g.clearRect(0, 0, W, H);
+  const t0 = d.feat.startSec * SR, t1 = t0 + (d.feat.dur + 0.06) * SR;
+  g.fillStyle = col; g.globalAlpha = 0.08; g.fillRect(t0 / x.length * W, 0, (t1 - t0) / x.length * W, H); g.globalAlpha = 1;
+  const step = x.length / W;
+  for (let px = 0; px < W; px++) {
+    let mn = 0, mx = 0; const a = Math.floor(px * step), b = Math.floor((px + 1) * step);
+    for (let i = a; i < b; i++) { if (x[i] < mn) mn = x[i]; if (x[i] > mx) mx = x[i]; }
+    const inside = a >= t0 && a <= t1;
+    g.fillStyle = inside ? col : css('--muted'); g.globalAlpha = inside ? 1 : 0.35;
+    g.fillRect(px, H / 2 - mx * H * 0.48, 1, Math.max(1, (mx - mn) * H * 0.48));
+  }
+  g.globalAlpha = 1;
+}
+
+const PARTS = [
+  ['timbre', '음색', '목소리 질감·공명', 25],
+  ['pitch', '음높이', '평균 목소리 높이', 20],
+  ['into', '억양', '높낮이 흐름', 20],
+  ['pron', '발음', '말소리 모양', 15],
+  ['rhythm', '리듬', '빠르기·끊어 읽기', 10],
+  ['stress', '강세', '세게·약하게', 10],
+];
+const tone = v => isNaN(v) ? '--line' : v >= 80 ? '--good' : v >= 60 ? '--warn' : '--bad';
+const gradeOf = v => v >= 90 ? '거의 판박이예요' : v >= 80 ? '많이 닮았어요' : v >= 65 ? '느낌이 살아 있어요' : v >= 50 ? '조금 더 연습해 봐요' : '아직 다른 사람 같아요';
+
+function run() {
+  if (!slots.A || !slots.B) return;
+  $('run').disabled = true; $('run').textContent = '분석 중…';
+  setTimeout(() => {
+    try {
+      const res = compare(slots.A.feat, slots.B.feat);
+      last = res; render(res);
+      if (!slots.A.demo && !slots.B.demo) { attemptInit++; history.push({ n: attemptInit, name: slots.B.name, ref: slots.A.name, at: Date.now(), o: res.overall, p: res.parts }); saveHist(); renderHist(); }
+    } catch (e) { $('hint').textContent = '분석 중 문제가 생겼어요. 두 파일에 목소리가 1초 이상 들어 있는지 확인해 주세요.'; }
+    $('run').disabled = false; $('run').textContent = '비교하기';
+  }, 30);
+}
+$('run').addEventListener('click', run);
+
+function render(res) {
+  const o = Math.round(res.overall), C = 2 * Math.PI * 82;
+  $('ring').setAttribute('stroke-dasharray', `${C * o / 100} ${C}`);
+  $('ring').setAttribute('stroke', `var(${tone(o)})`);
+  $('scoreTxt').textContent = isNaN(o) ? '–' : o;
+  $('grade').textContent = gradeOf(o);
+  $('demoNote').style.display = slots.A.demo || slots.B.demo ? '' : 'none';
+  $('meters').innerHTML = PARTS.map(([k, n, d, w]) => {
+    const v = res.parts[k], ok = !isNaN(v);
+    return `<div class="m"><div class="lab">${n} <em>${w}%</em><small>${d}</small></div><div class="bar"><i style="width:${ok ? v : 0}%; --col: var(${tone(v)})"></i></div><div class="val">${ok ? Math.round(v) : '–'}</div></div>`;
+  }).join('');
+  const name = Object.fromEntries(PARTS.map(p => [p[0], p[1]]));
+  $('fb').innerHTML = feedback(res).map(f => `<li style="--col: var(${tone(res.parts[f.k])})"><b>${name[f.k]}</b>${esc(f.t)}</li>`).join('');
+  drawPitch(); drawSpec();
+}
+
+function drawPitch() {
+  const cv = $('pitchChart'), [g, W, H] = fit(cv); g.clearRect(0, 0, W, H);
+  if (!last) return;
+  const R = slots.A.feat, I = slots.B.feat, shift = $('alignPitch').checked && !isNaN(last.detail.dPitch) ? -last.detail.dPitch : 0;
+  const st = hz => 12 * Math.log2(hz / 440) + 69;
+  const ref = R.frames.map((f, i) => f.f0 > 0 ? [i * HOP / SR, st(f.f0)] : null);
+  const im = new Array(R.frames.length).fill(null);
+  for (const [i, j] of last.path) if (I.frames[j].f0 > 0) im[i] = [i * HOP / SR, st(I.frames[j].f0) + shift];
+  const ys = [...ref, ...im].filter(Boolean).map(p => p[1]);
+  if (ys.length < 3) { g.fillStyle = css('--muted'); g.font = '13px ' + css('--font-body'); g.fillText('피치를 찾지 못했어요. 목소리가 또렷한 파일인지 확인하세요.', 16, H / 2); return; }
+  ys.sort((a, b) => a - b);
+  let lo = Math.floor(ys[Math.floor(ys.length * 0.02)] - 2), hi = Math.ceil(ys[Math.floor(ys.length * 0.98)] + 2);
+  if (hi - lo < 8) { const c = (hi + lo) / 2; lo = Math.floor(c - 4); hi = Math.ceil(c + 4); }
+  const L = 44, Rm = 10, T = 10, B = 26, tmax = R.dur + 0.06;
+  const X = t => L + t / tmax * (W - L - Rm), Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  g.font = '11px ' + css('--font-mono'); g.textBaseline = 'middle';
+  const stepN = hi - lo > 20 ? 4 : 2;
+  const NN = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  for (let v = Math.ceil(lo / stepN) * stepN; v <= hi; v += stepN) {
+    g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - Rm, Y(v)); g.stroke();
+    g.fillStyle = css('--muted'); g.textAlign = 'right'; g.fillText(NN[((v % 12) + 12) % 12] + (Math.floor(v / 12) - 1), L - 6, Y(v));
+  }
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  const tStep = tmax > 8 ? 2 : tmax > 3 ? 1 : 0.5;
+  for (let t = 0; t <= tmax + 1e-6; t += tStep) { g.fillStyle = css('--muted'); g.fillText(t.toFixed(tStep < 1 ? 1 : 0) + 's', X(t), H - B + 8); }
+  const line = (pts, col, w) => {
+    g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.beginPath(); let pen = false;
+    for (const p of pts) { if (!p) { pen = false; continue; } if (!pen) { g.moveTo(X(p[0]), Y(p[1])); pen = true; } else g.lineTo(X(p[0]), Y(p[1])); }
+    g.stroke();
+  };
+  line(ref, css('--ref'), 3);
+  line(im, css('--imi'), 2);
+}
+
+function drawSpec() {
+  const cv = $('specChart'), [g, W, H] = fit(cv); g.clearRect(0, 0, W, H);
+  if (!last) return;
+  const a = last.detail.LR, b = last.detail.LI, n = a.length;
+  const all = [...a, ...b]; let lo = Math.floor(Math.min(...all) / 5) * 5, hi = Math.ceil(Math.max(...all) / 5) * 5;
+  const L = 40, Rm = 10, T = 10, B = 26;
+  const hz2mel = h => 2595 * Math.log10(1 + h / 700), mlo = hz2mel(60), mhi = hz2mel(7600);
+  const Xb = k => L + k / (n - 1) * (W - L - Rm), Xh = h => L + (hz2mel(h) - mlo) / (mhi - mlo) * (W - L - Rm) * (n + 1) / (n - 1) - (W - L - Rm) / (n - 1);
+  const Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  g.font = '11px ' + css('--font-mono');
+  g.textBaseline = 'middle'; g.textAlign = 'right';
+  for (let v = lo; v <= hi; v += 10) { g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - Rm, Y(v)); g.stroke(); g.fillStyle = css('--muted'); g.fillText(v + 'dB', L - 4, Y(v)); }
+  g.textBaseline = 'top'; g.textAlign = 'center';
+  for (const [h, lab] of [[250, '250'], [500, '500'], [1000, '1k'], [2000, '2k'], [4000, '4k']]) { const x = Xh(h); if (x > L && x < W - Rm) { g.fillStyle = css('--muted'); g.fillText(lab, x, H - B + 8); g.strokeStyle = css('--line'); g.setLineDash([2, 3]); g.beginPath(); g.moveTo(x, T); g.lineTo(x, H - B); g.stroke(); g.setLineDash([]); } }
+  g.fillText('Hz', W - Rm - 8, H - B + 8);
+  const line = (arr, col, w, fill) => {
+    g.beginPath(); arr.forEach((v, k) => k ? g.lineTo(Xb(k), Y(v)) : g.moveTo(Xb(k), Y(v)));
+    if (fill) { g.save(); g.lineTo(Xb(n - 1), H - B); g.lineTo(Xb(0), H - B); g.closePath(); g.fillStyle = col; g.globalAlpha = 0.1; g.fill(); g.restore(); g.beginPath(); arr.forEach((v, k) => k ? g.lineTo(Xb(k), Y(v)) : g.moveTo(Xb(k), Y(v))); }
+    g.strokeStyle = col; g.lineWidth = w; g.stroke();
+  };
+  line(a, css('--ref'), 3, true);
+  line(b, css('--imi'), 2, false);
+}
+$('alignPitch').addEventListener('change', drawPitch);
+
+function renderHist() {
+  const best = Math.max(...history.map(h => h.o));
+  const c = v => isNaN(v) ? '–' : Math.round(v);
+  $('histBody').innerHTML = history.length ? history.slice().reverse().map(h => `<tr class="${h.o === best && history.length > 1 ? 'best' : ''}"><td>${h.n}</td><td>${esc(h.name)}</td><td>${c(h.o)}</td>${PARTS.map(p => `<td>${c(h.p[p[0]])}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="9" style="text-align:left;color:var(--muted)">아직 기록이 없어요. 내 파일로 비교하면 여기에 쌓여요.</td></tr>`;
+}
+$('clearHist').addEventListener('click', () => { history = []; attemptInit = 0; saveHist(); renderHist(); });
+
+function redraw() { drawWave('A'); drawWave('B'); drawPitch(); drawSpec(); }
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(redraw, 120); });
+new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', redraw);
+
+// ---- 시작: 예시 합성음으로 채워 두기 ----
+const xa = synth(SEQ), xb = synth(SEQ, { pitch: 1.12, tempo: 1.12, fscale: 1.07, flat: 0.6 });
+slots.A = { name: '예시 원본', buf: null, x: xa, feat: extract(xa), demo: true };
+slots.B = { name: '예시 모사', buf: null, x: xb, feat: extract(xb), demo: true };
+writeMeta('A'); writeMeta('B'); renderHist();
+const go = () => { drawWave('A'); drawWave('B'); run(); };
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
+})();
+</script>
+</body>
+</html>

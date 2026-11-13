@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>목소리 연습실</title>
+<meta name="description" content="성우 연기, 성대모사, 여목 연습을 위한 목소리 분석 도구 모음">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="tally on" style="justify-self:start">ON AIR</div>
+    <h1>목소리 연습실</h1>
+    <p class="sub">성우 연기, 성대모사, 여목을 연습할 때 귀로만 판단하기 어려운 부분을 숫자와 그래프로 보여 주는 도구 모음이에요. 녹음은 브라우저 안에서만 분석되고 어디에도 올라가지 않아요.</p>
+  </header>
+
+  <section class="panel" id="recentBox" hidden>
+    <h2 style="margin-bottom:10px">최근 성대모사 연습</h2>
+    <div class="recent" id="recent"></div>
+  </section>
+
+  <section class="tools">
+    <a class="panel tool" href="mimic.html" style="--c: var(--imi)">
+      <span class="pill live">사용 가능</span>
+      <h2>성대모사 싱크로율</h2>
+      <p>원본과 내 모사를 녹음해서 음색, 음높이, 억양, 발음, 리듬, 강세 점수를 받아요. 억양 곡선을 겹쳐 보고 어디가 다른지 찾을 수 있어요.</p>
+    </a>
+    <div class="panel tool soon" style="--c: var(--ref)">
+      <span class="pill soon">준비 중</span>
+      <h2>여목 연습</h2>
+      <p>소리 내는 동안 음높이와 공명 밝기를 실시간으로 보여 줘요. 목표 음역대를 정해 두고 그 안에 머무는 연습을 할 수 있어요.</p>
+    </div>
+    <div class="panel tool soon" style="--c: var(--warn)">
+      <span class="pill soon">준비 중</span>
+      <h2>음역대 측정</h2>
+      <p>"아~" 소리를 올렸다 내리면 내 최저음과 최고음을 피아노 건반 위에 표시하고 날짜별로 기록해요.</p>
+    </div>
+    <div class="panel tool soon" style="--c: var(--good)">
+      <span class="pill soon">준비 중</span>
+      <h2>대본 연습</h2>
+      <p>대사를 띄워 두고 한 줄씩 녹음해서 다시 들어봐요. 테이크를 비교하며 가장 좋은 연기를 골라요.</p>
+    </div>
+  </section>
+
+  <footer>목소리 연습실 · 분석은 모두 내 기기 안에서 이뤄져요.</footer>
+</div>
+<script>
+(() => {
+  let h = []; try { h = JSON.parse(localStorage.getItem('moksori.mimic.history') || '[]'); } catch (_) {}
+  if (!h.length) return;
+  const best = Math.max(...h.map(x => x.o)), lastOne = h[h.length - 1];
+  const r = v => Math.round(v);
+  document.getElementById('recent').innerHTML =
+    `<div><div class="big">${r(lastOne.o)}</div><div class="lab">최근 점수</div></div>` +
+    `<div><div class="big">${r(best)}</div><div class="lab">최고 점수</div></div>` +
+    `<div><div class="big">${h.length}</div><div class="lab">연습 횟수</div></div>`;
+  document.getElementById('recentBox').hidden = false;
+})();
+</script>
+</body>
+</html>
