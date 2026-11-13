@@ -22,8 +22,28 @@
 
   <section class="channels">
     <div class="panel ch" style="--c: var(--ref)" id="chA">
-      <div class="ch-head"><span class="ch-tag">A</span><h2>원본 목소리</h2></div>
-      <div class="drop" data-slot="A">
+      <div class="ch-head"><span class="ch-tag">A</span><h2>원본 목소리</h2>
+        <div class="tabs" role="tablist" aria-label="원본 넣는 방법">
+          <button type="button" role="tab" class="tab on" id="tabFile" aria-selected="true">파일 · 녹음</button>
+          <button type="button" role="tab" class="tab" id="tabYt" aria-selected="false">유튜브 링크</button>
+        </div>
+      </div>
+      <div class="yt" id="ytPane" hidden>
+        <div class="yt-row">
+          <input type="url" id="ytUrl" placeholder="유튜브 주소 붙여넣기 (youtu.be/… 또는 shorts도 돼요)" aria-label="유튜브 주소">
+          <button type="button" id="ytLoad">불러오기</button>
+        </div>
+        <div class="yt-box" id="ytBox" hidden><div id="ytPlayer"></div></div>
+        <div class="yt-row" id="ytCtl" hidden>
+          <label class="tm">시작 <input id="ytStart" inputmode="decimal" value="0:00"></label>
+          <button type="button" id="ytSetS" title="지금 재생 위치를 시작으로">지금</button>
+          <label class="tm">끝 <input id="ytEnd" inputmode="decimal" value="0:08"></label>
+          <button type="button" id="ytSetE" title="지금 재생 위치를 끝으로">지금</button>
+          <button type="button" class="rec" id="ytCap">● 구간 캡처</button>
+        </div>
+        <p class="cap" id="ytMsg">영상을 불러와 따라 할 구간(20초 이내)을 정하고 구간 캡처를 누르세요. 공유 창이 뜨면 <b>이 탭</b>을 고르고 <b>탭 오디오도 공유</b>를 켜 주세요. 컴퓨터 크롬·엣지에서 돼요.</p>
+      </div>
+      <div class="drop" data-slot="A" id="filePane">
         <label class="filebtn">파일 선택<input type="file" id="fileA" accept="audio/*,video/*"></label>
         <div class="name" id="nameA">예시 합성음이 들어 있어요. 따라 할 원본 클립을 올리거나 녹음하세요.</div>
         <button type="button" class="rec" id="recA">● 녹음</button>
@@ -60,6 +80,10 @@
       </svg>
       <div class="grade" id="grade"></div>
       <div class="demo" id="demoNote">예시 합성음끼리 비교한 결과예요</div>
+      <div class="ai" id="aiBox">
+        <div class="ai-head">AI 목소리 닮음</div>
+        <div id="aiBody"><button type="button" id="aiOn">AI 분석 켜기</button><div class="ai-sub">처음 한 번 모델(약 100MB)을 내려받아요. 이후엔 바로 돼요.</div></div>
+      </div>
     </div>
     <div style="display:grid; gap:18px;">
       <div class="meters" id="meters"></div>
@@ -91,7 +115,7 @@
 
   <section class="panel">
     <div class="chart-head"><h2>연습 기록</h2><button type="button" id="clearHist">기록 지우기</button></div>
-    <div class="histwrap"><table class="hist"><thead><tr><th>#</th><th>모사</th><th>종합</th><th>음색</th><th>음높이</th><th>억양</th><th>발음</th><th>리듬</th><th>강세</th></tr></thead><tbody id="histBody"></tbody></table></div>
+    <div class="histwrap"><table class="hist"><thead><tr><th>#</th><th>모사</th><th>종합</th><th>음색</th><th>음높이</th><th>억양</th><th>발음</th><th>리듬</th><th>강세</th><th>AI</th></tr></thead><tbody id="histBody"></tbody></table></div>
     <p class="cap">원본은 그대로 두고 내 모사 파일만 바꿔 가며 비교하면 회차별 점수가 쌓여요. 기록은 이 브라우저에 저장돼요.</p>
   </section>
 
@@ -107,6 +131,7 @@
 </div>
 
 <script src="assets/core.js"></script>
+<script src="assets/ai.js"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -292,7 +317,9 @@ function run() {
     try {
       const res = compare(slots.A.feat, slots.B.feat);
       last = res; render(res);
-      if (!slots.A.demo && !slots.B.demo) { attemptInit++; history.push({ n: attemptInit, name: slots.B.name, ref: slots.A.name, at: Date.now(), o: res.overall, p: res.parts }); saveHist(); renderHist(); }
+      let entry = null;
+      if (!slots.A.demo && !slots.B.demo) { attemptInit++; entry = { n: attemptInit, name: slots.B.name, ref: slots.A.name, at: Date.now(), o: res.overall, p: res.parts }; history.push(entry); saveHist(); renderHist(); }
+      runAI(entry);
     } catch (e) { $('hint').textContent = '분석 중 문제가 생겼어요. 두 파일에 목소리가 1초 이상 들어 있는지 확인해 주세요.'; }
     $('run').disabled = false; $('run').textContent = '비교하기';
   }, 30);
@@ -377,8 +404,8 @@ $('alignPitch').addEventListener('change', drawPitch);
 function renderHist() {
   const best = Math.max(...history.map(h => h.o));
   const c = v => isNaN(v) ? '–' : Math.round(v);
-  $('histBody').innerHTML = history.length ? history.slice().reverse().map(h => `<tr class="${h.o === best && history.length > 1 ? 'best' : ''}"><td>${h.n}</td><td>${esc(h.name)}</td><td>${c(h.o)}</td>${PARTS.map(p => `<td>${c(h.p[p[0]])}</td>`).join('')}</tr>`).join('')
-    : `<tr><td colspan="9" style="text-align:left;color:var(--muted)">아직 기록이 없어요. 내 파일로 비교하면 여기에 쌓여요.</td></tr>`;
+  $('histBody').innerHTML = history.length ? history.slice().reverse().map(h => `<tr class="${h.o === best && history.length > 1 ? 'best' : ''}"><td>${h.n}</td><td>${esc(h.name)}</td><td>${c(h.o)}</td>${PARTS.map(p => `<td>${c(h.p[p[0]])}</td>`).join('')}<td>${h.ai == null ? '–' : c(h.ai)}</td></tr>`).join('')
+    : `<tr><td colspan="10" style="text-align:left;color:var(--muted)">아직 기록이 없어요. 내 파일로 비교하면 여기에 쌓여요.</td></tr>`;
 }
 $('clearHist').addEventListener('click', () => { history = []; attemptInit = 0; saveHist(); renderHist(); });
 
@@ -386,6 +413,142 @@ function redraw() { drawWave('A'); drawWave('B'); drawPitch(); drawSpec(); }
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(redraw, 120); });
 new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', redraw);
+
+// ---- AI 목소리 닮음 ----
+const AIKEY = 'moksori.ai';
+let aiWanted = false; try { aiWanted = localStorage.getItem(AIKEY) === '1'; } catch (_) {}
+let aiToken = 0;
+const aiBody = html => { $('aiBody').innerHTML = html; };
+function speechPart(slot) {
+  const d = slots[slot], f = d.feat, a = Math.floor(f.startSec * SR), b = Math.min(d.x.length, a + Math.floor(Math.min(f.dur + 0.1, 15) * SR));
+  return d.x.slice(a, b);
+}
+async function enableAI() {
+  aiWanted = true; try { localStorage.setItem(AIKEY, '1'); } catch (_) {}
+  if (!window.VoiceAI) { aiBody('<div class="ai-sub err">AI 모듈을 불러오지 못했어요.</div>'); return; }
+  try {
+    aiBody('<div class="ai-sub">AI 모델 준비 중…</div><div class="lvl wide"><i id="aiBar" style="width:0%"></i></div>');
+    await VoiceAI.load((a, b) => { const bar = $('aiBar'); if (bar) bar.style.width = (a / b * 100).toFixed(0) + '%'; const s = $('aiBody').querySelector('.ai-sub'); if (s) s.textContent = `AI 모델 내려받는 중… ${(a / 1048576).toFixed(0)} / ${(b / 1048576).toFixed(0)} MB`; });
+    runAI(history.length && !slots.A.demo && !slots.B.demo ? history[history.length - 1] : null);
+  } catch (e) {
+    aiBody('<button type="button" id="aiOn">다시 시도</button><div class="ai-sub err">AI 모델을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.</div>');
+    $('aiOn').addEventListener('click', enableAI);
+  }
+}
+async function runAI(entry) {
+  if (!aiWanted) return;
+  if (!window.VoiceAI || !VoiceAI.ready()) { enableAI(); return; }
+  const my = ++aiToken;
+  aiBody('<div class="ai-sub">AI가 듣는 중…</div>');
+  try {
+    for (const s of ['A', 'B']) if (!slots[s].emb) { await new Promise(r => setTimeout(r, 20)); slots[s].emb = await VoiceAI.embed(speechPart(s)); }
+    if (my !== aiToken) return;
+    const c = VoiceAI.cos(slots.A.emb, slots.B.emb), v = VoiceAI.score(c);
+    aiBody(`<div class="ai-num" style="color: var(${tone(v)})">${Math.round(v)}</div><div class="ai-lab">${VoiceAI.label(v)}</div><div class="ai-sub">화자 인증 모델 유사도 ${c.toFixed(3)} (같은 사람 기준 ≈ 0.86 이상)</div>`);
+    if (entry) { entry.ai = v; saveHist(); renderHist(); }
+  } catch (e) {
+    if (my === aiToken) aiBody('<div class="ai-sub err">AI 분석에 실패했어요. 목소리가 1초 이상 들어 있는지 확인해 주세요.</div>');
+  }
+}
+$('aiOn').addEventListener('click', enableAI);
+
+// ---- 유튜브 링크 → 탭 소리 캡처 ----
+function setTab(yt) {
+  $('tabFile').classList.toggle('on', !yt); $('tabYt').classList.toggle('on', yt);
+  $('tabFile').setAttribute('aria-selected', String(!yt)); $('tabYt').setAttribute('aria-selected', String(yt));
+  $('ytPane').hidden = !yt; $('filePane').hidden = yt;
+}
+$('tabFile').addEventListener('click', () => setTab(false));
+$('tabYt').addEventListener('click', () => setTab(true));
+const ytMsg = (s, err) => { $('ytMsg').innerHTML = err ? `<span class="err">${s}</span>` : s; };
+function ytParse(u) {
+  u = (u || '').trim(); let id = null, t = 0;
+  try {
+    const url = new URL(u);
+    if (url.hostname.includes('youtu.be')) id = url.pathname.slice(1).split('/')[0];
+    else if (url.searchParams.get('v')) id = url.searchParams.get('v');
+    else { const m = url.pathname.match(/\/(shorts|embed|live)\/([\w-]{11})/); if (m) id = m[2]; }
+    const tt = url.searchParams.get('t') || url.searchParams.get('start');
+    if (tt) { const m = tt.match(/(?:(\d+)h)?(?:(\d+)m)?(\d+)s?$/); if (m) t = (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0); }
+  } catch (_) { if (/^[\w-]{11}$/.test(u)) id = u; }
+  return id && /^[\w-]{11}$/.test(id) ? { id, t } : null;
+}
+const parseTime = s => { s = String(s).trim(); if (!s) return NaN; const p = s.split(':').map(Number); if (p.some(isNaN)) return NaN; return p.reduce((a, v) => a * 60 + v, 0); };
+const fmtTime = v => { const m = Math.floor(v / 60), s = v - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(1).replace(/\.0$/, '')}`; };
+let ytPlayer = null, ytApi = null, ytCur = null, ytBusy = false;
+function ytLoadApi() {
+  if (ytApi) return ytApi;
+  ytApi = new Promise((res, rej) => {
+    if (window.YT && window.YT.Player) return res();
+    const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(); };
+    const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = () => { ytApi = null; rej(); }; document.head.appendChild(s);
+  });
+  return ytApi;
+}
+async function ytOpen() {
+  const v = ytParse($('ytUrl').value);
+  if (!v) { ytMsg('유튜브 주소를 알아보지 못했어요. 영상 페이지 주소나 공유 링크를 그대로 붙여 넣어 주세요.', true); return; }
+  try { await ytLoadApi(); } catch (_) { ytMsg('유튜브 플레이어를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.', true); return; }
+  ytCur = v; $('ytBox').hidden = false; $('ytCtl').hidden = false;
+  $('ytStart').value = fmtTime(v.t); $('ytEnd').value = fmtTime(v.t + 8);
+  if (ytPlayer) ytPlayer.cueVideoById({ videoId: v.id, startSeconds: v.t });
+  else ytPlayer = new YT.Player('ytPlayer', { videoId: v.id, playerVars: { start: Math.floor(v.t), playsinline: 1, rel: 0 },
+    events: { onError: e => ytMsg(e.data === 101 || e.data === 150 ? '이 영상은 다른 사이트에서 재생하지 못하게 막혀 있어요. 다른 영상을 쓰거나 파일로 올려 주세요.' : '영상을 재생하지 못했어요. 주소를 확인해 주세요.', true) } });
+  ytMsg('영상을 재생하면서 따라 할 대사의 시작과 끝에서 <b>지금</b>을 누르세요. 정해지면 <b>● 구간 캡처</b>.');
+}
+$('ytLoad').addEventListener('click', ytOpen);
+$('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') ytOpen(); });
+$('ytSetS').addEventListener('click', () => { if (ytPlayer && ytPlayer.getCurrentTime) $('ytStart').value = fmtTime(ytPlayer.getCurrentTime()); });
+$('ytSetE').addEventListener('click', () => { if (ytPlayer && ytPlayer.getCurrentTime) $('ytEnd').value = fmtTime(ytPlayer.getCurrentTime()); });
+$('ytCap').addEventListener('click', ytCapture);
+
+async function ytCapture() {
+  if (ytBusy || !ytPlayer || !ytPlayer.seekTo) return;
+  const s0 = parseTime($('ytStart').value), s1 = parseTime($('ytEnd').value);
+  if (isNaN(s0) || isNaN(s1) || s1 <= s0) { ytMsg('시작과 끝 시간을 1:23 같은 형식으로 넣어 주세요. 끝이 시작보다 뒤여야 해요.', true); return; }
+  if (s1 - s0 > MAX_SEC) { ytMsg(`구간은 ${MAX_SEC}초 이내로 잡아 주세요. 한두 문장이 가장 잘 맞아요.`, true); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { ytMsg('이 기기에서는 탭 소리 캡처가 안 돼요. 컴퓨터의 크롬이나 엣지에서 열거나, 화면 녹화 파일을 올려 주세요.', true); return; }
+  if (rec) stopRec();
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false }, preferCurrentTab: true, selfBrowserSurface: 'include', systemAudio: 'include' });
+  } catch (_) { ytMsg('공유가 취소됐어요. 다시 누르고 <b>이 탭</b>을 골라 주세요.', true); return; }
+  const at = stream.getAudioTracks();
+  if (!at.length) { stream.getTracks().forEach(t => t.stop()); ytMsg('소리가 공유되지 않았어요. 공유 창 아래쪽의 <b>탭 오디오도 공유</b>를 켜고 다시 해 주세요.', true); return; }
+  ytBusy = true; $('ytCap').disabled = true; $('ytCap').classList.add('on');
+  $('tally').classList.add('on'); $('tally').textContent = 'REC';
+  if (playing) { try { playing.node.stop(); } catch (_) {} playing = null; }
+  const c = ctx(); if (c.state === 'suspended') await c.resume();
+  const src = c.createMediaStreamSource(new MediaStream(at)), proc = c.createScriptProcessor(4096, 1, 1), mute = c.createGain(); mute.gain.value = 0;
+  const chunks = []; let on = false, done = false;
+  proc.onaudioprocess = e => { if (on) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+  src.connect(proc); proc.connect(mute); mute.connect(c.destination);
+  const t0 = performance.now();
+  ytPlayer.seekTo(s0, true); ytPlayer.playVideo();
+  const finish = async (why) => {
+    if (done) return; done = true; on = false; clearInterval(iv);
+    try { ytPlayer.pauseVideo(); } catch (_) {}
+    proc.onaudioprocess = null; try { src.disconnect(); proc.disconnect(); mute.disconnect(); } catch (_) {}
+    stream.getTracks().forEach(t => t.stop());
+    ytBusy = false; $('ytCap').disabled = false; $('ytCap').classList.remove('on');
+    $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY';
+    const len = chunks.reduce((a, b) => a + b.length, 0);
+    if (why === 'stopped' && len < c.sampleRate * 0.5) { ytMsg('공유가 중간에 멈췄어요. 다시 캡처해 주세요.', true); return; }
+    if (len < c.sampleRate * 0.5) { ytMsg('소리가 거의 캡처되지 않았어요. 탭 오디오 공유를 켰는지 확인해 주세요.', true); return; }
+    const buf = c.createBuffer(1, len, c.sampleRate), ch = buf.getChannelData(0); let o = 0;
+    for (const k of chunks) { ch.set(k, o); o += k.length; }
+    try { await loadBuffer('A', `유튜브 ${fmtTime(s0)}~${fmtTime(s1)}`, buf); ytMsg(`캡처 완료: ${fmtTime(s0)}~${fmtTime(s1)} 구간이 원본으로 들어갔어요. 이제 오른쪽에서 내 성대모사를 녹음하세요.`); }
+    catch (_) { ytMsg('캡처한 소리가 너무 작아요. 영상 볼륨을 올리고 다시 해 주세요.', true); }
+  };
+  at[0].addEventListener('ended', () => finish('stopped'));
+  const iv = setInterval(() => {
+    let st, t; try { st = ytPlayer.getPlayerState(); t = ytPlayer.getCurrentTime(); } catch (_) { return; }
+    on = st === 1 && t >= s0 - 0.05 && t < s1;
+    if (st === 1) ytMsg(`캡처 중… ${fmtTime(Math.max(0, t - s0))} / ${fmtTime(s1 - s0)}`);
+    if (t >= s1 || st === 0) finish('end');
+    else if (performance.now() - t0 > ((s1 - s0) * 3 + 15) * 1000) finish('timeout');
+  }, 40);
+}
 
 // ---- 시작: 예시 합성음으로 채워 두기 ----
 const xa = synth(SEQ), xb = synth(SEQ, { pitch: 1.12, tempo: 1.12, fscale: 1.07, flat: 0.6 });

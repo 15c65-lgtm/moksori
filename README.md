@@ -5,6 +5,9 @@
 - `index.html` 홈
 - `mimic.html` 성대모사 싱크로율 (마이크 녹음 + 파일 업로드)
 - `assets/core.js` 분석 엔진 (YIN 피치, MFCC + DTW 정렬, 스펙트럼 비교)
+- `assets/ai.js` AI 목소리 닮음 (WavLM 화자 인증 모델, Transformers.js로 브라우저에서 실행)
+
+원본은 유튜브 링크로도 넣을 수 있어요(컴퓨터 크롬·엣지에서 탭 오디오 캡처).
 - `assets/style.css` 공통 스타일
 
 녹음과 분석은 모두 브라우저 안에서 이뤄지며 서버로 전송되지 않습니다.
