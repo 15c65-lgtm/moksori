@@ -149,3 +149,38 @@ footer { color: var(--muted); font-size: 12.5px; }
 .ai-sub.err, .ai-sub .err { color: var(--bad); }
 .lvl.wide { width: 100%; margin: 0; }
 .cap a, .err a { color: inherit; font-weight: 700; overflow-wrap: anywhere; }
+
+/* ---- 저장 바 ---- */
+.savebar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); }
+.savebar input, .savebar select, .folder-edit input, .item select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.savebar input { flex: 1 1 200px; min-width: 0; }
+.savebar.off input, .savebar.off select { opacity: .5; }
+button.primary-sm { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+.save-msg { font-size: 13px; color: var(--muted); }
+
+/* ---- 보관함 ---- */
+.lib-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.btnlike { font-weight: 500; font-size: 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 8px 14px; cursor: pointer; position: relative; }
+.btnlike:hover { border-color: var(--ink); }
+.btnlike input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.folder-edit, .folder-act { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.folder-edit[hidden], .folder-act[hidden] { display: none; }
+.folder-edit input { flex: 0 1 240px; }
+.folder-act button { font-size: 13px; padding: 6px 11px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip { border-radius: 999px; padding: 6px 13px; font-size: 13.5px; }
+.chip em { font-style: normal; font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin-left: 2px; }
+.chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.on em { color: inherit; opacity: .7; }
+.lib-list { display: grid; gap: 8px; }
+.lib-empty { color: var(--muted); font-size: 14px; padding: 18px; border: 1.5px dashed var(--line); border-radius: 8px; text-align: center; }
+.item { display: grid; grid-template-columns: 56px 1fr auto; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.item-score { font-family: var(--font-mono); font-weight: 600; font-size: 22px; text-align: center; color: var(--col); border-right: 3px solid var(--col); padding-right: 10px; font-variant-numeric: tabular-nums; }
+.item-main { min-width: 0; }
+.item-title { font-weight: 700; overflow-wrap: anywhere; }
+.item-meta { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.item-parts { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.item-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.item-act button, .item select { font-size: 13px; padding: 6px 10px; }
+button.del.arm, #delFolder.arm { background: var(--bad); color: #fff; border-color: var(--bad); }
+@media (max-width: 720px) { .item { grid-template-columns: 48px 1fr; } .item-act { grid-column: 1 / -1; justify-content: flex-start; } }
