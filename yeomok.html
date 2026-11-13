@@ -164,7 +164,7 @@ const zoneOf = f => f < 140 ? ['남성 음역', 'm'] : f < 165 ? ['중성 구간
 const vowel = () => $('vowel').value;
 const cal = () => S.calib[vowel()] || {};
 function regPos(h) { // 0 = 진성, 1 = 가성
-  const c = cal(), M = c.modal ? c.modal.h1h2 : 3, F = c.fals ? c.fals.h1h2 : 12;
+  const c = cal(), M = c.modal ? c.modal.h1h2 : 4, F = c.fals ? c.fals.h1h2 : 14;
   const span = Math.max(3, F - M);
   return Math.max(-0.15, Math.min(1.15, (h - M) / span));
 }
@@ -380,7 +380,7 @@ $('sirenBtn').addEventListener('click', async () => {
 });
 function analyzeSiren() {
   const d = sirenData, n = d.length, w = 6, c = cal();
-  const M = c.modal ? c.modal.h1h2 : 3, F = c.fals ? c.fals.h1h2 : 12, need = Math.max(4, (F - M) * 0.45);
+  const M = c.modal ? c.modal.h1h2 : 4, F = c.fals ? c.fals.h1h2 : 14, need = Math.max(4, (F - M) * 0.45);
   const sm = d.map((_, i) => med(d.slice(Math.max(0, i - 2), i + 3).map(x => x.h1h2)));
   let best = 0, at = -1;
   for (let i = w; i < n - w; i++) {

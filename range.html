@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>음역대 측정 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>음역대 측정</h1>
+      <p class="sub">최저음, 진성 최고음, 가성 최고음, 말할 때 쓰는 음높이를 따로 재서 건반 위에 보여 줘요. 흔들리는 소리는 빼고, 0.3초 이상 안정적으로 낸 음만 기록해요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="panel rg-live">
+    <div class="rg-now">
+      <div class="ym-lab">지금 내는 음</div>
+      <div class="rg-note" id="nowNote">–</div>
+      <div class="ym-sub"><span id="nowHz">마이크를 켜면 실시간으로 보여요</span></div>
+    </div>
+    <div class="rg-tuner">
+      <div class="ym-lab" id="tunerLab">음정 (가장 가까운 음 기준)</div>
+      <canvas id="tuner" class="rg-tuner-cv"></canvas>
+      <div class="rg-tick"><span>-50¢ 낮음</span><span>정확</span><span>높음 +50¢</span></div>
+    </div>
+    <div class="rg-ctl">
+      <button type="button" class="primary-sm ym-mic" id="micBtn">● 마이크 시작</button>
+      <label class="ym-field">음이름 <select id="nameStyle"><option value="sci">C4 (영어)</option><option value="ko">도4 (한글)</option></select></label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head">
+      <h2>건반 위 내 음역</h2>
+      <div class="legend"><span style="--c: var(--ref)">진성</span><span style="--c: var(--warn)">가성</span><span style="--c: var(--imi)">지금</span><span style="--c: var(--good)">말하는 음높이</span></div>
+    </div>
+    <div class="rg-kbwrap"><canvas id="kb" class="rg-kb"></canvas></div>
+    <p class="cap">건반을 누르면 그 음이 들려요. 누른 음이 튜너 기준이 되니까 따라 불러 보세요. 건반 위 진한 정도는 측정 중 그 음에 머문 시간이에요.</p>
+  </section>
+
+  <section class="panel">
+    <h2>측정하기</h2>
+    <p class="cap">순서대로 하면 가장 정확해요. 각 단계는 최대 12초이고, 다 됐으면 끝내기를 눌러도 돼요. 모음은 "아~"가 좋아요.</p>
+    <div class="rg-steps">
+      <div class="rg-step" data-step="low">
+        <b>1. 최저음</b><span>편한 높이에서 시작해 "아~" 하고 천천히 내려가세요. 긁는 소리(보컬 프라이)는 자동으로 빼요.</span>
+        <div class="rg-val" id="vLow">–</div><button type="button">측정</button>
+      </div>
+      <div class="rg-step" data-step="chest">
+        <b>2. 진성 최고음</b><span>말하는 목소리 그대로 천천히 올라가세요. 소리가 뒤집히기 직전까지만이에요. 무리하지 마세요.</span>
+        <div class="rg-val" id="vChest">–</div><button type="button">측정</button>
+      </div>
+      <div class="rg-step" data-step="fals">
+        <b>3. 가성 최고음</b><span>힘을 빼고 "우~" 하고 가성으로 올라가세요. 목이 조이면 바로 멈추세요.</span>
+        <div class="rg-val" id="vFals">–</div><button type="button">측정</button>
+      </div>
+      <div class="rg-step" data-step="speak">
+        <b>4. 말하는 음높이</b><span>아래 문장을 평소처럼 소리 내 읽으세요: "안녕하세요, 오늘은 날씨가 좋아서 산책을 하고 싶어요."</span>
+        <div class="rg-val" id="vSpeak">–</div><button type="button">측정</button>
+      </div>
+    </div>
+    <div class="rg-run" id="runBox" hidden>
+      <b id="runTitle"></b> <span id="runInfo"></span>
+      <div class="lvl wide"><i id="runBar" style="width:0%"></i></div>
+      <button type="button" id="runStop">끝내기</button>
+    </div>
+  </section>
+
+  <section class="ym-two">
+    <div class="panel">
+      <h2>결과</h2>
+      <div class="rg-res" id="resBox"></div>
+      <div class="savebar" style="margin-top:12px">
+        <button type="button" class="primary-sm" id="saveRes">이 결과 기록하기</button>
+        <button type="button" id="resetRes">다시 측정</button>
+        <span class="save-msg" id="saveMsg"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>해석</h2>
+      <ol class="coach-list" id="interp"></ol>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>음 맞추기 게임</h2><button type="button" class="primary-sm" id="gameBtn">시작 (5문제)</button></div>
+    <p class="cap" style="margin-top:0">내 편한 음역 안에서 음이 하나씩 나와요. 듣고 2초 동안 같은 음을 "아~"로 내세요. 몇 센트(1반음 = 100센트) 차이 나는지 채점해요.</p>
+    <div class="rg-game" id="game"></div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>음역 기록</h2><button type="button" id="clearHist">기록 지우기</button></div>
+    <canvas id="histCv" class="rg-hist"></canvas>
+    <div class="histwrap"><table class="hist"><thead><tr><th>날짜</th><th>최저음</th><th>진성 최고</th><th>가성 최고</th><th>전체 음역</th><th>말하는 음높이</th></tr></thead><tbody id="histBody"></tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:12px">측정 요령</h2>
+    <div class="tips">
+      <div><b>목을 먼저 풀기</b>입술 떨기("부르르")나 허밍으로 2~3분 풀고 재면 실제 음역이 나와요. 아침보다 오후가 보통 넓게 나와요.</div>
+      <div><b>최고음은 "편하게 낼 수 있는" 음</b>소리를 지르거나 목을 조여서 겨우 닿은 음은 연습용 음역이 아니에요. 같은 음을 3초 유지할 수 있는 곳까지가 좋아요.</div>
+      <div><b>성종은 참고만</b>성종(베이스·테너 등)은 음역 말고도 음색과 편한 구간으로 정해요. 여기서는 음역만 보고 가장 가까운 걸 짚어 줘요.</div>
+      <div><b>여목과의 관계</b>여목 목표 음역이 진성·믹스로 닿는 범위 안에 있는지가 중요해요. 해석 칸에서 바로 알려 줘요.</div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/voicefeat.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const KEY = 'moksori.range';
+let S = { results: [], style: 'sci' }; try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} };
+let YM = {}; try { YM = JSON.parse(localStorage.getItem('moksori.yeomok') || '{}'); } catch (_) {}
+const target = (YM.target) || { fmin: 165, fmax: 255 };
+const calA = (YM.calib && YM.calib.a) || {};
+const med = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
+
+// ---- 음이름 ----
+const EN = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'], KO = ['도', '도#', '레', '레#', '미', '파', '파#', '솔', '솔#', '라', '라#', '시'];
+const midiOf = f => 69 + 12 * Math.log2(f / 440), hzOf = m => 440 * 2 ** ((m - 69) / 12);
+const nm = m => { m = Math.round(m); return (S.style === 'ko' ? KO : EN)[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); };
+$('nameStyle').value = S.style;
+$('nameStyle').addEventListener('change', () => { S.style = $('nameStyle').value; save(); renderAll(); });
+const isBlack = m => [1, 3, 6, 8, 10].includes(((m % 12) + 12) % 12);
+const LO = 36, HI = 84; // C2 ~ C6
+
+// ---- 진성·가성 판단 (여목 연습의 '아' 기준 녹음이 있으면 사용) ----
+const M0 = calA.modal ? calA.modal.h1h2 : 4, F0v = calA.fals ? calA.fals.h1h2 : 14;
+const regPos = h => (h - M0) / Math.max(3, F0v - M0);
+
+// ---- 현재 측정 결과 ----
+const cur = { low: null, chest: null, fals: null, speak: null, dwell: {} };
+
+// ---- 마이크 ----
+let actx = null, mic = null, floorDb = -60, recent = [], step = null, refNote = null;
+async function startMic() {
+  if (mic) return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('nowHz').innerHTML = '<span class="err">이 브라우저에서는 마이크를 쓸 수 없어요.</span>'; return false; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch (_) { $('nowHz').innerHTML = `<span class="err">마이크 권한이 없어요. ${location.protocol === 'file:' ? '사이트 주소로 열어 주세요.' : '주소창 자물쇠 아이콘에서 허용해 주세요.'}</span>`; return false; }
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') await actx.resume();
+  const src = actx.createMediaStreamSource(stream), proc = actx.createScriptProcessor(2048, 1, 1), mute = actx.createGain(); mute.gain.value = 0;
+  const st = new VF.Stream16k(actx.sampleRate);
+  proc.onaudioprocess = e => { st.push(e.inputBuffer.getChannelData(0)); onFrame(VF.analyze(st.last(VF.N))); };
+  src.connect(proc); proc.connect(mute); mute.connect(actx.destination);
+  mic = { stream, src, proc, mute }; floorDb = -60;
+  $('micBtn').textContent = '■ 마이크 멈춤'; $('micBtn').classList.add('on'); $('tally').classList.add('on'); $('tally').textContent = 'ON AIR';
+  loop(); return true;
+}
+function stopMic() {
+  if (!mic) return; if (step) endStep();
+  mic.proc.onaudioprocess = null; try { mic.src.disconnect(); mic.proc.disconnect(); mic.mute.disconnect(); } catch (_) {}
+  mic.stream.getTracks().forEach(t => t.stop()); mic = null;
+  $('micBtn').textContent = '● 마이크 시작'; $('micBtn').classList.remove('on'); $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY';
+  recent = []; renderNow();
+}
+$('micBtn').addEventListener('click', () => mic ? stopMic() : startMic());
+
+const FR = () => 2048 / (actx ? actx.sampleRate : 48000);
+function onFrame(fr) {
+  floorDb = Math.min(floorDb + 0.03, fr.db);
+  const now = performance.now();
+  const voiced = fr.f0 >= 55 && fr.f0 <= 1100 && fr.db > floorDb + 12;
+  if (!voiced) { if (recent.length && now - recent[recent.length - 1].t > 250) recent = []; return; }
+  const m = midiOf(fr.f0);
+  recent.push({ t: now, m, clar: fr.clarity, h: fr.h1h2, hr: fr.h1h2raw, f: fr.f0 }); if (recent.length > 12) recent.shift();
+  if (game && game.listening) game.samples.push(m);
+  if (!step) return;
+  step.elapsedVoiced += FR();
+  if (step.kind === 'speak') { if (fr.clarity > 0.6) step.f.push(fr.f0); return; }
+  // 안정된 음: 최근 8프레임이 ±0.6반음 안
+  const last = recent.slice(-8);
+  if (last.length < 8 || last.some(r => r.clar < 0.75)) return;
+  const mm = med(last.map(r => r.m));
+  if (last.some(r => Math.abs(r.m - mm) > 0.6)) return;
+  const note = Math.round(mm), rp = regPos(med(last.map(r => r.h).filter(v => !isNaN(v))));
+  cur.dwell[note] = (cur.dwell[note] || 0) + FR();
+  step.notes.push({ m: mm, note, rp, hz: hzOf(mm), hr: med(last.map(r => r.hr).filter(v => !isNaN(v))) });
+  if (step.kind === 'low') { if (cur.low == null || mm < cur.low.m) cur.low = { m: mm, hz: hzOf(mm) }; }
+  else if (step.kind === 'chest') { if (cur.chest == null || mm > cur.chest.m) cur.chest = { m: mm, hz: hzOf(mm) }; } // 끝날 때 전환점으로 확정
+  else if (step.kind === 'fals') { if (cur.fals == null || mm > cur.fals.m) cur.fals = { m: mm, hz: hzOf(mm) }; }
+}
+
+// ---- 측정 단계 ----
+const STEP_T = { low: '최저음 측정 중', chest: '진성 최고음 측정 중', fals: '가성 최고음 측정 중', speak: '말하는 음높이 측정 중' };
+document.querySelectorAll('.rg-step button').forEach(b => b.addEventListener('click', async () => {
+  const kind = b.closest('.rg-step').dataset.step;
+  if (!(await startMic())) return;
+  if (step) endStep();
+  if (kind === 'low') cur.low = null; if (kind === 'chest') cur.chest = null; if (kind === 'fals') cur.fals = null;
+  step = { kind, t0: performance.now(), notes: [], f: [], elapsedVoiced: 0, skipped: 0 };
+  document.querySelectorAll('.rg-step').forEach(s => s.classList.toggle('on', s.dataset.step === kind));
+  $('runBox').hidden = false; $('runTitle').textContent = STEP_T[kind];
+}));
+$('runStop').addEventListener('click', () => endStep());
+function endStep() {
+  if (!step) return;
+  const s = step; step = null; $('runBox').hidden = true;
+  document.querySelectorAll('.rg-step').forEach(x => x.classList.remove('on'));
+  if (s.kind === 'speak') {
+    if (s.f.length * FR() < 2) { $('vSpeak').innerHTML = '<span class="err">소리가 짧았어요. 문장을 끝까지 읽어 주세요.</span>'; }
+    else cur.speak = { hz: med(s.f), lo: q(s.f, 0.1), hi: q(s.f, 0.9) };
+  }
+  let flip = null;
+  if (s.kind === 'chest' && s.notes.length >= 10) {
+    // 진성→가성 전환점: 같은 모음에서 H1-H2가 갑자기 뛰는 곳 (음이 올라가는 중)
+    const n = s.notes, k = 4;
+    for (let i = k; i <= n.length - k; i++) {
+      const a = n.slice(i - k, i), b = n.slice(i, i + k), mean = arr => arr.reduce((x, y) => x + y, 0) / arr.length;
+      const jump = mean(b.map(x => x.hr)) - mean(a.map(x => x.hr)), rising = mean(b.map(x => x.m)) >= mean(a.map(x => x.m)) - 0.3; // 같은 음에서 뒤집혀도 잡기
+      if (jump >= 6 && rising) { flip = { i, jump }; break; }
+    }
+    if (flip) { const before = n.slice(0, flip.i), top = before.reduce((x, y) => y.m > x.m ? y : x); cur.chest = { m: top.m, hz: hzOf(top.m) }; s.flipAt = n[flip.i]; }
+  }
+  if (s.kind === 'chest' && cur.chest && s.notes.length && s.notes.every(x => x.rp >= 0.85)) $('vChest').innerHTML = '<span class="err">처음부터 가성으로 잡혔어요. 말하는 목소리 그대로 낮은 곳에서 시작해 보세요.</span>';
+  else if ((s.kind === 'low' && !cur.low) || (s.kind === 'chest' && !cur.chest) || (s.kind === 'fals' && !cur.fals)) $({ low: 'vLow', chest: 'vChest', fals: 'vFals' }[s.kind]).innerHTML = '<span class="err">안정된 음이 잡히지 않았어요. 각 음을 잠깐씩 유지하며 천천히 움직여 보세요.</span>';
+  else renderAll();
+  if (s.kind === 'chest' && s.flipAt) $('vChest').insertAdjacentHTML('beforeend', `<small class="rg-note-s">${nm(s.flipAt.m)}에서 가성으로 넘어가서 그 앞까지만 셌어요</small>`);
+  renderRes(); renderInterp(); drawKb();
+}
+
+// ---- 표시 루프 ----
+let raf = 0;
+function loop() {
+  cancelAnimationFrame(raf);
+  const f = () => {
+    renderNow(); drawKb(); drawTuner();
+    if (step) {
+      const el = (performance.now() - step.t0) / 1000;
+      $('runBar').style.width = Math.min(100, el / 12 * 100) + '%';
+      const v = step.kind === 'low' ? cur.low : step.kind === 'chest' ? cur.chest : step.kind === 'fals' ? cur.fals : null;
+      $('runInfo').textContent = step.kind === 'speak' ? `${Math.max(0, 12 - el).toFixed(0)}초 남음` : v ? `지금까지 ${nm(v.m)} (${Math.round(v.hz)} Hz) · ${Math.max(0, 12 - el).toFixed(0)}초 남음` : `안정된 음을 기다리는 중… ${Math.max(0, 12 - el).toFixed(0)}초`;
+      if (el >= 12) endStep();
+    }
+    if (game) gameTick();
+    if (mic) raf = requestAnimationFrame(f);
+  };
+  raf = requestAnimationFrame(f);
+}
+function nowPitch() { const r = recent.filter(x => performance.now() - x.t < 200 && x.clar > 0.6); return r.length >= 2 ? med(r.map(x => x.m)) : null; }
+function renderNow() {
+  const m = nowPitch();
+  if (m == null) { $('nowNote').textContent = '–'; if (mic) $('nowHz').textContent = '"아~" 해 보세요'; return; }
+  $('nowNote').textContent = nm(m); $('nowHz').textContent = `${hzOf(m).toFixed(1)} Hz`;
+}
+function fit(cv) { const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = Math.max(1, r.width * d); cv.height = Math.max(1, r.height * d); const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return [g, r.width, r.height]; }
+function drawTuner() {
+  const [g, W, H] = fit($('tuner')); g.clearRect(0, 0, W, H);
+  const m = nowPitch(), ref = refNote != null ? refNote : (m != null ? Math.round(m) : null);
+  $('tunerLab').textContent = refNote != null ? `음정 (${nm(refNote)} 기준)` : '음정 (가장 가까운 음 기준)';
+  g.fillStyle = css('--good'); g.globalAlpha = 0.15; g.fillRect(W / 2 - W * 0.1, 0, W * 0.2, H); g.globalAlpha = 1;
+  g.strokeStyle = css('--line'); for (let c = -50; c <= 50; c += 10) { const x = W / 2 + c / 50 * (W / 2 - 6); g.beginPath(); g.moveTo(x, c % 50 ? H * 0.55 : H * 0.3); g.lineTo(x, H); g.stroke(); }
+  if (m == null || ref == null) return;
+  let cents = (m - ref) * 100; const off = Math.abs(cents) > 50;
+  cents = Math.max(-50, Math.min(50, cents));
+  const x = W / 2 + cents / 50 * (W / 2 - 6);
+  g.strokeStyle = css(Math.abs(cents) <= 10 ? '--good' : off ? '--bad' : '--warn'); g.lineWidth = 4; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(x, 4); g.lineTo(x, H - 2); g.stroke();
+  g.fillStyle = css('--ink'); g.font = '600 12px ' + css('--font-mono'); g.textAlign = x > W * 0.75 ? 'right' : 'left'; g.textBaseline = 'top';
+  g.fillText(`${(m - ref) * 100 > 0 ? '+' : ''}${Math.round((m - ref) * 100)}¢`, x + (x > W * 0.75 ? -8 : 8), 2);
+}
+
+// ---- 건반 ----
+let keyRects = [];
+function drawKb() {
+  const cv = $('kb'), [g, W, H] = fit(cv); g.clearRect(0, 0, W, H);
+  const whites = []; for (let m = LO; m <= HI; m++) if (!isBlack(m)) whites.push(m);
+  const top = 46, kh = H - top - 24, ww = W / whites.length, bw = ww * 0.62, bh = kh * 0.6;
+  const xOf = m => { if (!isBlack(m)) return whites.indexOf(m) * ww; return whites.indexOf(m - 1) * ww + ww - bw / 2; };
+  const cx = m => { const mi = Math.max(LO, Math.min(HI, m)), b = Math.floor(mi), fr = mi - b; const c0 = xOf(b) + (isBlack(b) ? bw : ww) / 2, c1 = xOf(Math.min(HI, b + 1)) + (isBlack(b + 1) ? bw : ww) / 2; return c0 + (c1 - c0) * fr; };
+  const maxD = Math.max(0.5, ...Object.values(cur.dwell));
+  keyRects = [];
+  const nowM = nowPitch(), nowN = nowM != null ? Math.round(nowM) : null;
+  const tint = m => { const d = cur.dwell[m] || 0; return d ? 0.12 + 0.6 * d / maxD : 0; };
+  // 흰 건반
+  for (const m of whites) {
+    const x = xOf(m);
+    g.fillStyle = css('--panel'); g.fillRect(x, top, ww, kh);
+    if (tint(m)) { g.fillStyle = css('--ref'); g.globalAlpha = tint(m); g.fillRect(x, top, ww, kh); g.globalAlpha = 1; }
+    if (m === nowN || m === refNote) { g.fillStyle = css(m === nowN ? '--imi' : '--good'); g.globalAlpha = m === nowN ? 0.75 : 0.35; g.fillRect(x, top, ww, kh); g.globalAlpha = 1; }
+    g.strokeStyle = css('--line'); g.strokeRect(x + 0.5, top + 0.5, ww - 1, kh - 1);
+    keyRects.push({ m, x, y: top, w: ww, h: kh, black: false });
+    if (m % 12 === 0) { g.fillStyle = css('--muted'); g.font = '11px ' + css('--font-mono'); g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(nm(m), x + ww / 2, top + kh - 4); }
+  }
+  for (let m = LO; m <= HI; m++) if (isBlack(m)) {
+    const x = xOf(m);
+    g.fillStyle = css('--ink'); g.fillRect(x, top, bw, bh);
+    if (tint(m)) { g.fillStyle = css('--ref'); g.globalAlpha = tint(m); g.fillRect(x, top, bw, bh); g.globalAlpha = 1; }
+    if (m === nowN || m === refNote) { g.fillStyle = css(m === nowN ? '--imi' : '--good'); g.globalAlpha = 0.85; g.fillRect(x, top, bw, bh); g.globalAlpha = 1; }
+    keyRects.push({ m, x, y: top, w: bw, h: bh, black: true });
+  }
+  // 음역 막대 (건반 위)
+  const bar = (a, b, y, col, lab) => { if (a == null || b == null) return; const x0 = cx(a) - 4, x1 = cx(b) + 4; g.fillStyle = css(col); g.fillRect(x0, y, Math.max(6, x1 - x0), 8); g.font = '11px ' + css('--font-body'); g.textBaseline = 'bottom'; g.textAlign = 'left'; g.fillStyle = css(col); if (lab) g.fillText(lab, Math.min(x0, W - 120), y - 2); };
+  if (cur.low && cur.chest) bar(cur.low.m, cur.chest.m, 30, '--ref', `진성 ${nm(cur.low.m)}–${nm(cur.chest.m)}`);
+  if (cur.fals) bar(cur.chest ? cur.chest.m : cur.fals.m - 0.5, cur.fals.m, 30, '--warn', '');
+  if (cur.fals) { g.fillStyle = css('--warn'); g.textAlign = 'right'; g.textBaseline = 'bottom'; g.fillText(`가성 ~${nm(cur.fals.m)}`, Math.min(W - 2, cx(cur.fals.m) + 4), 28); }
+  if (cur.low && !cur.chest) { g.fillStyle = css('--ref'); g.beginPath(); g.arc(cx(cur.low.m), 34, 5, 0, 7); g.fill(); g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(`최저 ${nm(cur.low.m)}`, cx(cur.low.m) + 8, 30); }
+  // 여목 목표, 말하는 음높이 (건반 아래)
+  const ty = top + kh + 6, a = midiOf(target.fmin), b = midiOf(target.fmax);
+  g.strokeStyle = css('--imi'); g.lineWidth = 2; g.beginPath(); g.moveTo(cx(a), ty); g.lineTo(cx(a), ty + 8); g.lineTo(cx(b), ty + 8); g.lineTo(cx(b), ty); g.stroke();
+  g.fillStyle = css('--imi'); g.font = '11px ' + css('--font-body'); g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText('여목 목표', cx(b) + 6, ty);
+  if (cur.speak) { const s = midiOf(cur.speak.hz); g.fillStyle = css('--good'); g.beginPath(); g.moveTo(cx(s), ty); g.lineTo(cx(s) - 6, ty + 12); g.lineTo(cx(s) + 6, ty + 12); g.fill(); g.textAlign = 'right'; g.fillText('말하기', cx(s) - 8, ty); }
+}
+// 건반 누르면 소리 + 튜너 기준
+function playNote(m, dur = 1.1) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
+    const t = actx.currentTime, out = actx.createGain(); out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(0.25, t + 0.02); out.gain.exponentialRampToValueAtTime(0.001, t + dur); out.connect(actx.destination);
+    [[1, 1], [2, 0.35], [3, 0.12]].forEach(([h, a]) => { const o = actx.createOscillator(), gg = actx.createGain(); o.frequency.value = hzOf(m) * h; gg.gain.value = a; o.connect(gg); gg.connect(out); o.start(t); o.stop(t + dur + 0.05); });
+  } catch (_) {}
+}
+$('kb').addEventListener('click', e => {
+  const r = $('kb').getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const k = keyRects.filter(k => k.black).find(k => x >= k.x && x <= k.x + k.w && y >= k.y && y <= k.y + k.h) || keyRects.filter(k => !k.black).find(k => x >= k.x && x <= k.x + k.w && y >= k.y && y <= k.y + k.h);
+  if (!k) return; refNote = refNote === k.m ? null : k.m; if (refNote != null) playNote(k.m); drawKb(); drawTuner();
+});
+
+// ---- 결과 ----
+const TYPES = [['베이스', 40, 64], ['바리톤', 45, 69], ['테너', 48, 72], ['알토', 53, 77], ['메조소프라노', 57, 81], ['소프라노', 60, 84]];
+function voiceType() {
+  if (!cur.low || !cur.chest) return null;
+  const a = cur.low.m, b = cur.chest.m;
+  let best = null;
+  for (const [n, lo, hi] of TYPES) { const ov = Math.max(0, Math.min(b, hi) - Math.max(a, lo)), un = Math.max(b, hi) - Math.min(a, lo), s = ov / un; if (!best || s > best.s) best = { n, lo, hi, s }; }
+  return best;
+}
+function spanTxt(st) { st = Math.round(st); const o = Math.floor(st / 12), r = st % 12; return `${st}반음 (${o ? o + '옥타브' : ''}${o && r ? ' ' : ''}${r ? r + '반음' : ''})`; }
+function renderAll() {
+  const v = x => x ? `${nm(x.m)} <small>${Math.round(x.hz)} Hz</small>` : '–';
+  $('vLow').innerHTML = v(cur.low); $('vChest').innerHTML = v(cur.chest); $('vFals').innerHTML = v(cur.fals);
+  $('vSpeak').innerHTML = cur.speak ? `${nm(midiOf(cur.speak.hz))} <small>${Math.round(cur.speak.hz)} Hz · 범위 ${Math.round(cur.speak.lo)}–${Math.round(cur.speak.hi)}</small>` : '–';
+  renderRes(); renderInterp(); drawKb(); renderHist();
+}
+function renderRes() {
+  const top = cur.fals || cur.chest, vt = voiceType();
+  const tiles = [
+    ['전체 음역', cur.low && top ? spanTxt(top.m - cur.low.m) : '–', cur.low && top ? `${nm(cur.low.m)} ~ ${nm(top.m)}` : '최저음과 최고음을 재면 나와요'],
+    ['진성 음역', cur.low && cur.chest ? spanTxt(cur.chest.m - cur.low.m) : '–', cur.low && cur.chest ? `${nm(cur.low.m)} ~ ${nm(cur.chest.m)}` : ''],
+    ['가장 가까운 성종', vt ? vt.n : '–', vt ? `보통 ${nm(vt.lo)}~${nm(vt.hi)} (참고용)` : '최저음과 진성 최고음이 필요해요'],
+    ['말하는 음높이', cur.speak ? `${Math.round(cur.speak.hz)} Hz` : '–', cur.speak ? `${nm(midiOf(cur.speak.hz))}, 진성 음역의 ${cur.low && cur.chest ? Math.round((midiOf(cur.speak.hz) - cur.low.m) / Math.max(1, cur.chest.m - cur.low.m) * 100) + '% 지점' : '–'}` : ''],
+  ];
+  $('resBox').innerHTML = tiles.map(([a, b, c]) => `<div class="rg-tile"><div class="ym-lab">${a}</div><div class="rg-big">${b}</div><div class="ym-sub">${c}</div></div>`).join('');
+}
+function renderInterp() {
+  const out = [], esc = s => s;
+  if (!cur.low && !cur.chest && !cur.speak) out.push(['측정을 시작해 보세요', '1번 최저음부터 차례대로 재면 해석이 채워져요.', 'start']);
+  if (cur.low && cur.chest) {
+    const span = cur.chest.m - cur.low.m;
+    out.push([`진성 음역 ${Math.round(span)}반음`, span < 14 ? '아직 좁은 편이에요. 목을 충분히 풀고 다시 재면 넓게 나오는 경우가 많아요. 사이렌("우~" 미끄러지기)을 매일 하면 조금씩 넓어져요.' : span < 24 ? '보통 범위예요. 위아래 끝 음을 편하게 유지하는 연습을 하면 쓸 수 있는 구간이 넓어져요.' : '넓은 편이에요. 끝 음은 무리하지 말고 편한 구간을 넓히는 데 집중하세요.', span < 14 ? 'warn' : 'ok']);
+  }
+  if (cur.chest) {
+    const tTop = midiOf(target.fmax), tBot = midiOf(target.fmin), gap = cur.chest.m - tTop;
+    if (gap >= 2) out.push([`여목 목표(${Math.round(target.fmin)}~${Math.round(target.fmax)} Hz)가 진성 음역 안에 있어요`, `진성 최고음 ${nm(cur.chest.m)}가 목표 위쪽 끝(${nm(tTop)})보다 ${Math.round(gap)}반음 높아요. 목표 음높이는 가성 없이 닿아요. 무게를 줄이고 공명을 올리는 쪽에 집중하세요.`, 'ok']);
+    else if (cur.chest.m >= tBot) out.push(['여목 목표 위쪽이 진성 끝자락이에요', `진성 최고음(${nm(cur.chest.m)})이 목표 위쪽 끝(${nm(tTop)}) 근처예요. 목표 아래쪽(${nm(tBot)}~)부터 편하게 쓰고, 위쪽은 믹스로 가볍게 내는 연습이 필요해요.`, 'warn']);
+    else out.push(['여목 목표가 진성 최고음보다 높아요', `진성 최고음 ${nm(cur.chest.m)}가 목표 시작(${nm(tBot)})보다 낮아요. 목표를 ${Math.round(hzOf(cur.chest.m - 2))} Hz 근처로 낮춰 시작하거나, 믹스로 위쪽을 넓히는 연습부터 하세요.`, 'warn']);
+  }
+  if (cur.speak) {
+    const s = cur.speak.hz, st = 12 * Math.log2(target.fmin / s);
+    if (st > 0.5) out.push([`지금 말하는 음높이는 ${Math.round(s)} Hz예요`, `여목 목표 시작(${target.fmin} Hz)까지 약 ${st.toFixed(1)}반음 올리면 돼요. 한 번에 2반음 정도씩 올려 익숙해지면 다음 단계로 가세요.`, 'next']);
+    else out.push([`말하는 음높이 ${Math.round(s)} Hz, 목표 안이에요`, '음높이는 됐어요. 이제 여목 연습에서 공명과 진성·가성 위치를 맞춰 보세요.', 'ok']);
+  }
+  if (cur.fals && cur.chest) { const d = cur.fals.m - cur.chest.m; out.push([`가성이 진성보다 ${Math.round(d)}반음 더 올라가요`, d > 7 ? '가성 음역이 넓어요. 가성과 진성이 만나는 구간(전환점) 근처를 부드럽게 잇는 연습이 믹스에 도움이 돼요.' : '진성과 가성 최고음 차이가 작아요. 가성은 힘을 완전히 빼고 다시 재 보세요.', 'next']); }
+  $('interp').innerHTML = out.map(([t, b, k]) => `<li class="tip-${k === 'ok' ? 'ok' : k === 'start' ? 'start' : k === 'next' ? 'next' : 'pitch'}"><b>${esc(t)}</b><span>${esc(b)}</span></li>`).join('');
+}
+
+// ---- 기록 ----
+$('saveRes').addEventListener('click', () => {
+  if (!cur.low && !cur.chest && !cur.fals && !cur.speak) { $('saveMsg').textContent = '저장할 측정값이 없어요.'; return; }
+  S.results.push({ at: Date.now(), low: cur.low && cur.low.m, chest: cur.chest && cur.chest.m, fals: cur.fals && cur.fals.m, speak: cur.speak && cur.speak.hz });
+  S.results = S.results.slice(-100); save(); renderHist(); $('saveMsg').textContent = '기록했어요.';
+});
+$('resetRes').addEventListener('click', () => { cur.low = cur.chest = cur.fals = cur.speak = null; cur.dwell = {}; renderAll(); $('saveMsg').textContent = ''; });
+$('clearHist').addEventListener('click', () => { S.results = []; save(); renderHist(); });
+function renderHist() {
+  const r = S.results.slice().reverse(), p = n => String(n).padStart(2, '0'), f = m => m == null ? '–' : nm(m);
+  $('histBody').innerHTML = r.length ? r.slice(0, 30).map(x => { const d = new Date(x.at), top = x.fals != null ? x.fals : x.chest; return `<tr><td>${d.getMonth() + 1}.${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</td><td>${f(x.low)}</td><td>${f(x.chest)}</td><td>${f(x.fals)}</td><td>${x.low != null && top != null ? Math.round(top - x.low) + '반음' : '–'}</td><td>${x.speak ? Math.round(x.speak) + ' Hz' : '–'}</td></tr>`; }).join('')
+    : '<tr><td colspan="6" style="text-align:left;color:var(--muted)">아직 기록이 없어요. 측정 후 「이 결과 기록하기」를 누르세요.</td></tr>';
+  drawHist();
+}
+function drawHist() {
+  const [g, W, H] = fit($('histCv')); g.clearRect(0, 0, W, H);
+  const r = S.results.slice(-20); const L = 46, R = 10, T = 10, B = 24;
+  if (!r.length) { g.fillStyle = css('--muted'); g.font = '13px ' + css('--font-body'); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('기록이 쌓이면 날짜별 음역 막대가 그려져요', W / 2, H / 2); return; }
+  const vals = r.flatMap(x => [x.low, x.chest, x.fals, x.speak && midiOf(x.speak)]).filter(v => v != null);
+  const lo = Math.floor(Math.min(...vals) - 2), hi = Math.ceil(Math.max(...vals) + 2);
+  const Y = m => T + (hi - m) / (hi - lo) * (H - T - B), bw = Math.min(28, (W - L - R) / r.length * 0.5), X = i => L + (i + 0.5) * (W - L - R) / r.length;
+  g.font = '11px ' + css('--font-mono'); g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let m = Math.ceil(lo / 12) * 12; m <= hi; m += 12) { g.strokeStyle = css('--line'); g.beginPath(); g.moveTo(L, Y(m)); g.lineTo(W - R, Y(m)); g.stroke(); g.fillStyle = css('--muted'); g.fillText(nm(m), L - 6, Y(m)); }
+  const t0 = midiOf(target.fmin), t1 = midiOf(target.fmax); g.fillStyle = css('--imi'); g.globalAlpha = 0.08; g.fillRect(L, Y(t1), W - L - R, Y(t0) - Y(t1)); g.globalAlpha = 1;
+  r.forEach((x, i) => {
+    if (x.low != null && x.chest != null) { g.fillStyle = css('--ref'); g.fillRect(X(i) - bw / 2, Y(x.chest), bw, Y(x.low) - Y(x.chest)); }
+    if (x.fals != null) { const from = x.chest != null ? x.chest : x.fals - 1; g.fillStyle = css('--warn'); g.fillRect(X(i) - bw / 2, Y(x.fals), bw, Y(from) - Y(x.fals)); }
+    if (x.speak) { g.fillStyle = css('--good'); g.beginPath(); g.arc(X(i), Y(midiOf(x.speak)), 4, 0, 7); g.fill(); }
+    const d = new Date(x.at); g.fillStyle = css('--muted'); g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(`${d.getMonth() + 1}/${d.getDate()}`, X(i), H - B + 6);
+  });
+}
+
+// ---- 음 맞추기 게임 ----
+let game = null;
+$('gameBtn').addEventListener('click', async () => {
+  if (!(await startMic())) return;
+  let lo = cur.low ? Math.ceil(cur.low.m) + 2 : 48, hi = cur.chest ? Math.floor(cur.chest.m) - 2 : 60;
+  if (cur.speak) { const s = Math.round(midiOf(cur.speak.hz)); lo = Math.max(lo, s - 5); hi = Math.min(hi, s + 7); }
+  if (hi - lo < 4) { lo = 48; hi = 60; }
+  game = { lo, hi, round: 0, results: [], phase: 'next', t: 0, samples: [], listening: false };
+  $('gameBtn').disabled = true; renderGame();
+});
+function gameTick() {
+  const g = game, now = performance.now();
+  if (g.phase === 'next') {
+    if (g.round >= 5) { finishGame(); return; }
+    g.note = g.lo + Math.floor(Math.random() * (g.hi - g.lo + 1)); g.round++; g.phase = 'play'; g.t = now; refNote = g.note; playNote(g.note, 1.2); renderGame();
+  } else if (g.phase === 'play' && now - g.t > 1300) { g.phase = 'sing'; g.t = now; g.samples = []; g.listening = true; renderGame(); }
+  else if (g.phase === 'sing' && now - g.t > 2600) {
+    g.listening = false;
+    const s = g.samples.slice(Math.floor(g.samples.length * 0.3));
+    const err = s.length >= 8 ? (med(s) - g.note) * 100 : null;
+    g.results.push({ note: g.note, err }); g.phase = 'pause'; g.t = now; renderGame();
+  } else if (g.phase === 'pause' && now - g.t > 1200) g.phase = 'next';
+}
+function finishGame() {
+  const g = game; game = null; refNote = null; $('gameBtn').disabled = false;
+  const ok = g.results.filter(r => r.err != null), avg = ok.length ? ok.reduce((a, r) => a + Math.abs(r.err), 0) / ok.length : null;
+  $('game').innerHTML = gameRows(g) + `<div class="rg-game-sum">${avg == null ? '소리가 잡히지 않았어요. 음이 끝나면 바로 "아~" 하고 2초 내 주세요.' : `평균 오차 <b>${Math.round(avg)}센트</b> · ${avg <= 15 ? '아주 정확해요' : avg <= 30 ? '좋아요. 거의 맞았어요' : avg <= 60 ? '반음 안쪽으로 맞추고 있어요. 조금 더 귀 기울여 보세요' : '반음 이상 차이 나요. 건반을 눌러 한 음씩 천천히 맞춰 보세요'}`}</div>`;
+}
+function gameRows(g) {
+  return '<ol class="rg-game-list">' + g.results.map(r => `<li><b>${nm(r.note)}</b> ${r.err == null ? '<span class="err">소리 없음</span>' : `<span style="color: var(${Math.abs(r.err) <= 15 ? '--good' : Math.abs(r.err) <= 50 ? '--warn' : '--bad'})">${r.err > 0 ? '+' : ''}${Math.round(r.err)}¢ ${Math.abs(r.err) <= 15 ? '정확' : r.err > 0 ? '높음' : '낮음'}</span>`}</li>`).join('') + '</ol>';
+}
+function renderGame() {
+  const g = game; if (!g) return;
+  const msg = g.phase === 'play' ? `${g.round}/5 · 듣는 중… <b>${nm(g.note)}</b>` : g.phase === 'sing' ? `${g.round}/5 · <b>지금 "아~"</b> (${nm(g.note)})` : `${g.round}/5`;
+  $('game').innerHTML = `<div class="rg-game-now">${msg}</div>` + gameRows(g);
+}
+
+// ---- 시작 ----
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawKb(); drawTuner(); drawHist(); }, 120); });
+new MutationObserver(() => { drawKb(); drawTuner(); drawHist(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+const go = () => renderAll();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
+})();
+</script>
+</body>
+</html>

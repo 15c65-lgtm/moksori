@@ -4,6 +4,7 @@
 
 - `index.html` 홈
 - `mimic.html` 성대모사 싱크로율 (마이크 녹음 + 파일 업로드)
+- `range.html` 음역대 측정 (최저·진성최고·가성최고·말하기 음높이, 건반, 튜너, 음 맞추기 게임, 기록)
 - `yeomok.html` 여목 연습 (실시간 음높이·공명 지도, 진성·가성 미터, 기준 녹음, 사이렌 테스트)
 - `assets/core.js` 분석 엔진 (YIN 피치, MFCC + DTW 정렬, 스펙트럼 비교)
 - `assets/voicefeat.js` 실시간 프레임 분석 (YIN 피치, LPC 포먼트, H1–H2)

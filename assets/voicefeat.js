@@ -16,9 +16,9 @@ const VF = (() => {
     }
   }
 
-  // YIN: 60~700 Hz, 맑음 = 1 - 정규화 차이값
+  // YIN: 60~1100 Hz, 맑음 = 1 - 정규화 차이값
   function pitch(x) {
-    const W = 480, tmin = Math.floor(SR / 700), tmax = Math.floor(SR / 60);
+    const W = 480, tmin = Math.floor(SR / 1100), tmax = Math.floor(SR / 60);
     const dn = new Float32Array(tmax + 1); let run = 0;
     for (let t = 1; t <= tmax; t++) { let s = 0; for (let i = 0; i < W; i++) { const v = x[i] - x[i + t]; s += v * v; } run += s; dn[t] = run > 0 ? s * t / run : 1; }
     let tau = -1;
@@ -80,7 +80,7 @@ const VF = (() => {
   function analyze(x) {
     let e = 0; for (let i = 0; i < N; i++) e += x[i] * x[i];
     const db = 10 * Math.log10(e / N + 1e-12);
-    const out = { db, f0: 0, clarity: 0, h1h2: NaN, F: null, res: NaN };
+    const out = { db, f0: 0, clarity: 0, h1h2: NaN, h1h2raw: NaN, F: null, res: NaN };
     if (db < -65) return out;
     const p = pitch(x); out.f0 = p.f0; out.clarity = p.clarity;
     if (!p.f0) return out;
@@ -90,9 +90,17 @@ const VF = (() => {
     const mag = new Float32Array(NFFT / 2);
     for (let k = 0; k < NFFT / 2; k++) mag[k] = 10 * Math.log10(re[k] * re[k] + im[k] * im[k] + 1e-12);
     const df = SR / NFFT;
-    out.h1h2 = harmonicDb(mag, p.f0, df) - harmonicDb(mag, 2 * p.f0, df);
+    out.h1h2 = out.h1h2raw = harmonicDb(mag, p.f0, df) - harmonicDb(mag, 2 * p.f0, df);
     const F = formants(x);
-    if (F) { out.F = F; out.res = Math.cbrt(F[0] * F[1] * F[2]); }
+    if (F) {
+      out.F = F; out.res = Math.cbrt(F[0] * F[1] * F[2]);
+      // 포먼트 보정(H1*-H2*): 성도 공명이 H1·H2를 키운 만큼 빼서 성대 자체의 차이만 남김
+      const T = f => F.reduce((s, Fi, i) => { const b = (80 + 30 * i) / 2; return s + 20 * Math.log10((Fi * Fi + b * b) / Math.sqrt(((f - Fi) ** 2 + b * b) * ((f + Fi) ** 2 + b * b))); }, 0);
+      const corr = T(p.f0) - T(2 * p.f0);
+      // 음이 높으면(250 Hz~) 포먼트 추정이 배음에 붙어 보정이 틀어지므로 낮은 음에서만 적용
+      const w = Math.max(0, Math.min(1, (260 - p.f0) / 40)); // 220 Hz 아래 완전 보정, 260 Hz 위 보정 없음 (사이는 서서히)
+      if (w > 0 && F[0] > 1.6 * p.f0 && isFinite(corr) && Math.abs(corr) < 25) out.h1h2 -= w * corr;
+    }
     return out;
   }
 
