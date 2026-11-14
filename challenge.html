@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이번 주 대사 챌린지 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>이번 주 대사 챌린지</h1>
+      <p class="sub">매주 대사 하나를 골라 누가 가장 똑같이 따라 하는지 겨뤄요. 사람마다 그 주 최고 점수 1개로 순위를 매기고, 월요일 0시(한국 시간)에 새 대사로 바뀌어요.</p>
+    </div>
+    <div class="tally" id="weekTag">–</div>
+  </header>
+
+  <section class="panel ch-card" id="card">
+    <div class="ch-quote-wrap">
+      <div class="ch-who" id="who">–</div>
+      <blockquote class="ch-quote" id="quote">이번 주 대사를 불러오는 중…</blockquote>
+      <div class="ch-orig" id="orig"></div>
+      <p class="ch-tip" id="tip"></p>
+    </div>
+    <div class="ch-side">
+      <div class="ch-stat"><div class="ym-lab">남은 시간</div><div class="ch-big" id="left">–</div><div class="ym-sub" id="period"></div></div>
+      <div class="ch-stat"><div class="ym-lab">참가자</div><div class="ch-big"><span id="count">–</span><small> 명</small></div></div>
+      <a class="primary-sm ch-go" id="goBtn" href="mimic.html?challenge">도전하기</a>
+      <a class="ch-yt" id="ytLink" href="#" target="_blank" rel="noopener" hidden>유튜브에서 원본 보기 ↗</a>
+    </div>
+  </section>
+
+  <section class="ym-two">
+    <div class="panel">
+      <div class="chart-head"><h2>순위표</h2><button type="button" id="refresh">새로고침</button></div>
+      <div class="histwrap"><table class="hist ch-table"><thead><tr><th>순위</th><th>닉네임</th><th>총점</th><th>싱크로율</th><th>AI 닮음</th></tr></thead><tbody id="board"><tr><td colspan="5" class="muted">불러오는 중…</td></tr></tbody></table></div>
+      <p class="cap">총점 = 싱크로율 70% + AI 목소리 닮음 30%. 같은 점수면 먼저 제출한 사람이 위예요.</p>
+    </div>
+    <div class="panel">
+      <h2>내 기록</h2>
+      <div class="ch-me" id="me"><p class="cap">불러오는 중…</p></div>
+      <div class="ch-nick">
+        <input type="text" id="nick" maxlength="12" placeholder="닉네임 (2~12자)" aria-label="닉네임">
+        <button type="button" id="nickBtn">닉네임 저장</button>
+      </div>
+      <p class="cap" id="nickMsg"></p>
+      <button type="button" class="del" id="delMe">내 기록 모두 삭제</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>지난 챌린지</h2>
+    <div class="ch-past" id="past"><p class="cap">아직 지난 챌린지가 없어요.</p></div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:12px">규칙과 개인정보</h2>
+    <div class="tips">
+      <div><b>원본은 정해진 구간만</b>모두 같은 유튜브 영상, 같은 구간을 원본으로 써요. 도전하기를 누르면 자동으로 맞춰져요.</div>
+      <div><b>내 모사는 마이크 녹음만</b>파일 업로드는 막혀 있어요. 원본 소리를 그대로 녹음해서 원본과 너무 똑같으면 제출이 거부돼요.</div>
+      <div><b>제출 횟수</b>1분에 1번, 하루 30번까지 낼 수 있고 가장 높은 점수만 순위에 올라가요.</div>
+      <div><b>저장하는 정보</b>닉네임, 점수, 제출 시각만 저장해요. 녹음 소리는 서버로 보내지 않아요. 이메일이나 이름은 받지 않고, 「내 기록 모두 삭제」로 언제든 지울 수 있어요.</div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="assets/challenges.js"></script>
+<script src="assets/board.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const f1 = v => v == null ? '–' : (Math.round(v * 10) / 10).toFixed(1);
+const { id: W, ch: CH } = Week.current();
+$('weekTag').textContent = W;
+let myId = null;
+
+function renderCard() {
+  $('period').textContent = Week.label(W);
+  if (!CH) {
+    $('who').textContent = '준비 중';
+    $('quote').textContent = '이번 주 대사가 아직 정해지지 않았어요.';
+    $('goBtn').classList.add('off'); $('goBtn').removeAttribute('href');
+    return;
+  }
+  $('who').textContent = `${CH.character} · ${CH.work}`;
+  $('quote').textContent = `“${CH.line}”`;
+  $('orig').innerHTML = [CH.original, CH.meaning && `뜻: ${CH.meaning}`].filter(Boolean).map(esc).join('<br>');
+  $('tip').textContent = CH.tip || '';
+  if (CH.youtube) { $('ytLink').hidden = false; $('ytLink').href = `https://www.youtube.com/watch?v=${encodeURIComponent(CH.youtube)}&t=${Math.floor(CH.start)}s`; }
+  else { $('goBtn').classList.add('off'); $('goBtn').removeAttribute('href'); $('goBtn').textContent = '원본 영상 준비 중'; }
+}
+function tickLeft() {
+  const ms = Week.range(W).end - Date.now();
+  if (ms <= 0) { $('left').textContent = '마감'; return; }
+  const d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5), m = Math.floor(ms % 36e5 / 6e4);
+  $('left').textContent = d ? `${d}일 ${h}시간` : `${h}시간 ${m}분`;
+}
+
+async function loadBoard() {
+  try {
+    const [rows, n] = await Promise.all([Board.top(W, 50), Board.count(W)]);
+    $('count').textContent = n;
+    $('board').innerHTML = rows.length ? rows.map((r, i) => `<tr class="${r.user_id === myId ? 'mine' : ''}"><td>${i < 3 ? `<span class="medal m${i + 1}">${i + 1}</span>` : i + 1}</td><td>${esc(r.nickname)}${r.user_id === myId ? ' <em>나</em>' : ''}</td><td><b>${f1(r.total)}</b></td><td>${f1(r.synchro)}</td><td>${f1(r.ai)}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="muted">아직 아무도 도전하지 않았어요. 첫 기록을 남겨 보세요!</td></tr>';
+  } catch (e) { $('board').innerHTML = `<tr><td colspan="5" class="err">${esc(e.message)}</td></tr>`; $('count').textContent = '–'; }
+}
+async function loadMe() {
+  try {
+    const me = await Board.me(); myId = me ? me.id : null;
+    if (me && me.nickname) $('nick').value = me.nickname;
+    const mine = me ? await Board.mine(W) : null;
+    $('me').innerHTML = !me || !me.nickname ? '<p class="cap">아직 참가하지 않았어요. 닉네임을 정하고 도전하기를 눌러 보세요.</p>'
+      : mine ? `<div class="ch-mine"><div><div class="ym-lab">이번 주 내 순위</div><div class="ch-big">${mine.rank}<small> 위</small></div></div><div><div class="ym-lab">최고 총점</div><div class="ch-big">${f1(mine.total)}</div></div><div><div class="ym-lab">싱크로율 · AI</div><div class="ch-big ch-mid">${f1(mine.synchro)} · ${f1(mine.ai)}</div></div></div>`
+      : `<p class="cap"><b>${esc(me.nickname)}</b>님, 이번 주는 아직 기록이 없어요.</p>`;
+  } catch (e) { $('me').innerHTML = `<p class="cap err">${esc(e.message)}</p>`; }
+}
+async function loadPast() {
+  const weeks = Week.past().slice(0, 8); if (!weeks.length) return;
+  const blocks = await Promise.all(weeks.map(async w => {
+    const c = CHALLENGES[w]; let top = [];
+    try { top = await Board.top(w, 3); } catch (_) {}
+    return `<div class="ch-pastrow"><div><b>${esc(c.character)}</b> “${esc(c.line)}”<div class="ym-sub">${w} · ${Week.label(w)}</div></div><ol>${top.length ? top.map(r => `<li>${esc(r.nickname)} <span>${f1(r.total)}</span></li>`).join('') : '<li class="muted">참가자 없음</li>'}</ol></div>`;
+  }));
+  $('past').innerHTML = blocks.join('');
+}
+
+$('nickBtn').addEventListener('click', async () => {
+  const bad = Board.checkNick($('nick').value); if (bad) { $('nickMsg').innerHTML = `<span class="err">${esc(bad)}</span>`; return; }
+  $('nickBtn').disabled = true;
+  try { const n = await Board.setNickname($('nick').value); $('nickMsg').textContent = `「${n}」으로 저장했어요.`; await loadMe(); loadBoard(); }
+  catch (e) { $('nickMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  $('nickBtn').disabled = false;
+});
+$('delMe').addEventListener('click', async e => {
+  const b = e.currentTarget;
+  if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더 누르면 닉네임과 모든 기록이 지워져요'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '내 기록 모두 삭제'; }, 4000); return; }
+  b.classList.remove('arm'); b.textContent = '내 기록 모두 삭제';
+  try { await Board.deleteMe(); $('nick').value = ''; $('nickMsg').textContent = '닉네임과 기록을 모두 지웠어요.'; myId = null; loadMe(); loadBoard(); }
+  catch (err) { $('nickMsg').innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+});
+$('refresh').addEventListener('click', () => { loadMe().then(loadBoard); });
+
+renderCard(); tickLeft(); setInterval(tickLeft, 30000);
+loadMe().then(loadBoard); loadPast();
+})();
+</script>
+</body>
+</html>

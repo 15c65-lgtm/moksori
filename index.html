@@ -23,6 +23,11 @@
     <div class="recent" id="recent"></div>
   </section>
 
+  <a class="panel ch-home" href="challenge.html" id="chHome">
+    <div><div class="ch-who" id="chHomeWho">이번 주 대사 챌린지</div><div class="ch-home-line" id="chHomeLine">이번 주 대사로 겨뤄 보세요</div></div>
+    <span class="primary-sm ch-home-go">순위표 · 도전하기 →</span>
+  </a>
+
   <section class="tools">
     <a class="panel tool" href="mimic.html" style="--c: var(--imi)">
       <span class="pill live">사용 가능</span>
@@ -48,7 +53,11 @@
 
   <footer>목소리 연습실 · 분석은 모두 내 기기 안에서 이뤄져요.</footer>
 </div>
+<script src="assets/challenges.js"></script>
 <script>
+(() => {
+  try { const { ch } = Week.current(); if (ch) { document.getElementById('chHomeWho').textContent = `이번 주 대사 챌린지 · ${ch.character}`; document.getElementById('chHomeLine').textContent = `“${ch.line}”`; } } catch (_) {}
+})();
 (() => {
   let h = []; try { h = JSON.parse(localStorage.getItem('moksori.mimic.history') || '[]'); } catch (_) {}
   if (!h.length) return;

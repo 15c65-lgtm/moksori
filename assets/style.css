@@ -278,3 +278,46 @@ canvas.rg-kb { width: 100%; min-width: 640px; height: 210px; display: block; cur
 .rg-game-list { margin: 0; padding-left: 20px; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; font-variant-numeric: tabular-nums; }
 .rg-game-sum { font-size: 15px; }
 canvas.rg-hist { width: 100%; height: 200px; display: block; margin-bottom: 10px; }
+
+/* ---- 이번 주 대사 챌린지 ---- */
+.ch-card { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; align-items: center; border-top: 4px solid var(--imi); }
+@media (max-width: 760px) { .ch-card { grid-template-columns: 1fr; } }
+.ch-who { font-size: 13px; font-weight: 700; color: var(--imi); letter-spacing: .3px; }
+.ch-quote { font-family: var(--font-display); font-size: clamp(26px, 4.4vw, 40px); line-height: 1.25; margin: 6px 0 8px; text-wrap: balance; }
+.ch-orig { color: var(--muted); font-size: 14px; }
+.ch-tip { font-size: 13.5px; margin: 10px 0 0; padding-left: 10px; border-left: 3px solid var(--line); color: var(--muted); }
+.ch-side { display: grid; gap: 12px; }
+.ch-stat { display: grid; gap: 2px; }
+.ch-big { font-family: var(--font-mono); font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.ch-big small { font-size: 13px; color: var(--muted); font-weight: 500; }
+.ch-mid { font-size: 20px; }
+a.ch-go { display: inline-block; text-align: center; text-decoration: none; padding: 12px 18px; font-size: 16px; border-radius: 8px; border: 1px solid var(--ink); }
+a.ch-go.off { opacity: .45; pointer-events: none; }
+.ch-yt { font-size: 13px; color: var(--muted); }
+.ch-yt[hidden] { display: none; }
+.ch-table tr.mine td { background: color-mix(in srgb, var(--imi) 8%, transparent); }
+.ch-table td em { font-style: normal; font-size: 11px; color: var(--imi); font-weight: 700; }
+.ch-table td.muted, .muted { color: var(--muted); text-align: left !important; }
+.medal { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 12px; }
+.medal.m1 { background: #c9a227; } .medal.m2 { background: #8f9aa6; } .medal.m3 { background: #b4703a; }
+.ch-me { margin: 8px 0 12px; }
+.ch-mine { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ch-nick { display: flex; gap: 8px; flex-wrap: wrap; }
+.ch-nick input { flex: 1 1 160px; min-width: 0; font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+#delMe { margin-top: 8px; font-size: 13px; }
+.ch-past { display: grid; gap: 10px; margin-top: 10px; }
+.ch-pastrow { display: grid; grid-template-columns: 1fr auto; gap: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; align-items: center; }
+.ch-pastrow ol { margin: 0; padding-left: 18px; font-size: 13.5px; }
+.ch-pastrow ol span { font-family: var(--font-mono); color: var(--muted); margin-left: 4px; }
+.ch-banner { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; border-left: 4px solid var(--imi); }
+.ch-banner[hidden] { display: none; }
+.ch-banner-line { font-family: var(--font-display); font-size: 24px; }
+.ch-submit { display: grid; gap: 10px; padding: 14px; border: 2px solid var(--imi); border-radius: 10px; background: color-mix(in srgb, var(--imi) 5%, transparent); }
+.ch-submit[hidden] { display: none; }
+.ch-checks { display: flex; gap: 8px 16px; flex-wrap: wrap; font-size: 13.5px; }
+.ch-checks .ok { color: var(--good); } .ch-checks .no { color: var(--muted); } .ch-checks .wait { color: var(--warn); }
+.tabs[hidden], .filebtn[hidden] { display: none; }
+a.ch-home { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; text-decoration: none; color: inherit; border-left: 4px solid var(--imi); }
+a.ch-home:hover { border-color: var(--imi); }
+.ch-home-line { font-family: var(--font-display); font-size: clamp(22px, 3.6vw, 30px); margin-top: 4px; }
+.ch-home-go { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--ink); }
