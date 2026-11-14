@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대본 연습 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=202611141530">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>대본 연습</h1>
+      <p class="sub">대본을 붙여 넣고 내 역할을 고르면, 상대역 대사는 기계 음성이 읽어 주고 내 대사는 한 줄씩 녹음돼요. 줄마다 테이크를 쌓아 비교하고, 가장 좋은 테이크만 모아 장면으로 들어 보세요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="panel sc-top">
+    <label class="ym-field">대본 <select id="scSel" aria-label="대본 선택"></select></label>
+    <button type="button" id="scNew">+ 새 대본</button>
+    <button type="button" id="scEditBtn">대본 편집</button>
+    <label class="ym-field">내 역할 <select id="roleSel" aria-label="내 역할"></select></label>
+    <label class="tog"><input type="checkbox" id="ttsOn" checked> 상대역 읽어 주기</label>
+    <span class="cap" id="topMsg" style="margin:0"></span>
+  </section>
+
+  <section class="panel sc-edit" id="editBox" hidden>
+    <div class="chart-head"><h2>대본 편집</h2><div class="sup-ctl"><button type="button" class="primary-sm" id="edSave">저장</button><button type="button" id="edCancel">닫기</button><button type="button" class="del" id="edDel">이 대본 삭제</button></div></div>
+    <input type="text" id="edTitle" maxlength="40" placeholder="대본 제목" aria-label="대본 제목">
+    <textarea id="edText" rows="12" spellcheck="false" aria-label="대본 내용"></textarea>
+    <p class="cap">한 줄에 대사 하나. <b>역할: 대사</b> 형식이면 역할을 알아봐요. 괄호만 있는 줄은 지문, 대사 앞 <b>(웃으며)</b> 같은 괄호는 연기 지시로 보여 줘요. 맨 윗줄 <b># 제목</b>은 장면 제목이에요.</p>
+  </section>
+
+  <section class="sc-main">
+    <div class="panel sc-list-wrap">
+      <div class="chart-head"><h2 id="scTitle">대본</h2><span class="cap" style="margin:0" id="scCount"></span></div>
+      <ol class="sc-list" id="lineList"></ol>
+    </div>
+    <div class="sc-right">
+      <div class="panel sc-prompt" id="prompt">
+        <div class="sc-pos"><span class="pill-z" id="pRole"></span><span class="cap" style="margin:0" id="pIdx"></span></div>
+        <div class="sc-prev" id="pPrev"></div>
+        <div class="sc-dir" id="pDir"></div>
+        <div class="sc-line" id="pLine">대본을 불러오는 중…</div>
+        <div class="sc-next" id="pNext"></div>
+        <div class="sc-ctl">
+          <button type="button" id="prevBtn" title="이전 줄 (←)">◀</button>
+          <button type="button" class="primary-sm sc-rec" id="recBtn" title="녹음 (스페이스)">● 녹음</button>
+          <button type="button" id="playBest" title="베스트 테이크 듣기 (P)">▶ 베스트</button>
+          <button type="button" id="nextBtn" title="다음 줄 (→)">▶▶</button>
+        </div>
+        <div class="lvl wide"><i id="recLvl" style="width:0%"></i></div>
+        <div class="cap" id="recMsg" style="margin:0">스페이스: 녹음 시작/끝 · ←→: 줄 이동 · P: 베스트 듣기</div>
+      </div>
+      <div class="panel sc-scene">
+        <div class="chart-head"><h2>장면</h2></div>
+        <div class="sc-scene-btns">
+          <button type="button" class="primary-sm" id="runScene">▶ 장면 연습 (자동 녹음)</button>
+          <button type="button" id="playScene">▶ 장면 듣기 (베스트 테이크)</button>
+          <button type="button" id="exportWav">내 대사 WAV 저장</button>
+          <button type="button" id="stopScene" hidden>■ 멈춤</button>
+        </div>
+        <p class="cap" id="sceneMsg">장면 연습: 현재 줄부터 상대역은 읽어 주고, 내 차례가 오면 자동으로 녹음을 시작해요. 말을 마치고 1.3초 조용하면 다음 줄로 넘어가요.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head">
+      <h2>이 줄의 테이크</h2>
+      <div class="sup-ctl">
+        <label class="btnlike">원본 대사 올리기<input type="file" id="refFile" accept="audio/*,video/*"></label>
+        <button type="button" id="refPlay" hidden>▶ 원본</button>
+        <button type="button" id="refDel" hidden>원본 빼기</button>
+      </div>
+    </div>
+    <p class="cap" id="refMsg" style="margin-top:0">애니나 드라마의 원본 대사 소리를 올리면 테이크마다 원본과의 싱크로율도 계산해요.</p>
+    <div class="histwrap"><table class="hist sc-takes"><thead><tr><th>#</th><th>★</th><th>길이</th><th>말 빠르기</th><th>평균 높이</th><th>억양 폭</th><th>크기 변화</th><th>쉼</th><th id="thSync" hidden>원본 싱크로</th><th>높낮이</th><th></th></tr></thead><tbody id="takeBody"></tbody></table></div>
+    <p class="cap" id="takeNote"></p>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:12px">대본 연습 요령</h2>
+    <div class="tips">
+      <div><b>같은 줄을 다르게 세 번</b>한 줄을 화난 듯, 담담하게, 웃으며처럼 다르게 녹음해 보고 숫자(억양 폭, 크기 변화, 빠르기)가 어떻게 달라지는지 보세요. 감정 차이가 실제로 소리에 드러나는지 확인할 수 있어요.</div>
+      <div><b>쉼도 연기예요</b>「쉼」 열은 문장 안에서 0.25초 넘게 멈춘 횟수예요. 대사의 무게가 실리는 곳에서 쉬고 있는지 들어 보세요.</div>
+      <div><b>원본과 비교</b>원본 대사를 올리면 억양 곡선과 빠르기를 원본에 맞춰 볼 수 있어요. 숫자를 맞추는 게 아니라, 왜 다른지 듣는 게 목적이에요.</div>
+      <div><b>저장 위치</b>대본은 이 브라우저에, 녹음은 이 기기 안에만 저장돼요. 다른 기기로 옮기려면 「내 대사 WAV 저장」으로 파일을 받아 두세요.</div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/core.js?v=202611141530"></script>
+<script src="assets/voicefeat.js?v=202611141530"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const med = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const qq = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.max(0, Math.min(s.length - 1, Math.floor(p * (s.length - 1))))]; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const RATE = 16000;
+
+// ---------- 대본 저장 (localStorage) ----------
+const SKEY = 'moksori.scripts';
+const SAMPLE = `# 편의점 앞에서
+(밤, 비가 막 그친 편의점 앞)
+하루: 또 늦었네. 우산은 챙겼어?
+민재: (머쓱하게) 아니… 비 그친 줄 알았지.
+하루: 하여간. 자, 이거 써.
+민재: 너는?
+하루: (웃으며) 나는 괜찮아. 집 바로 앞이잖아.
+민재: …고마워. 내일은 꼭 돌려줄게.
+하루: 내일 비 오면 그때 줘. 약속!`;
+let ST = { list: [], cur: null };
+try { ST = Object.assign(ST, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) {}
+const saveST = () => { try { localStorage.setItem(SKEY, JSON.stringify(ST)); } catch (_) {} };
+if (!ST.list.length) { const id = uid(); ST.list.push({ id, title: '편의점 앞에서 (예시)', text: SAMPLE, role: '하루' }); ST.cur = id; saveST(); }
+const curScript = () => ST.list.find(s => s.id === ST.cur) || ST.list[0];
+
+// ---------- 녹음 저장 (IndexedDB) ----------
+const DB = (() => {
+  let p = null;
+  const open = () => p || (p = new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error('no-idb'));
+    const r = indexedDB.open('moksori-script', 1);
+    r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('takes', { keyPath: 'id' }).createIndex('script', 'scriptId'); d.createObjectStore('refs', { keyPath: 'key' }); };
+    r.onsuccess = () => res(r.result); r.onerror = () => { p = null; rej(r.error); };
+  }));
+  const tx = async (store, mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction(store, mode), s = t.objectStore(store); let out; const q = fn(s); if (q) q.onsuccess = () => { out = q.result; }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); };
+  return {
+    takes: sid => tx('takes', 'readonly', s => s.index('script').getAll(sid)).then(a => a || []),
+    put: t => tx('takes', 'readwrite', s => s.put(t)),
+    del: id => tx('takes', 'readwrite', s => s.delete(id)),
+    delScript: async sid => { const all = await DB.takes(sid); for (const t of all) await DB.del(t.id); },
+    ref: key => tx('refs', 'readonly', s => s.get(key)),
+    putRef: r => tx('refs', 'readwrite', s => s.put(r)),
+    delRef: key => tx('refs', 'readwrite', s => s.delete(key)),
+  };
+})();
+
+// ---------- 대본 해석 ----------
+function parse(text) {
+  const items = []; let title = '', pendingDir = '';
+  for (let raw of text.split(/\r?\n/)) {
+    const line = raw.trim(); if (!line) continue;
+    if (/^#/.test(line)) { title = line.replace(/^#+\s*/, ''); continue; }
+    if (/^[(（].*[)）]$/.test(line)) { items.push({ type: 'dir', text: line.slice(1, -1).trim() }); continue; }
+    let role = '', body = line;
+    const m = line.match(/^([^:：()（）]{1,15})\s*[:：]\s*(.+)$/);
+    if (m) { role = m[1].trim(); body = m[2].trim(); }
+    let note = '';
+    const d = body.match(/^[(（]([^)）]{1,40})[)）]\s*(.+)$/);
+    if (d) { note = d[1].trim(); body = d[2].trim(); }
+    items.push({ type: 'line', role, text: body, note });
+  }
+  return { title, items };
+}
+let P = { title: '', items: [] }, lines = [], idx = 0, takes = [], refCache = new Map();
+const myRole = () => curScript().role || '';
+const isMine = l => !l.role || l.role === myRole() || myRole() === '*';
+
+// ---------- 화면: 대본 ----------
+function loadScript() {
+  const s = curScript(); ST.cur = s.id; saveST();
+  P = parse(s.text);
+  lines = P.items.map((it, i) => ({ ...it, i })).filter(it => it.type === 'line');
+  const roles = [...new Set(lines.map(l => l.role).filter(Boolean))];
+  $('roleSel').innerHTML = (roles.length ? roles.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('') : '') + '<option value="*">전부 내가 읽기</option>';
+  if (!roles.includes(s.role) && s.role !== '*') { s.role = roles[0] || '*'; saveST(); }
+  $('roleSel').value = s.role;
+  $('scSel').innerHTML = ST.list.map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join(''); $('scSel').value = s.id;
+  $('scTitle').textContent = P.title || s.title;
+  idx = Math.min(idx, Math.max(0, lines.length - 1));
+  if (lines.length && !isMine(lines[idx])) { const k = lines.findIndex(isMine); if (k >= 0) idx = k; }
+  return refreshTakes();
+}
+async function refreshTakes() {
+  try { takes = await DB.takes(curScript().id); } catch (_) { takes = []; $('topMsg').innerHTML = '<span class="err">이 브라우저에서는 녹음을 저장할 수 없어요 (시크릿 창이면 일반 창에서 열어 주세요).</span>'; }
+  renderList(); renderPrompt(); await renderTakes();
+}
+const lineTakes = i => takes.filter(t => t.line === i).sort((a, b) => a.at - b.at);
+const bestTake = i => { const t = lineTakes(i); return t.find(x => x.star) || t[t.length - 1] || null; };
+function renderList() {
+  const s = curScript(), mine = lines.filter(isMine).length, done = lines.filter(l => isMine(l) && lineTakes(l.i).length).length;
+  $('scCount').textContent = `내 대사 ${mine}줄 중 ${done}줄 녹음`;
+  $('lineList').innerHTML = P.items.map((it, k) => {
+    if (it.type === 'dir') return `<li class="sc-li dir">(${esc(it.text)})</li>`;
+    const li = lines.findIndex(l => l.i === k), l = lines[li], n = lineTakes(k).length, star = lineTakes(k).some(t => t.star);
+    return `<li class="sc-li${isMine(l) ? ' mine' : ''}${li === idx ? ' on' : ''}" data-li="${li}"><span class="sc-role">${esc(l.role || '나')}</span><span class="sc-txt">${l.note ? `<em>(${esc(l.note)})</em> ` : ''}${esc(l.text)}</span><span class="sc-n">${isMine(l) ? (n ? `${star ? '★' : ''}${n}` : '–') : ''}</span></li>`;
+  }).join('');
+  const on = $('lineList').querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+}
+$('lineList').addEventListener('click', e => { const li = e.target.closest('[data-li]'); if (!li || scene) return; idx = +li.dataset.li; renderList(); renderPrompt(); renderTakes(); });
+function renderPrompt() {
+  const l = lines[idx];
+  if (!l) { $('pLine').textContent = '대본에 대사가 없어요. 「대본 편집」에서 대사를 넣어 주세요.'; return; }
+  const prevItem = P.items.slice(0, l.i).reverse().find(x => x.type === 'line'), dirBefore = P.items[l.i - 1] && P.items[l.i - 1].type === 'dir' ? P.items[l.i - 1].text : '';
+  const nextItem = P.items.slice(l.i + 1).find(x => x.type === 'line');
+  $('pRole').textContent = isMine(l) ? `내 대사 · ${l.role || '나'}` : `상대역 · ${l.role}`; $('pRole').className = 'pill-z ' + (isMine(l) ? 'z-f' : 'z-m');
+  $('pIdx').textContent = `${idx + 1} / ${lines.length}`;
+  $('pPrev').textContent = prevItem ? `${prevItem.role ? prevItem.role + ': ' : ''}${prevItem.text}` : '';
+  $('pDir').textContent = [dirBefore && `(${dirBefore})`, l.note && `연기: ${l.note}`].filter(Boolean).join('  ');
+  $('pLine').textContent = l.text; $('pLine').classList.toggle('partner', !isMine(l));
+  $('pNext').textContent = nextItem ? `다음 · ${nextItem.role ? nextItem.role + ': ' : ''}${nextItem.text}` : '마지막 줄이에요';
+  $('recBtn').disabled = !isMine(l) && !scene;
+  $('playBest').disabled = !bestTake(l.i);
+}
+function go(d) { if (scene) return; const n = idx + d; if (n < 0 || n >= lines.length) return; idx = n; renderList(); renderPrompt(); renderTakes(); }
+$('prevBtn').addEventListener('click', () => go(-1)); $('nextBtn').addEventListener('click', () => go(1));
+$('roleSel').addEventListener('change', () => { curScript().role = $('roleSel').value; saveST(); renderList(); renderPrompt(); });
+$('scSel').addEventListener('change', () => { ST.cur = $('scSel').value; idx = 0; saveST(); loadScript(); });
+
+// 편집
+function openEdit(isNew) {
+  const s = isNew ? null : curScript();
+  $('editBox').hidden = false; $('edTitle').value = s ? s.title : ''; $('edText').value = s ? s.text : '# 새 장면\n나: 첫 대사를 여기에 써요.\n상대: 상대역 대사는 기계 음성이 읽어 줘요.';
+  $('editBox').dataset.mode = isNew ? 'new' : 'edit'; $('edDel').hidden = isNew; $('edTitle').focus();
+}
+$('scNew').addEventListener('click', () => openEdit(true)); $('scEditBtn').addEventListener('click', () => openEdit(false));
+$('edCancel').addEventListener('click', () => { $('editBox').hidden = true; });
+$('edSave').addEventListener('click', async () => {
+  const text = $('edText').value, title = $('edTitle').value.trim() || (parse(text).title) || '제목 없는 대본';
+  if ($('editBox').dataset.mode === 'new') { const id = uid(); ST.list.push({ id, title, text, role: '' }); ST.cur = id; idx = 0; }
+  else { const s = curScript(); const changed = s.text !== text; s.title = title; s.text = text; if (changed) $('topMsg').textContent = '대본을 고쳤어요. 줄 순서가 바뀌었다면 예전 테이크가 다른 줄에 붙어 보일 수 있어요.'; }
+  saveST(); $('editBox').hidden = true; await loadScript();
+});
+$('edDel').addEventListener('click', async e => {
+  const b = e.currentTarget; if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더 누르면 대본과 녹음이 모두 지워져요'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '이 대본 삭제'; }, 4000); return; }
+  const s = curScript(); try { await DB.delScript(s.id); } catch (_) {}
+  ST.list = ST.list.filter(x => x.id !== s.id); ST.cur = ST.list[0] && ST.list[0].id; saveST(); $('editBox').hidden = true;
+  if (!ST.list.length) { const id = uid(); ST.list.push({ id, title: '편의점 앞에서 (예시)', text: SAMPLE, role: '하루' }); ST.cur = id; saveST(); }
+  idx = 0; loadScript();
+});
+
+// ---------- 마이크 / 녹음 ----------
+let actx = null, mic = null, rec = null, floorDb = -60;
+async function ensureMic() {
+  if (mic) return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('recMsg').innerHTML = '<span class="err">이 브라우저에서는 마이크를 쓸 수 없어요.</span>'; return false; }
+  let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } }); }
+  catch (_) { $('recMsg').innerHTML = `<span class="err">마이크 권한이 없어요. ${location.protocol === 'file:' ? '사이트 주소로 열어 주세요.' : '주소창 자물쇠 아이콘에서 허용해 주세요.'}</span>`; return false; }
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') await actx.resume();
+  const src = actx.createMediaStreamSource(stream), proc = actx.createScriptProcessor(2048, 1, 1), mute = actx.createGain(); mute.gain.value = 0;
+  const st = new VF.Stream16k(actx.sampleRate); let lastTotal = 0;
+  proc.onaudioprocess = e => {
+    st.push(e.inputBuffer.getChannelData(0));
+    const n = st.total - lastTotal; lastTotal = st.total;
+    const chunk = st.last(Math.min(n, RATE));
+    let s = 0; for (const v of chunk) s += v * v; const db = 10 * Math.log10(s / Math.max(1, chunk.length) + 1e-12);
+    floorDb = Math.min(floorDb + 0.03, db);
+    if (rec) onRecChunk(chunk, db);
+  };
+  src.connect(proc); proc.connect(mute); mute.connect(actx.destination);
+  mic = { stream, src, proc, mute }; return true;
+}
+async function startRec(auto) {
+  const l = lines[idx]; if (!l || rec) return;
+  if (!(await ensureMic())) return;
+  stopPlay();
+  rec = { line: l.i, chunks: [], n: 0, t0: performance.now(), voiced: false, lastVoice: 0, auto: !!auto };
+  $('recBtn').textContent = '■ 녹음 끝'; $('recBtn').classList.add('on'); $('tally').classList.add('on'); $('tally').textContent = 'REC';
+  $('recMsg').textContent = auto ? '내 차례예요. 말을 마치고 잠깐 멈추면 자동으로 다음 줄로 넘어가요.' : '녹음 중… 다 하면 스페이스나 「녹음 끝」';
+}
+function onRecChunk(chunk, db) {
+  rec.chunks.push(new Float32Array(chunk)); rec.n += chunk.length;
+  const now = performance.now(), loud = db > floorDb + 14;
+  if (loud) { rec.voiced = true; rec.lastVoice = now; }
+  $('recLvl').style.width = Math.min(100, Math.max(0, (db + 60) * 2)) + '%';
+  if (rec.auto && rec.voiced && now - rec.lastVoice > 1300) stopRec();
+  else if (rec.n > RATE * 30) stopRec();
+  else if (rec.auto && !rec.voiced && now - rec.t0 > 8000) stopRec();
+}
+async function stopRec() {
+  if (!rec) return; const r = rec; rec = null;
+  $('recBtn').textContent = '● 녹음'; $('recBtn').classList.remove('on'); $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; $('recLvl').style.width = '0%';
+  let x = new Float32Array(r.n), o = 0; for (const c of r.chunks) { x.set(c, o); o += c.length; }
+  x = trim(x);
+  if (x.length < RATE * 0.4) { $('recMsg').textContent = '소리가 거의 녹음되지 않았어요.'; if (scene) sceneNext(); return; }
+  const t = { id: uid(), scriptId: curScript().id, line: r.line, lineText: lines.find(l => l.i === r.line).text, at: Date.now(), pcm: toI16(x), star: false };
+  t.stats = analyze(x, t.lineText);
+  const ref = await getRef(r.line); if (ref) t.sync = syncScore(ref.x, x);
+  try { await DB.put(t); } catch (_) { $('recMsg').innerHTML = '<span class="err">저장하지 못했어요.</span>'; }
+  takes.push(t); renderList(); renderPrompt(); renderTakes();
+  $('recMsg').textContent = `테이크 ${lineTakes(r.line).length} 저장 · ${t.stats.dur.toFixed(1)}초 · 말 빠르기 ${t.stats.rate.toFixed(1)}음절/초`;
+  if (scene) sceneNext();
+}
+$('recBtn').addEventListener('click', () => rec ? stopRec() : startRec(false));
+function trim(x) { // 앞뒤 무음 자르기 (0.15초 여유)
+  const w = 320, e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); }
+  if (!e.length) return x;
+  const pk = Math.max(...e), th = Math.max(pk - 35, -70); let a = 0, b = e.length - 1;
+  while (a < e.length && e[a] < th) a++; while (b > a && e[b] < th) b--;
+  return x.slice(Math.max(0, (a - 8) * w), Math.min(x.length, (b + 9) * w));
+}
+const toI16 = x => { const o = new Int16Array(x.length); for (let i = 0; i < x.length; i++) o[i] = Math.max(-1, Math.min(1, x[i])) * 32767; return o; };
+const toF32 = a => { const o = new Float32Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] / 32767; return o; };
+
+// ---------- 테이크 분석 ----------
+function syllables(text) { const h = (text.match(/[가-힣]/g) || []).length, lat = (text.match(/[A-Za-z]+/g) || []).reduce((a, w) => a + Math.max(1, Math.round(w.length / 3)), 0), dig = (text.match(/\d/g) || []).length; return Math.max(1, h + lat + dig); }
+function analyze(x, text) {
+  const N = 1024, hop = 512, fr = []; let pk = -99;
+  for (let i = 0; i + N <= x.length; i += hop) { const r = VF.analyze(x.subarray(i, i + N)); fr.push(r); if (r.db > pk) pk = r.db; }
+  const speech = fr.map(r => r.db > pk - 30), voiced = fr.filter((r, i) => speech[i] && r.f0 > 60 && r.clarity > 0.5);
+  // 쉼: 말소리 사이 0.25초 넘는 조용한 구간
+  let pauses = 0, run = 0, started = false; const minRun = Math.round(0.25 * RATE / hop);
+  for (let i = 0; i < speech.length; i++) { if (speech[i]) { if (started && run >= minRun) pauses++; run = 0; started = true; } else run++; }
+  const speakSec = speech.filter(Boolean).length * hop / RATE;
+  const st = voiced.map(r => 12 * Math.log2(r.f0 / 440) + 69), dbs = fr.filter((r, i) => speech[i]).map(r => r.db);
+  const contour = fr.map((r, i) => speech[i] && r.f0 > 60 && r.clarity > 0.5 ? 12 * Math.log2(r.f0 / 440) + 69 : null);
+  return {
+    dur: x.length / RATE, rate: syllables(text) / Math.max(0.3, speakSec), f0: voiced.length ? med(voiced.map(r => r.f0)) : NaN,
+    into: st.length > 5 ? qq(st, 0.9) - qq(st, 0.1) : NaN, dyn: dbs.length > 5 ? qq(dbs, 0.9) - qq(dbs, 0.1) : NaN, pauses,
+    contour: contour.filter((_, i) => i % 2 === 0).map(v => v == null ? null : Math.round(v * 10) / 10),
+  };
+}
+async function getRef(line) {
+  const key = curScript().id + ':' + line;
+  if (refCache.has(key)) return refCache.get(key);
+  let r = null; try { r = await DB.ref(key); } catch (_) {}
+  const v = r ? { name: r.name, x: toF32(r.pcm) } : null; refCache.set(key, v); return v;
+}
+function syncScore(refX, x) { try { return Math.round(compare(extract(refX), extract(x)).overall); } catch (_) { return null; } }
+
+// ---------- 테이크 표 ----------
+async function renderTakes() {
+  const l = lines[idx]; if (!l) { $('takeBody').innerHTML = ''; return; }
+  const ref = await getRef(l.i), list = lineTakes(l.i);
+  $('thSync').hidden = !ref; $('refPlay').hidden = !ref; $('refDel').hidden = !ref;
+  $('refMsg').textContent = ref ? `원본: ${ref.name} · 테이크마다 원본과의 싱크로율을 보여 줘요.` : '애니나 드라마의 원본 대사 소리를 올리면 테이크마다 원본과의 싱크로율도 계산해요.';
+  if (!isMine(l)) { $('takeBody').innerHTML = `<tr><td colspan="11" class="muted">상대역 대사예요. 내 역할을 바꾸거나 「전부 내가 읽기」를 고르면 녹음할 수 있어요.</td></tr>`; $('takeNote').textContent = ''; return; }
+  if (!list.length) { $('takeBody').innerHTML = `<tr><td colspan="11" class="muted">아직 테이크가 없어요. 스페이스를 눌러 녹음해 보세요.</td></tr>`; $('takeNote').textContent = ''; return; }
+  const f = (v, d = 1) => Number.isFinite(v) ? v.toFixed(d) : '–';
+  $('takeBody').innerHTML = list.map((t, k) => `<tr data-id="${t.id}" class="${t.star ? 'best' : ''}"><td>${k + 1}</td><td><button type="button" class="star${t.star ? ' on' : ''}" data-act="star" title="베스트로 고르기">${t.star ? '★' : '☆'}</button></td><td>${f(t.stats.dur)}초</td><td>${f(t.stats.rate)}<small>음절/초</small></td><td>${Number.isFinite(t.stats.f0) ? Math.round(t.stats.f0) + ' Hz <small>' + VF.note(t.stats.f0) + '</small>' : '–'}</td><td>${f(t.stats.into)}<small>반음</small></td><td>${f(t.stats.dyn, 0)}<small>dB</small></td><td>${t.stats.pauses}</td>${ref ? `<td><b>${t.sync == null ? '–' : t.sync}</b></td>` : ''}<td><canvas class="spark" data-id="${t.id}"></canvas></td><td class="sc-acts"><button type="button" data-act="play">▶</button><button type="button" class="del" data-act="del">삭제</button></td></tr>`).join('');
+  list.forEach(t => drawSpark(document.querySelector(`canvas.spark[data-id="${t.id}"]`), t.stats.contour, ref && ref.contour));
+  // 테이크 비교 요약
+  if (list.length >= 2) {
+    const a = list[list.length - 2].stats, b = list[list.length - 1].stats, d = [];
+    if (Number.isFinite(a.into) && Number.isFinite(b.into) && Math.abs(b.into - a.into) >= 1.5) d.push(`억양 폭 ${b.into > a.into ? '+' : ''}${(b.into - a.into).toFixed(1)}반음`);
+    if (Math.abs(b.rate - a.rate) >= 0.5) d.push(`${b.rate > a.rate ? '더 빠르게' : '더 느리게'} (${(b.rate - a.rate > 0 ? '+' : '')}${(b.rate - a.rate).toFixed(1)}음절/초)`);
+    if (Number.isFinite(a.dyn) && Number.isFinite(b.dyn) && Math.abs(b.dyn - a.dyn) >= 3) d.push(`크기 변화 ${b.dyn > a.dyn ? '더 크게' : '더 작게'}`);
+    if (Number.isFinite(a.f0) && Number.isFinite(b.f0) && Math.abs(12 * Math.log2(b.f0 / a.f0)) >= 1) d.push(`평균 높이 ${12 * Math.log2(b.f0 / a.f0) > 0 ? '+' : ''}${(12 * Math.log2(b.f0 / a.f0)).toFixed(1)}반음`);
+    $('takeNote').textContent = d.length ? `방금 테이크는 바로 전 테이크보다: ${d.join(' · ')}` : '방금 테이크는 바로 전 테이크와 숫자상 비슷해요. 감정을 더 크게 바꿔 보세요.';
+  } else $('takeNote').textContent = '☆를 눌러 베스트 테이크를 고르면 장면 듣기와 WAV 저장에 그 테이크가 쓰여요. 고르지 않으면 가장 최근 테이크가 쓰여요.';
+}
+function drawSpark(cv, c) {
+  if (!cv) return; const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = r.width * d; cv.height = r.height * d;
+  const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); const W = r.width, H = r.height, v = c.filter(x => x != null);
+  if (v.length < 3) return; const lo = Math.min(...v) - 1, hi = Math.max(...v) + 1;
+  g.strokeStyle = css('--imi'); g.lineWidth = 1.6; g.beginPath(); let pen = false;
+  c.forEach((y, i) => { if (y == null) { pen = false; return; } const X = i / (c.length - 1) * W, Y = H - (y - lo) / (hi - lo) * H; pen ? g.lineTo(X, Y) : g.moveTo(X, Y); pen = true; }); g.stroke();
+}
+$('takeBody').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return; const id = b.closest('tr').dataset.id, t = takes.find(x => x.id === id); if (!t) return;
+  if (b.dataset.act === 'play') playPcm(toF32(t.pcm));
+  else if (b.dataset.act === 'star') { const on = !t.star; for (const x of lineTakes(t.line)) if (x.star) { x.star = false; await DB.put(x); } t.star = on; await DB.put(t); renderList(); renderTakes(); }
+  else if (b.dataset.act === 'del') {
+    if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '삭제'; }, 3000); return; }
+    await DB.del(id); takes = takes.filter(x => x.id !== id); renderList(); renderPrompt(); renderTakes();
+  }
+});
+
+// ---------- 원본 대사 ----------
+$('refFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; const l = lines[idx]; if (!f || !l) return;
+  $('refMsg').textContent = `「${f.name}」 불러오는 중…`;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const ab = await f.arrayBuffer(), buf = await new Promise((res, rej) => { const p = actx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); });
+    const dur = Math.min(buf.duration, 20), off = new OfflineAudioContext(1, Math.ceil(dur * RATE), RATE), s = off.createBufferSource(); s.buffer = buf; s.connect(off.destination); s.start();
+    let x = Float32Array.from((await off.startRendering()).getChannelData(0)); x = trim(x);
+    let pk = 0; for (const v of x) pk = Math.max(pk, Math.abs(v)); if (pk > 0 && pk < 0.3) for (let i = 0; i < x.length; i++) x[i] *= 0.3 / pk;
+    const key = curScript().id + ':' + l.i; await DB.putRef({ key, name: f.name, pcm: toI16(x) }); refCache.delete(key);
+    for (const t of lineTakes(l.i)) { t.sync = syncScore(x, toF32(t.pcm)); await DB.put(t); }
+    renderTakes();
+  } catch (_) { $('refMsg').innerHTML = '<span class="err">파일을 읽지 못했어요. mp3, m4a, wav로 올려 주세요.</span>'; }
+});
+$('refPlay').addEventListener('click', async () => { const r = await getRef(lines[idx].i); if (r) playPcm(r.x); });
+$('refDel').addEventListener('click', async () => { const key = curScript().id + ':' + lines[idx].i; await DB.delRef(key); refCache.delete(key); renderTakes(); });
+
+// ---------- 재생 / TTS ----------
+let playing = null;
+function playPcm(x) {
+  return new Promise(res => {
+    try {
+      stopPlay(); actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
+      const b = actx.createBuffer(1, x.length, RATE); b.copyToChannel(x, 0); const n = actx.createBufferSource(); n.buffer = b; n.connect(actx.destination); n.onended = () => { if (playing === n) playing = null; res(); }; n.start(); playing = n;
+    } catch (_) { res(); }
+  });
+}
+function stopPlay() { if (playing) { try { playing.stop(); } catch (_) {} playing = null; } if (window.speechSynthesis) speechSynthesis.cancel(); }
+$('playBest').addEventListener('click', () => { const t = bestTake(lines[idx].i); if (t) playPcm(toF32(t.pcm)); });
+let koVoice = null;
+function pickVoice() { if (!window.speechSynthesis) return; const vs = speechSynthesis.getVoices(); koVoice = vs.find(v => /ko(-|_)?KR/i.test(v.lang)) || vs.find(v => /^ko/i.test(v.lang)) || null; }
+if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text, role) {
+  return new Promise(res => {
+    if (!$('ttsOn').checked || !window.speechSynthesis) { setTimeout(res, Math.min(4000, 300 + text.length * 120)); return; }
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; if (koVoice) u.voice = koVoice;
+    const roles = [...new Set(lines.map(l => l.role).filter(r => r && r !== myRole()))], k = Math.max(0, roles.indexOf(role));
+    u.pitch = [1.0, 0.8, 1.2, 0.9][k % 4]; u.rate = 1.05;
+    let done = false; const fin = () => { if (!done) { done = true; res(); } };
+    u.onend = fin; u.onerror = fin; setTimeout(fin, 3000 + text.length * 250);
+    speechSynthesis.speak(u);
+  });
+}
+
+// ---------- 장면 연습 / 장면 듣기 ----------
+let scene = null;
+function sceneUI(on, label) {
+  $('runScene').hidden = on; $('playScene').hidden = on; $('exportWav').hidden = on; $('stopScene').hidden = !on;
+  $('sceneMsg').textContent = label || '장면 연습: 현재 줄부터 상대역은 읽어 주고, 내 차례가 오면 자동으로 녹음을 시작해요. 말을 마치고 1.3초 조용하면 다음 줄로 넘어가요.';
+}
+$('runScene').addEventListener('click', async () => {
+  if (!lines.length || !(await ensureMic())) return;
+  scene = { mode: 'rehearse', token: Math.random() }; sceneUI(true, '장면 연습 중… 내 차례에는 자동으로 녹음돼요.'); sceneStep();
+});
+async function sceneStep() {
+  if (!scene) return; const tk = scene.token, l = lines[idx];
+  renderList(); renderPrompt();
+  if (!isMine(l)) { await speak(l.text, l.role); if (scene && scene.token === tk) sceneNext(); }
+  else { await new Promise(r => setTimeout(r, 250)); if (scene && scene.token === tk) startRec(true); }
+}
+function sceneNext() {
+  if (!scene) return;
+  if (idx >= lines.length - 1) { endScene('장면 끝! 줄마다 테이크를 비교하고 ☆로 베스트를 골라 보세요.'); return; }
+  idx++; renderTakes(); sceneStep();
+}
+function endScene(msg) { const was = scene; scene = null; if (rec) stopRec(); stopPlay(); sceneUI(false, msg); renderList(); renderPrompt(); renderTakes(); }
+$('stopScene').addEventListener('click', () => endScene('멈췄어요.'));
+$('playScene').addEventListener('click', async () => {
+  if (!lines.length) return;
+  scene = { mode: 'play', token: Math.random() }; const tk = scene.token; sceneUI(true, '장면을 들려 드리는 중… (내 대사는 베스트 테이크)');
+  for (let k = 0; k < lines.length; k++) {
+    if (!scene || scene.token !== tk) return;
+    idx = k; renderList(); renderPrompt();
+    const l = lines[k];
+    if (isMine(l)) { const t = bestTake(l.i); if (t) await playPcm(toF32(t.pcm)); else await speak(`(${l.text})`, ''); }
+    else await speak(l.text, l.role);
+    await new Promise(r => setTimeout(r, 250));
+  }
+  if (scene && scene.token === tk) endScene('장면 듣기 끝.');
+});
+$('exportWav').addEventListener('click', () => {
+  const parts = lines.filter(isMine).map(l => bestTake(l.i)).filter(Boolean).map(t => toF32(t.pcm));
+  if (!parts.length) { $('sceneMsg').textContent = '저장할 내 대사 테이크가 없어요.'; return; }
+  const gap = Math.round(RATE * 0.6), len = parts.reduce((a, p) => a + p.length + gap, 0), all = new Float32Array(len); let o = 0;
+  for (const p of parts) { all.set(p, o); o += p.length + gap; }
+  const buf = new ArrayBuffer(44 + len * 2), v = new DataView(buf), w = (p, s) => { for (let i = 0; i < s.length; i++) v.setUint8(p + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + len * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, RATE, true); v.setUint32(28, RATE * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, len * 2, true);
+  for (let i = 0; i < len; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, all[i])) * 32767, true);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })); a.download = `${curScript().title.replace(/[\\/:*?"<>|]/g, '')}-내대사.wav`; document.body.appendChild(a); a.click(); a.remove();
+  $('sceneMsg').textContent = `내 대사 ${parts.length}줄을 WAV 파일로 저장했어요.`;
+});
+
+// ---------- 단축키 ----------
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); if (scene && scene.mode === 'rehearse') { if (rec) stopRec(); return; } if (!lines[idx] || !isMine(lines[idx])) return; rec ? stopRec() : startRec(false); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+  else if (e.key === 'p' || e.key === 'P') { const t = lines[idx] && bestTake(lines[idx].i); if (t) playPcm(toF32(t.pcm)); }
+});
+
+loadScript();
+})();
+</script>
+</body>
+</html>

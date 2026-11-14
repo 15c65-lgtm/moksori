@@ -365,3 +365,47 @@ a.ch-home:hover { border-color: var(--imi); }
 @media (max-width: 700px) { .sup-run { grid-template-columns: 1fr; } }
 .sup-live { display: grid; gap: 6px; }
 canvas.sup-cv { width: 100%; height: 170px; display: block; margin: 6px 0 10px; }
+
+/* ---- 대본 연습 ---- */
+.sc-top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 16px; }
+.sc-top select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; max-width: 220px; }
+.sc-edit { display: grid; gap: 10px; }
+.sc-edit[hidden] { display: none; }
+.sc-edit input, .sc-edit textarea { font: inherit; font-size: 14.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; }
+.sc-edit textarea { font-family: var(--font-body); line-height: 1.7; resize: vertical; }
+.sc-main { display: grid; grid-template-columns: 1fr 1.25fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .sc-main { grid-template-columns: 1fr; } }
+.sc-list-wrap { display: grid; gap: 8px; }
+.sc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 470px; overflow-y: auto; }
+.sc-li { display: grid; grid-template-columns: 64px 1fr 34px; gap: 8px; align-items: baseline; padding: 7px 8px; border-radius: 6px; font-size: 14px; cursor: pointer; color: var(--muted); }
+.sc-li:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.sc-li.mine { color: var(--ink); }
+.sc-li.on { background: color-mix(in srgb, var(--imi) 10%, transparent); box-shadow: inset 3px 0 0 var(--imi); }
+.sc-li.dir { display: block; cursor: default; font-size: 12.5px; font-style: italic; color: var(--muted); padding-left: 80px; }
+.sc-role { font-weight: 700; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-li.mine .sc-role { color: var(--imi); }
+.sc-txt em { font-style: normal; color: var(--muted); font-size: 12.5px; }
+.sc-n { font-family: var(--font-mono); font-size: 12px; text-align: right; color: var(--muted); }
+.sc-right { display: grid; gap: 16px; }
+.sc-prompt { display: grid; gap: 10px; border-top: 4px solid var(--imi); }
+.sc-pos { display: flex; justify-content: space-between; align-items: center; }
+.sc-prev, .sc-next { font-size: 13.5px; color: var(--muted); }
+.sc-dir { font-size: 13.5px; color: var(--warn); font-weight: 500; min-height: 1.2em; }
+.sc-line { font-family: var(--font-display); font-size: clamp(24px, 3.4vw, 34px); line-height: 1.35; text-wrap: balance; }
+.sc-line.partner { color: var(--muted); }
+.sc-ctl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sc-rec { padding: 10px 20px; font-size: 15px; }
+.sc-rec.on { background: var(--imi); border-color: var(--imi); animation: blink 1.2s steps(2, start) infinite; }
+.sc-scene { display: grid; gap: 8px; }
+.sc-scene-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.sc-scene-btns button[hidden] { display: none; }
+.sc-takes td small { color: var(--muted); font-size: 11px; margin-left: 2px; }
+.sc-takes canvas.spark { width: 110px; height: 26px; display: block; }
+.sc-takes .star { border: 0; background: none; font-size: 18px; padding: 0 4px; color: var(--warn); cursor: pointer; }
+.sc-takes tr.best td { background: color-mix(in srgb, var(--warn) 8%, transparent); }
+.sc-acts { display: flex; gap: 6px; justify-content: flex-end; }
+.sc-acts button { font-size: 12.5px; padding: 4px 9px; }
+#refPlay[hidden], #refDel[hidden], #thSync[hidden], #edDel[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .sc-rec.on { animation: none; } }
+.wrap > *, .sc-main > *, .sc-right > * { min-width: 0; }
+.panel, .wrap :where(section, div, details, ol, ul) { min-width: 0; }
