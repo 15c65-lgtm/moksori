@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611140938">
+<link rel="stylesheet" href="assets/style.css?v=202611141003">
 </head>
 <body>
 <div class="wrap">
@@ -74,6 +74,29 @@
     </div>
   </section>
 
+  <section class="panel" id="supSec">
+    <div class="chart-head">
+      <h2>지지 음역대 분석</h2>
+      <div class="sup-ctl">
+        <label class="ym-field">시작 음 <select id="supStart"></select></label>
+        <label class="ym-field">간격 <select id="supStep"><option value="2">온음 (빠르게)</option><option value="1">반음 (자세히)</option></select></label>
+        <button type="button" class="primary-sm" id="supBtn">테스트 시작</button>
+      </div>
+    </div>
+    <p class="cap" style="margin-top:0">호흡 지지를 유지한 채 안정적으로 낼 수 있는 음의 범위를 찾아요. 기준음이 나오면 같은 음을 <b>"아~"로 3초</b> 유지하세요. 음정이 맞는지, 흔들리지 않는지, 끝에서 처지거나 작아지지 않는지, 중간에 뒤집히거나 숨이 새지 않는지를 봐요. 시작 음에서 위로 올라가다 두 음 연속으로 안 되면 아래로 내려가요.</p>
+    <div class="sup-run" id="supRun" hidden>
+      <div class="sup-note"><div class="ym-lab" id="supPhase">준비</div><div class="rg-note" id="supNote">–</div><div class="ym-sub" id="supDir"></div></div>
+      <div class="sup-live">
+        <div class="ym-lab">음정</div><canvas id="supTuner" class="rg-tuner-cv"></canvas>
+        <div class="lvl wide"><i id="supBar" style="width:0%"></i></div>
+        <div class="ym-sub" id="supLive"></div>
+      </div>
+      <button type="button" id="supStop">그만하기</button>
+    </div>
+    <canvas id="supCv" class="sup-cv"></canvas>
+    <ol class="coach-list" id="supRes"></ol>
+  </section>
+
   <section class="ym-two">
     <div class="panel">
       <h2>결과</h2>
@@ -99,7 +122,7 @@
   <section class="panel">
     <div class="chart-head"><h2>음역 기록</h2><button type="button" id="clearHist">기록 지우기</button></div>
     <canvas id="histCv" class="rg-hist"></canvas>
-    <div class="histwrap"><table class="hist"><thead><tr><th>날짜</th><th>최저음</th><th>진성 최고</th><th>가성 최고</th><th>전체 음역</th><th>말하는 음높이</th></tr></thead><tbody id="histBody"></tbody></table></div>
+    <div class="histwrap"><table class="hist"><thead><tr><th>날짜</th><th>최저음</th><th>진성 최고</th><th>가성 최고</th><th>전체 음역</th><th>지지 음역</th><th>말하는 음높이</th></tr></thead><tbody id="histBody"></tbody></table></div>
   </section>
 
   <section class="panel">
@@ -108,7 +131,7 @@
       <div><b>목을 먼저 풀기</b>입술 떨기("부르르")나 허밍으로 2~3분 풀고 재면 실제 음역이 나와요. 아침보다 오후가 보통 넓게 나와요.</div>
       <div><b>최고음은 "편하게 낼 수 있는" 음</b>소리를 지르거나 목을 조여서 겨우 닿은 음은 연습용 음역이 아니에요. 같은 음을 3초 유지할 수 있는 곳까지가 좋아요.</div>
       <div><b>성종은 참고만</b>성종(베이스·테너 등)은 음역 말고도 음색과 편한 구간으로 정해요. 여기서는 음역만 보고 가장 가까운 걸 짚어 줘요.</div>
-      <div><b>여목과의 관계</b>여목 목표 음역이 진성·믹스로 닿는 범위 안에 있는지가 중요해요. 해석 칸에서 바로 알려 줘요.</div>
+      <div><b>지지 음역대란</b>소리를 낼 수만 있는 음역이 아니라, 호흡 지지를 유지한 채 흔들림 없이 끝까지 낼 수 있는 음의 범위예요. 노래나 연기에서 실제로 믿고 쓰는 구간이에요.</div>
     </div>
   </section>
 </div>
@@ -121,9 +144,6 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 const KEY = 'moksori.range';
 let S = { results: [], style: 'sci' }; try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} };
-let YM = {}; try { YM = JSON.parse(localStorage.getItem('moksori.yeomok') || '{}'); } catch (_) {}
-const target = (YM.target) || { fmin: 165, fmax: 255 };
-const calA = (YM.calib && YM.calib.a) || {};
 const med = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
 
@@ -132,16 +152,16 @@ const EN = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'], KO
 const midiOf = f => 69 + 12 * Math.log2(f / 440), hzOf = m => 440 * 2 ** ((m - 69) / 12);
 const nm = m => { m = Math.round(m); return (S.style === 'ko' ? KO : EN)[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); };
 $('nameStyle').value = S.style;
-$('nameStyle').addEventListener('change', () => { S.style = $('nameStyle').value; save(); renderAll(); });
+$('nameStyle').addEventListener('change', () => { S.style = $('nameStyle').value; save(); fillSupStart(); renderAll(); renderSup(); });
 const isBlack = m => [1, 3, 6, 8, 10].includes(((m % 12) + 12) % 12);
 const LO = 36, HI = 84; // C2 ~ C6
 
-// ---- 진성·가성 판단 (여목 연습의 '아' 기준 녹음이 있으면 사용) ----
-const M0 = calA.modal ? calA.modal.h1h2 : 4, F0v = calA.fals ? calA.fals.h1h2 : 14;
+// ---- 진성·가성 대략 판단 (H1-H2) ----
+const M0 = 4, F0v = 14;
 const regPos = h => (h - M0) / Math.max(3, F0v - M0);
 
 // ---- 현재 측정 결과 ----
-const cur = { low: null, chest: null, fals: null, speak: null, dwell: {} };
+const cur = { low: null, chest: null, fals: null, speak: null, sup: null, dwell: {} };
 
 // ---- 마이크 ----
 let actx = null, mic = null, floorDb = -60, recent = [], step = null, refNote = null;
@@ -174,6 +194,7 @@ function onFrame(fr) {
   floorDb = Math.min(floorDb + 0.03, fr.db);
   const now = performance.now();
   const voiced = fr.f0 >= 55 && fr.f0 <= 1100 && fr.db > floorDb + 12;
+  if (sup && sup.phase === 'go') sup.frames.push({ t: now, v: voiced && fr.clarity > 0.5, m: voiced ? midiOf(fr.f0) : NaN, db: fr.db, cpp: fr.cpp, hr: fr.h1h2raw });
   if (!voiced) { if (recent.length && now - recent[recent.length - 1].t > 250) recent = []; return; }
   const m = midiOf(fr.f0);
   recent.push({ t: now, m, clar: fr.clarity, h: fr.h1h2, hr: fr.h1h2raw, f: fr.f0 }); if (recent.length > 12) recent.shift();
@@ -246,6 +267,7 @@ function loop() {
       if (el >= 12) endStep();
     }
     if (game) gameTick();
+    if (sup) supTick();
     if (mic) raf = requestAnimationFrame(f);
   };
   raf = requestAnimationFrame(f);
@@ -308,10 +330,14 @@ function drawKb() {
   if (cur.fals) bar(cur.chest ? cur.chest.m : cur.fals.m - 0.5, cur.fals.m, 30, '--warn', '');
   if (cur.fals) { g.fillStyle = css('--warn'); g.textAlign = 'right'; g.textBaseline = 'bottom'; g.fillText(`가성 ~${nm(cur.fals.m)}`, Math.min(W - 2, cx(cur.fals.m) + 4), 28); }
   if (cur.low && !cur.chest) { g.fillStyle = css('--ref'); g.beginPath(); g.arc(cx(cur.low.m), 34, 5, 0, 7); g.fill(); g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(`최저 ${nm(cur.low.m)}`, cx(cur.low.m) + 8, 30); }
-  // 여목 목표, 말하는 음높이 (건반 아래)
-  const ty = top + kh + 6, a = midiOf(target.fmin), b = midiOf(target.fmax);
-  g.strokeStyle = css('--imi'); g.lineWidth = 2; g.beginPath(); g.moveTo(cx(a), ty); g.lineTo(cx(a), ty + 8); g.lineTo(cx(b), ty + 8); g.lineTo(cx(b), ty); g.stroke();
-  g.fillStyle = css('--imi'); g.font = '11px ' + css('--font-body'); g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText('여목 목표', cx(b) + 6, ty);
+  // 지지 음역대 (건반 아래), 말하는 음높이
+  const ty = top + kh + 6;
+  g.font = '11px ' + css('--font-body');
+  if (cur.sup && cur.sup.lo != null) {
+    g.fillStyle = css('--good'); g.fillRect(cx(cur.sup.lo) - 4, ty, Math.max(8, cx(cur.sup.hi) - cx(cur.sup.lo) + 8), 8);
+    g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText(`지지 음역 ${nm(cur.sup.lo)}–${nm(cur.sup.hi)}`, Math.min(cx(cur.sup.hi) + 10, W - 110), ty - 1);
+  }
+  if (cur.sup) for (const n of cur.sup.notes) { g.fillStyle = css(n.score >= 70 ? '--good' : n.score >= 50 ? '--warn' : '--bad'); g.beginPath(); g.arc(cx(n.m), ty + 4, 3, 0, 7); g.fill(); }
   if (cur.speak) { const s = midiOf(cur.speak.hz); g.fillStyle = css('--good'); g.beginPath(); g.moveTo(cx(s), ty); g.lineTo(cx(s) - 6, ty + 12); g.lineTo(cx(s) + 6, ty + 12); g.fill(); g.textAlign = 'right'; g.fillText('말하기', cx(s) - 8, ty); }
 }
 // 건반 누르면 소리 + 튜너 기준
@@ -337,7 +363,7 @@ function voiceType() {
   for (const [n, lo, hi] of TYPES) { const ov = Math.max(0, Math.min(b, hi) - Math.max(a, lo)), un = Math.max(b, hi) - Math.min(a, lo), s = ov / un; if (!best || s > best.s) best = { n, lo, hi, s }; }
   return best;
 }
-function spanTxt(st) { st = Math.round(st); const o = Math.floor(st / 12), r = st % 12; return `${st}반음 (${o ? o + '옥타브' : ''}${o && r ? ' ' : ''}${r ? r + '반음' : ''})`; }
+function spanTxt(st) { st = Math.round(st); if (st <= 0) return '한 음'; const o = Math.floor(st / 12), r = st % 12; return `${st}반음 (${o ? o + '옥타브' : ''}${o && r ? ' ' : ''}${r ? r + '반음' : ''})`; }
 function renderAll() {
   const v = x => x ? `${nm(x.m)} <small>${Math.round(x.hz)} Hz</small>` : '–';
   $('vLow').innerHTML = v(cur.low); $('vChest').innerHTML = v(cur.chest); $('vFals').innerHTML = v(cur.fals);
@@ -349,6 +375,7 @@ function renderRes() {
   const tiles = [
     ['전체 음역', cur.low && top ? spanTxt(top.m - cur.low.m) : '–', cur.low && top ? `${nm(cur.low.m)} ~ ${nm(top.m)}` : '최저음과 최고음을 재면 나와요'],
     ['진성 음역', cur.low && cur.chest ? spanTxt(cur.chest.m - cur.low.m) : '–', cur.low && cur.chest ? `${nm(cur.low.m)} ~ ${nm(cur.chest.m)}` : ''],
+    ['지지 음역대', cur.sup && cur.sup.lo != null ? spanTxt(cur.sup.hi - cur.sup.lo) : '–', cur.sup && cur.sup.lo != null ? `${nm(cur.sup.lo)} ~ ${nm(cur.sup.hi)}` : '지지 음역대 분석을 하면 나와요'],
     ['가장 가까운 성종', vt ? vt.n : '–', vt ? `보통 ${nm(vt.lo)}~${nm(vt.hi)} (참고용)` : '최저음과 진성 최고음이 필요해요'],
     ['말하는 음높이', cur.speak ? `${Math.round(cur.speak.hz)} Hz` : '–', cur.speak ? `${nm(midiOf(cur.speak.hz))}, 진성 음역의 ${cur.low && cur.chest ? Math.round((midiOf(cur.speak.hz) - cur.low.m) / Math.max(1, cur.chest.m - cur.low.m) * 100) + '% 지점' : '–'}` : ''],
   ];
@@ -361,16 +388,9 @@ function renderInterp() {
     const span = cur.chest.m - cur.low.m;
     out.push([`진성 음역 ${Math.round(span)}반음`, span < 14 ? '아직 좁은 편이에요. 목을 충분히 풀고 다시 재면 넓게 나오는 경우가 많아요. 사이렌("우~" 미끄러지기)을 매일 하면 조금씩 넓어져요.' : span < 24 ? '보통 범위예요. 위아래 끝 음을 편하게 유지하는 연습을 하면 쓸 수 있는 구간이 넓어져요.' : '넓은 편이에요. 끝 음은 무리하지 말고 편한 구간을 넓히는 데 집중하세요.', span < 14 ? 'warn' : 'ok']);
   }
-  if (cur.chest) {
-    const tTop = midiOf(target.fmax), tBot = midiOf(target.fmin), gap = cur.chest.m - tTop;
-    if (gap >= 2) out.push([`여목 목표(${Math.round(target.fmin)}~${Math.round(target.fmax)} Hz)가 진성 음역 안에 있어요`, `진성 최고음 ${nm(cur.chest.m)}가 목표 위쪽 끝(${nm(tTop)})보다 ${Math.round(gap)}반음 높아요. 목표 음높이는 가성 없이 닿아요. 무게를 줄이고 공명을 올리는 쪽에 집중하세요.`, 'ok']);
-    else if (cur.chest.m >= tBot) out.push(['여목 목표 위쪽이 진성 끝자락이에요', `진성 최고음(${nm(cur.chest.m)})이 목표 위쪽 끝(${nm(tTop)}) 근처예요. 목표 아래쪽(${nm(tBot)}~)부터 편하게 쓰고, 위쪽은 믹스로 가볍게 내는 연습이 필요해요.`, 'warn']);
-    else out.push(['여목 목표가 진성 최고음보다 높아요', `진성 최고음 ${nm(cur.chest.m)}가 목표 시작(${nm(tBot)})보다 낮아요. 목표를 ${Math.round(hzOf(cur.chest.m - 2))} Hz 근처로 낮춰 시작하거나, 믹스로 위쪽을 넓히는 연습부터 하세요.`, 'warn']);
-  }
-  if (cur.speak) {
-    const s = cur.speak.hz, st = 12 * Math.log2(target.fmin / s);
-    if (st > 0.5) out.push([`지금 말하는 음높이는 ${Math.round(s)} Hz예요`, `여목 목표 시작(${target.fmin} Hz)까지 약 ${st.toFixed(1)}반음 올리면 돼요. 한 번에 2반음 정도씩 올려 익숙해지면 다음 단계로 가세요.`, 'next']);
-    else out.push([`말하는 음높이 ${Math.round(s)} Hz, 목표 안이에요`, '음높이는 됐어요. 이제 여목 연습에서 공명과 진성·가성 위치를 맞춰 보세요.', 'ok']);
+  if (cur.speak && cur.low && cur.chest) {
+    const pos = (midiOf(cur.speak.hz) - cur.low.m) / Math.max(1, cur.chest.m - cur.low.m) * 100;
+    out.push([`말하는 음높이 ${Math.round(cur.speak.hz)} Hz (${nm(midiOf(cur.speak.hz))})`, `진성 음역의 아래에서 ${Math.round(pos)}% 지점이에요. 말할 때는 보통 음역의 아래쪽을 써요. 너무 바닥에 붙어 있으면 목이 쉽게 피곤해질 수 있어요.`, 'next']);
   }
   if (cur.fals && cur.chest) { const d = cur.fals.m - cur.chest.m; out.push([`가성이 진성보다 ${Math.round(d)}반음 더 올라가요`, d > 7 ? '가성 음역이 넓어요. 가성과 진성이 만나는 구간(전환점) 근처를 부드럽게 잇는 연습이 믹스에 도움이 돼요.' : '진성과 가성 최고음 차이가 작아요. 가성은 힘을 완전히 빼고 다시 재 보세요.', 'next']); }
   $('interp').innerHTML = out.map(([t, b, k]) => `<li class="tip-${k === 'ok' ? 'ok' : k === 'start' ? 'start' : k === 'next' ? 'next' : 'pitch'}"><b>${esc(t)}</b><span>${esc(b)}</span></li>`).join('');
@@ -378,34 +398,184 @@ function renderInterp() {
 
 // ---- 기록 ----
 $('saveRes').addEventListener('click', () => {
-  if (!cur.low && !cur.chest && !cur.fals && !cur.speak) { $('saveMsg').textContent = '저장할 측정값이 없어요.'; return; }
-  S.results.push({ at: Date.now(), low: cur.low && cur.low.m, chest: cur.chest && cur.chest.m, fals: cur.fals && cur.fals.m, speak: cur.speak && cur.speak.hz });
+  if (!cur.low && !cur.chest && !cur.fals && !cur.speak && !(cur.sup && cur.sup.lo != null)) { $('saveMsg').textContent = '저장할 측정값이 없어요.'; return; }
+  S.results.push({ at: Date.now(), low: cur.low && cur.low.m, chest: cur.chest && cur.chest.m, fals: cur.fals && cur.fals.m, speak: cur.speak && cur.speak.hz, supLo: cur.sup && cur.sup.lo, supHi: cur.sup && cur.sup.hi });
   S.results = S.results.slice(-100); save(); renderHist(); $('saveMsg').textContent = '기록했어요.';
 });
-$('resetRes').addEventListener('click', () => { cur.low = cur.chest = cur.fals = cur.speak = null; cur.dwell = {}; renderAll(); $('saveMsg').textContent = ''; });
+$('resetRes').addEventListener('click', () => { cur.low = cur.chest = cur.fals = cur.speak = null; cur.sup = null; cur.dwell = {}; renderSup(); renderAll(); $('saveMsg').textContent = ''; });
 $('clearHist').addEventListener('click', () => { S.results = []; save(); renderHist(); });
 function renderHist() {
   const r = S.results.slice().reverse(), p = n => String(n).padStart(2, '0'), f = m => m == null ? '–' : nm(m);
-  $('histBody').innerHTML = r.length ? r.slice(0, 30).map(x => { const d = new Date(x.at), top = x.fals != null ? x.fals : x.chest; return `<tr><td>${d.getMonth() + 1}.${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</td><td>${f(x.low)}</td><td>${f(x.chest)}</td><td>${f(x.fals)}</td><td>${x.low != null && top != null ? Math.round(top - x.low) + '반음' : '–'}</td><td>${x.speak ? Math.round(x.speak) + ' Hz' : '–'}</td></tr>`; }).join('')
-    : '<tr><td colspan="6" style="text-align:left;color:var(--muted)">아직 기록이 없어요. 측정 후 「이 결과 기록하기」를 누르세요.</td></tr>';
+  $('histBody').innerHTML = r.length ? r.slice(0, 30).map(x => { const d = new Date(x.at), top = x.fals != null ? x.fals : x.chest; return `<tr><td>${d.getMonth() + 1}.${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</td><td>${f(x.low)}</td><td>${f(x.chest)}</td><td>${f(x.fals)}</td><td>${x.low != null && top != null ? Math.round(top - x.low) + '반음' : '–'}</td><td>${x.supLo != null ? `${f(x.supLo)}–${f(x.supHi)}` : '–'}</td><td>${x.speak ? Math.round(x.speak) + ' Hz' : '–'}</td></tr>`; }).join('')
+    : '<tr><td colspan="7" style="text-align:left;color:var(--muted)">아직 기록이 없어요. 측정 후 「이 결과 기록하기」를 누르세요.</td></tr>';
   drawHist();
 }
 function drawHist() {
   const [g, W, H] = fit($('histCv')); g.clearRect(0, 0, W, H);
   const r = S.results.slice(-20); const L = 46, R = 10, T = 10, B = 24;
   if (!r.length) { g.fillStyle = css('--muted'); g.font = '13px ' + css('--font-body'); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('기록이 쌓이면 날짜별 음역 막대가 그려져요', W / 2, H / 2); return; }
-  const vals = r.flatMap(x => [x.low, x.chest, x.fals, x.speak && midiOf(x.speak)]).filter(v => v != null);
+  const vals = r.flatMap(x => [x.low, x.chest, x.fals, x.supLo, x.supHi, x.speak && midiOf(x.speak)]).filter(v => v != null);
   const lo = Math.floor(Math.min(...vals) - 2), hi = Math.ceil(Math.max(...vals) + 2);
   const Y = m => T + (hi - m) / (hi - lo) * (H - T - B), bw = Math.min(28, (W - L - R) / r.length * 0.5), X = i => L + (i + 0.5) * (W - L - R) / r.length;
   g.font = '11px ' + css('--font-mono'); g.textAlign = 'right'; g.textBaseline = 'middle';
   for (let m = Math.ceil(lo / 12) * 12; m <= hi; m += 12) { g.strokeStyle = css('--line'); g.beginPath(); g.moveTo(L, Y(m)); g.lineTo(W - R, Y(m)); g.stroke(); g.fillStyle = css('--muted'); g.fillText(nm(m), L - 6, Y(m)); }
-  const t0 = midiOf(target.fmin), t1 = midiOf(target.fmax); g.fillStyle = css('--imi'); g.globalAlpha = 0.08; g.fillRect(L, Y(t1), W - L - R, Y(t0) - Y(t1)); g.globalAlpha = 1;
   r.forEach((x, i) => {
     if (x.low != null && x.chest != null) { g.fillStyle = css('--ref'); g.fillRect(X(i) - bw / 2, Y(x.chest), bw, Y(x.low) - Y(x.chest)); }
     if (x.fals != null) { const from = x.chest != null ? x.chest : x.fals - 1; g.fillStyle = css('--warn'); g.fillRect(X(i) - bw / 2, Y(x.fals), bw, Y(from) - Y(x.fals)); }
+    if (x.supLo != null) { g.fillStyle = css('--good'); g.fillRect(X(i) + bw / 2 + 2, Y(x.supHi), 5, Y(x.supLo) - Y(x.supHi)); }
     if (x.speak) { g.fillStyle = css('--good'); g.beginPath(); g.arc(X(i), Y(midiOf(x.speak)), 4, 0, 7); g.fill(); }
     const d = new Date(x.at); g.fillStyle = css('--muted'); g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(`${d.getMonth() + 1}/${d.getDate()}`, X(i), H - B + 6);
   });
+}
+
+// ---- 지지 음역대 분석 ----
+let sup = null;
+function fillSupStart() {
+  const opts = ['<option value="auto">자동 (말하는 음높이 근처)</option>'];
+  for (let m = LO; m <= HI; m++) opts.push(`<option value="${m}">${nm(m)} (${Math.round(hzOf(m))} Hz)</option>`);
+  const keep = $('supStart').value; $('supStart').innerHTML = opts.join(''); if (keep) $('supStart').value = keep;
+}
+function autoStart() {
+  if (refNote != null) return refNote;
+  if (cur.speak) return Math.round(midiOf(cur.speak.hz)) + 2;
+  if (cur.low && cur.chest) return Math.round(cur.low.m + (cur.chest.m - cur.low.m) * 0.35);
+  return 50; // D3
+}
+$('supBtn').addEventListener('click', async () => {
+  if (!(await startMic())) return;
+  if (step) endStep();
+  const s = $('supStart').value === 'auto' ? autoStart() : +$('supStart').value;
+  sup = { start: s, step: +$('supStep').value, dir: 1, note: s, fails: 0, results: [], phase: 'tone', t: performance.now(), frames: [] };
+  cur.sup = { lo: null, hi: null, notes: [] };
+  $('supRun').hidden = false; $('supBtn').disabled = true; $('supRes').innerHTML = '';
+  playNote(s, 1.0); refNote = s;
+  $('supRun').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+$('supStop').addEventListener('click', () => { if (sup) finishSup(true); });
+const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+function linfit(xs, ys) { const n = xs.length, mx = mean(xs), my = mean(ys); let sxy = 0, sxx = 0; for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; } const b = sxx ? sxy / sxx : 0; return { b, a: my - b * mx, res: ys.map((y, i) => y - (my + b * (xs[i] - mx))) }; }
+const sd = a => { const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
+// 한 음 평가: 시작 0.4초 뺀 나머지로 6가지 확인
+function judgeNote(target, frames, onset) {
+  const w = frames.filter(f => f.t >= onset + 400 && f.t <= onset + 3000);
+  if (w.length < 20) return { score: 0, why: ['소리가 짧았어요'], main: '소리 없음' };
+  const v = w.filter(f => f.v && Number.isFinite(f.m)), vf = v.length / w.length;
+  if (v.length < 15) return { score: 0, why: ['소리가 끊기거나 너무 작았어요'], main: '소리 끊김' };
+  const cents = v.map(f => (f.m - target) * 100), err = med(cents);
+  // 비브라토(초당 5~7번 떨림)는 지지된 소리라 감점하지 않도록 0.2초 이동평균 후 흔들림 계산
+  const dtMs = med(v.slice(1).map((f, i) => f.t - v[i].t)) || 43, k = Math.max(1, Math.round(100 / dtMs)); // 약 0.2초 창: 비브라토 한 주기만 평균
+  const smooth = cents.map((_, i) => mean(cents.slice(Math.max(0, i - k), i + k + 1)));
+  const stab = sd(smooth.slice(k, -k).length > 5 ? smooth.slice(k, -k) : smooth);
+  const n = v.length, head = med(cents.slice(0, Math.max(3, Math.floor(n * 0.25)))), tail = med(cents.slice(Math.floor(n * 0.75)));
+  const drift = tail - head;
+  const ts = v.map(f => (f.t - v[0].t) / 1000), fit = linfit(ts, v.map(f => f.db)), slope = fit.b, dbsd = sd(fit.res);
+  const hr = v.map(f => f.hr).filter(Number.isFinite), flip = hr.length > 10 ? Math.abs(med(hr.slice(Math.floor(hr.length * 0.6))) - med(hr.slice(0, Math.floor(hr.length * 0.4)))) : 0;
+  const cp = v.map(f => f.cpp).filter(Number.isFinite), leak = cp.length > 10 ? med(cp.slice(Math.floor(cp.length * 0.67))) / Math.max(0.05, med(cp.slice(0, Math.floor(cp.length * 0.33)))) : 1;
+  let score = 100; const why = [];
+  const pen = (cond, p, msg) => { if (cond > 0) { score -= p; why.push(msg); } };
+  pen(Math.abs(err) - 20, Math.max(0, Math.abs(err) - 20) * 0.8, `음이 ${Math.round(Math.abs(err))}센트 ${err > 0 ? '높아요' : '낮아요'}`);
+  pen(stab - 10, Math.max(0, stab - 10) * 3, `음이 흔들려요 (${Math.round(stab)}센트)`);
+  pen(Math.abs(drift) - 15, Math.max(0, Math.abs(drift) - 15) * 0.8, drift < 0 ? `끝으로 갈수록 음이 처져요 (${Math.round(drift)}센트)` : `끝으로 갈수록 음이 올라가요 (+${Math.round(drift)}센트)`);
+  pen(-slope - 1.5, Math.max(0, -slope - 1.5) * 10, `소리가 점점 작아져요 (초당 ${(-slope).toFixed(1)} dB)`);
+  pen(dbsd - 1.5, Math.max(0, dbsd - 1.5) * 8, `소리 크기가 흔들려요`);
+  pen(0.95 - vf, Math.max(0, 0.95 - vf) * 200, `중간에 소리가 끊겨요`);
+  pen(flip - 6, 35, '중간에 소리가 뒤집혔어요 (진성↔가성)');
+  pen(0.6 - leak, 32, '끝으로 갈수록 숨이 새요');
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  if (Math.abs(err) > 50) score = Math.min(score, 45);
+  return { score, why, err, stab, drift, slope, dbsd, vf, flip, leak, reg: hr.length ? regPos(med(hr)) : NaN };
+}
+function supTick() {
+  const S_ = sup, now = performance.now();
+  $('supNote').textContent = nm(S_.note); $('supDir').textContent = `${S_.dir > 0 ? '위로 ↑' : '아래로 ↓'} · ${S_.results.length + 1}번째 음 · ${Math.round(hzOf(S_.note))} Hz`;
+  if (S_.phase === 'tone') {
+    $('supPhase').textContent = '기준음 듣기'; $('supLive').textContent = '이 음을 기억하세요';
+    if (now - S_.t > 1300) { S_.phase = 'go'; S_.t = now; S_.frames = []; S_.onset = null; }
+  } else if (S_.phase === 'go') {
+    if (S_.onset == null) { const f = S_.frames.find(x => x.v); if (f) S_.onset = f.t; }
+    const el = S_.onset == null ? 0 : (now - S_.onset) / 1000;
+    $('supPhase').textContent = S_.onset == null ? '"아~" 시작하세요' : '유지하세요';
+    $('supBar').style.width = Math.min(100, el / 3 * 100) + '%';
+    const lv = S_.frames.slice(-6).filter(f => f.v);
+    if (lv.length >= 3) { const c = (med(lv.map(f => f.m)) - S_.note) * 100; $('supLive').textContent = `${c > 0 ? '+' : ''}${Math.round(c)}센트 · ${el.toFixed(1)} / 3초`; drawSupTuner(c); }
+    if ((S_.onset != null && el >= 3) || (S_.onset == null && now - S_.t > 6000)) {
+      const r = S_.onset == null ? { score: 0, why: ['소리가 들리지 않았어요'] } : judgeNote(S_.note, S_.frames, S_.onset);
+      r.m = S_.note; S_.results.push(r); cur.sup.notes.push({ m: S_.note, score: r.score });
+      S_.fails = r.score >= 70 ? 0 : S_.fails + 1;
+      S_.phase = 'rest'; S_.t = now; $('supPhase').textContent = r.score >= 70 ? `✓ ${r.score}점 지지됨` : r.score >= 50 ? `△ ${r.score}점 아슬아슬` : `✗ ${r.score}점`;
+      $('supLive').textContent = r.why.length ? r.why.slice(0, 2).join(' · ') : '음정·크기·음색 모두 안정적이에요';
+      renderSup(); drawKb();
+    }
+  } else if (S_.phase === 'rest') {
+    if (now - S_.t > 1600) {
+      let next = S_.note + S_.dir * S_.step;
+      const done = S_.fails >= 2 || next > HI || next < LO;
+      if (done && S_.dir > 0) { S_.dir = -1; S_.fails = 0; next = S_.start - S_.step; if (next < LO) return finishSup(); }
+      else if (done) return finishSup();
+      S_.note = next; S_.phase = 'tone'; S_.t = now; refNote = next; playNote(next, 1.0);
+    }
+  }
+}
+function drawSupTuner(c) {
+  const [g, W, H] = fit($('supTuner')); g.clearRect(0, 0, W, H);
+  g.fillStyle = css('--good'); g.globalAlpha = 0.15; g.fillRect(W / 2 - W * 0.2, 0, W * 0.4, H); g.globalAlpha = 1;
+  const x = W / 2 + Math.max(-100, Math.min(100, c)) / 100 * (W / 2 - 6);
+  g.strokeStyle = css(Math.abs(c) <= 20 ? '--good' : Math.abs(c) <= 50 ? '--warn' : '--bad'); g.lineWidth = 4; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, 4); g.lineTo(x, H - 2); g.stroke();
+}
+function finishSup(stopped) {
+  const S_ = sup; sup = null; refNote = null;
+  $('supRun').hidden = true; $('supBtn').disabled = false;
+  // 시작 음을 포함해 이어지는 '지지됨(70점 이상)' 구간
+  const byM = new Map(S_.results.map(r => [r.m, r])), ok = m => byM.has(m) && byM.get(m).score >= 70;
+  let lo = null, hi = null;
+  if (ok(S_.start)) { lo = hi = S_.start; while (ok(hi + S_.step)) hi += S_.step; while (ok(lo - S_.step)) lo -= S_.step; }
+  else { const okNotes = S_.results.filter(r => r.score >= 70).map(r => r.m).sort((a, b) => a - b); if (okNotes.length) { lo = okNotes[0]; hi = okNotes[okNotes.length - 1]; } }
+  cur.sup = { lo, hi, notes: S_.results.map(r => ({ m: r.m, score: r.score })), results: S_.results, step: S_.step, stopped: !!stopped };
+  renderSup(); renderAll();
+}
+function renderSup() {
+  drawSupChart();
+  const s = cur.sup;
+  if (!s || !s.results) { if (!s) $('supRes').innerHTML = ''; return; }
+  const out = [], esc = x => String(x).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  if (s.lo == null) out.push(['지지된 음을 찾지 못했어요', '시작 음이 너무 높거나 낮았을 수 있어요. 시작 음을 말하는 높이 근처로 정하고, 기준음이 끝나면 바로 편하게 "아~"를 3초 유지해 보세요.', 'pitch']);
+  else {
+    const span = s.hi - s.lo, top = cur.fals || cur.chest;
+    out.push([span ? `지지 음역대 ${nm(s.lo)} ~ ${nm(s.hi)} (${span}반음)` : `지지된 음은 ${nm(s.lo)} 한 음이에요`, `${cur.low && top ? `전체 음역 ${nm(cur.low.m)}~${nm(top.m)} 중 ${Math.round(span / Math.max(1, top.m - cur.low.m) * 100)}%를 안정적으로 써요. ` : ''}${s.step === 2 ? '온음 간격이라 경계가 ±1반음 정도 오차가 있어요. 경계 근처를 반음 간격으로 다시 재면 더 정확해요.' : ''}`, 'ok']);
+    // 경계 바깥 음의 실패 원인 → 조언
+    const edge = s.results.filter(r => r.score < 70 && (r.m > s.hi || r.m < s.lo));
+    const up = edge.filter(r => r.m > s.hi), down = edge.filter(r => r.m < s.lo);
+    const advise = (arr, where) => {
+      if (!arr.length) return;
+      const all = arr.flatMap(r => r.why).join(' ');
+      let tip = '';
+      if (/작아져요|처져요|끊겨요/.test(all)) tip = '숨이 끝까지 버텨 주지 못하는 신호예요. 숨을 배 아래까지 편하게 채우고, 내쉬는 공기를 일정하게 유지하는 연습(스~ 하고 10초 일정하게 내쉬기)을 해 보세요.';
+      else if (/흔들려요|크기가 흔들/.test(all)) tip = '목과 후두에 힘이 들어가 흔들리는 신호예요. 볼륨을 조금 줄이고, 입술 떨기(부르르)로 같은 음을 먼저 낸 다음 "아"로 바꿔 보세요.';
+      else if (/뒤집혔/.test(all)) tip = '진성과 가성 전환점 근처예요. 작게 "우~" 사이렌으로 전환점을 부드럽게 넘는 연습이 도움이 돼요.';
+      else if (/숨이 새요/.test(all)) tip = '끝으로 갈수록 성대가 벌어지는 신호예요. 짧고 또렷하게 "아, 아, 아" 끊어 낸 다음 그 닫힌 느낌으로 길게 이어 보세요.';
+      else if (/높아요|낮아요/.test(all)) tip = '음정이 목표에 닿지 못했어요. 기준음을 한 번 더 듣고 허밍으로 먼저 맞춘 다음 "아"로 바꿔 보세요.';
+      out.push([`${where} 경계 (${nm(arr[0].m)} 부근): ${arr[0].why.slice(0, 2).join(', ') || '점수가 낮아요'}`, tip || '경계 음은 무리해서 반복하지 말고, 바로 아래(위) 음을 편하게 유지하는 연습부터 하세요.', 'pitch']);
+    };
+    advise(up.sort((a, b) => a.m - b.m), '위쪽'); advise(down.sort((a, b) => b.m - a.m), '아래쪽');
+    const weak = s.results.filter(r => r.score >= 50 && r.score < 70);
+    if (weak.length) out.push([`아슬아슬한 음 ${weak.length}개`, `${weak.map(r => nm(r.m)).join(', ')} — 낼 수는 있지만 끝까지 안정적이지는 않아요. 이 음들을 지지 음역으로 끌어오는 게 다음 목표예요.`, 'next']);
+  }
+  if (s.stopped) out.push(['테스트를 중간에 멈췄어요', '끝까지 하면 위아래 경계가 더 정확해져요.', 'start']);
+  $('supRes').innerHTML = out.map(([a, b, k]) => `<li class="tip-${k}"><b>${esc(a)}</b><span>${esc(b)}</span></li>`).join('');
+}
+function drawSupChart() {
+  const cv = $('supCv'), [g, W, H] = fit(cv); g.clearRect(0, 0, W, H);
+  const s = cur.sup; const L = 36, R = 10, T = 12, B = 26;
+  if (!s || !s.notes.length) { g.fillStyle = css('--muted'); g.font = '13px ' + css('--font-body'); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('테스트하면 음마다 지지 점수가 막대로 그려져요', W / 2, H / 2); return; }
+  const ns = [...s.notes].sort((a, b) => a.m - b.m), lo = ns[0].m, hi = ns[ns.length - 1].m, span = Math.max(1, hi - lo);
+  const X = m => L + (m - lo + 0.5) / (span + 1) * (W - L - R), bw = Math.max(6, Math.min(26, (W - L - R) / (span + 1) * 0.7)), Y = v => T + (100 - v) / 100 * (H - T - B);
+  g.font = '11px ' + css('--font-mono'); g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (const v of [0, 50, 70, 100]) { g.strokeStyle = css('--line'); if (v === 70) g.setLineDash([4, 3]); g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - R, Y(v)); g.stroke(); g.setLineDash([]); g.fillStyle = css('--muted'); g.fillText(v, L - 6, Y(v)); }
+  for (const n of ns) {
+    g.fillStyle = css(n.score >= 70 ? '--good' : n.score >= 50 ? '--warn' : '--bad');
+    g.fillRect(X(n.m) - bw / 2, Y(Math.max(2, n.score)), bw, Y(0) - Y(Math.max(2, n.score)));
+    g.fillStyle = css('--muted'); g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(nm(n.m), X(n.m), H - B + 6);
+  }
 }
 
 // ---- 음 맞추기 게임 ----
@@ -446,9 +616,9 @@ function renderGame() {
 }
 
 // ---- 시작 ----
-let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawKb(); drawTuner(); drawHist(); }, 120); });
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawKb(); drawTuner(); drawHist(); drawSupChart(); }, 120); });
 new MutationObserver(() => { drawKb(); drawTuner(); drawHist(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-const go = () => renderAll();
+const go = () => { fillSupStart(); renderAll(); renderSup(); };
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
 })();
 </script>

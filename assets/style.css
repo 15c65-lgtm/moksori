@@ -356,3 +356,12 @@ a.ch-home:hover { border-color: var(--imi); }
 .tr-bar i { transition: width .1s; }
 .tr-reps { margin: 0; padding-left: 20px; font-size: 13.5px; display: grid; gap: 2px; }
 #drNext[hidden] { display: none; }
+
+/* ---- 지지 음역대 ---- */
+.sup-ctl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.sup-ctl select { font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.sup-run { display: grid; grid-template-columns: 180px 1fr auto; gap: 18px; align-items: center; padding: 14px; border: 2px solid var(--good); border-radius: 10px; margin-bottom: 12px; background: color-mix(in srgb, var(--good) 5%, transparent); }
+.sup-run[hidden] { display: none; }
+@media (max-width: 700px) { .sup-run { grid-template-columns: 1fr; } }
+.sup-live { display: grid; gap: 6px; }
+canvas.sup-cv { width: 100%; height: 170px; display: block; margin: 6px 0 10px; }
