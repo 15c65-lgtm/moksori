@@ -124,7 +124,7 @@ async function loadMe() {
 async function loadPast() {
   const weeks = Week.past().slice(0, 8); if (!weeks.length) return;
   const blocks = await Promise.all(weeks.map(async w => {
-    const c = CHALLENGES[w]; let top = [];
+    const c = Week.resolve(w); let top = [];
     try { top = await Board.top(w, 3); } catch (_) {}
     return `<div class="ch-pastrow"><div><b>${esc(c.character)}</b> “${esc(c.line)}”<div class="ym-sub">${w} · ${Week.label(w)}</div></div><ol>${top.length ? top.map(r => `<li>${esc(r.nickname)} <span>${f1(r.total)}</span></li>`).join('') : '<li class="muted">참가자 없음</li>'}</ol></div>`;
   }));
