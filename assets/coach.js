@@ -25,13 +25,21 @@ window.Coach = (() => {
       else if (s.resRel > t.rmax) out.push({ k: 'res', title: '공명을 과하게 올렸어요', body: `평소 대비 +${r0(s.resRel)}%예요. 너무 밝으면 앵앵거리거나 얇게 들릴 수 있어요. 입꼬리 당김을 조금 풀고 목표(+${t.rmin}~${t.rmax}%) 안으로 돌아오세요.` });
     }
 
-    if (s.regMix) {
+    const allowFals = t.reg && t.reg[1] >= 0.95, needFals = t.reg && t.reg[0] >= 0.5, allowAir = t.breath === 'allow';
+    if (s.regMix && needFals) {
       const { modal, mix, fals } = s.regMix;
-      if (fals > 0.45) out.push({ k: 'reg', title: `가성 쪽이 ${r0(fals * 100)}%로 많아요`, body: '가성으로 말하면 숨이 새고 힘없이 들리기 쉬워요. 성대를 붙이는 감각을 찾아 보세요. 가볍게 "응, 응" 하고 짧게 끊어 소리 낸 다음, 그 닫힌 느낌을 유지한 채 "응~" 하고 길게 이어 보세요. 미터가 믹스 쪽으로 오면 성공이에요.' });
+      if (modal + mix > 0.5) out.push({ k: 'reg', title: `가성 쪽이 ${r0(fals * 100)}%예요 (이 스타일은 가성 중심)`, body: '소리를 위로 띄워 가성으로 넘겨 보세요. "후~" 하고 힘을 뺀 소리에서 시작해 그 느낌 그대로 말하면 미터가 가성 쪽으로 가요. 목을 조여서 높이지는 마세요.' });
+      else out.push({ k: 'reg-good', title: `가성 비율 ${r0(fals * 100)}%, 스타일에 맞아요`, body: '이 상태로 문장 끝까지 높이와 공기감을 유지하는 연습(끝 올리기 문장)으로 넘어가 보세요.' });
+    } else if (s.regMix) {
+      const { modal, mix, fals } = s.regMix;
+      if (fals > 0.45 && !allowFals) out.push({ k: 'reg', title: `가성 쪽이 ${r0(fals * 100)}%로 많아요`, body: '가성으로 말하면 숨이 새고 힘없이 들리기 쉬워요. 성대를 붙이는 감각을 찾아 보세요. 가볍게 "응, 응" 하고 짧게 끊어 소리 낸 다음, 그 닫힌 느낌을 유지한 채 "응~" 하고 길게 이어 보세요. 미터가 믹스 쪽으로 오면 성공이에요.' });
       else if (modal > 0.65 && s.f0 >= t.fmin) out.push({ k: 'reg', title: '높이는 맞는데 소리가 무거워요', body: `진성 쪽이 ${r0(modal * 100)}%예요. 성대를 두껍게 쓰고 있다는 신호예요. 볼륨을 반으로 줄이고, 아주 부드럽게 "음~"에서 "아~"로 열어 보세요. 소리를 위로 띄운다는 느낌으로 가볍게 내면 미터가 믹스 쪽으로 이동해요.` });
       else if (mix >= 0.5) out.push({ k: 'reg-good', title: `믹스 비율 ${r0(mix * 100)}%, 좋아요`, body: '성대는 닫히면서 가볍게 쓰고 있어요. 이 감각을 짧은 단어("네", "응", "안녕")로 옮기는 연습을 시작해도 돼요.' });
     }
-    if (s.breath != null && s.breath > 0.3) out.push({ k: 'breath', title: `숨 섞인 소리가 ${r0(s.breath * 100)}%예요`, body: '소리를 높이려다 성대가 벌어지면 숨이 새요. 숨을 덜 쓰고 작게 내 보세요. 촛불 앞에서 말해도 불꽃이 거의 흔들리지 않는 정도가 좋아요.' });
+    if (allowAir && s.breath != null) {
+      if (s.breath < 0.1) out.push({ k: 'breath', title: '공기감이 적어요', body: '이 스타일은 공기 섞인 소리가 매력이에요. 도라에몽 소리에서 긁는 소리를 빼고 바람을 섞는 느낌으로, 숨을 조금 더 실어 보세요.' });
+      else if (s.breath > 0.75) out.push({ k: 'breath', title: `숨이 ${r0(s.breath * 100)}%로 너무 많아요`, body: '공기가 너무 많으면 소리가 끊기고 목이 빨리 말라요. 소리의 심지가 남을 만큼만 공기를 섞고, 물을 자주 마셔 주세요.' });
+    } else if (s.breath != null && s.breath > 0.3) out.push({ k: 'breath', title: `숨 섞인 소리가 ${r0(s.breath * 100)}%예요`, body: '소리를 높이려다 성대가 벌어지면 숨이 새요. 숨을 덜 쓰고 작게 내 보세요. 촛불 앞에서 말해도 불꽃이 거의 흔들리지 않는 정도가 좋아요.' });
 
     if (prev && prev.length) {
       const p = prev[prev.length - 1];

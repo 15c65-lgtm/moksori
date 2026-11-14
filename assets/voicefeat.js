@@ -80,7 +80,7 @@ const VF = (() => {
   function analyze(x) {
     let e = 0; for (let i = 0; i < N; i++) e += x[i] * x[i];
     const db = 10 * Math.log10(e / N + 1e-12);
-    const out = { db, f0: 0, clarity: 0, h1h2: NaN, h1h2raw: NaN, F: null, res: NaN };
+    const out = { db, f0: 0, clarity: 0, h1h2: NaN, h1h2raw: NaN, cpp: NaN, F: null, res: NaN };
     if (db < -65) return out;
     const p = pitch(x); out.f0 = p.f0; out.clarity = p.clarity;
     if (!p.f0) return out;
@@ -90,6 +90,19 @@ const VF = (() => {
     const mag = new Float32Array(NFFT / 2);
     for (let k = 0; k < NFFT / 2; k++) mag[k] = 10 * Math.log10(re[k] * re[k] + im[k] * im[k] + 1e-12);
     const df = SR / NFFT;
+    // CPP(켑스트럼 피크 돌출도): 숨이 섞일수록 배음 줄무늬가 흐려져 값이 낮아짐
+    {
+      const cr = new Float32Array(NFFT), ci = new Float32Array(NFFT);
+      for (let k = 0; k < NFFT / 2; k++) { cr[k] = mag[k]; cr[NFFT - 1 - k] = mag[k]; }
+      fft(cr, ci);
+      const ce = n => cr[n] / NFFT, lo = 16, hi = 300;
+      let sx = 0, sy = 0, sxx = 0, sxy = 0, m = 0;
+      for (let n = lo; n <= hi; n++) { const y = ce(n); sx += n; sy += y; sxx += n * n; sxy += n * y; m++; }
+      const slope = (m * sxy - sx * sy) / (m * sxx - sx * sx), icpt = (sy - slope * sx) / m;
+      const T0 = SR / p.f0, a = Math.max(lo, Math.floor(T0 * 0.9)), b = Math.min(hi, Math.ceil(T0 * 1.1));
+      let pk = -1e9, at = a; for (let n = a; n <= b; n++) { const y = ce(n); if (y > pk) { pk = y; at = n; } }
+      out.cpp = pk - (slope * at + icpt);
+    }
     out.h1h2 = out.h1h2raw = harmonicDb(mag, p.f0, df) - harmonicDb(mag, 2 * p.f0, df);
     const F = formants(x);
     if (F) {

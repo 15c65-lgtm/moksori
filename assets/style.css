@@ -321,3 +321,38 @@ a.ch-home { display: flex; justify-content: space-between; align-items: center; 
 a.ch-home:hover { border-color: var(--imi); }
 .ch-home-line { font-family: var(--font-display); font-size: clamp(22px, 3.6vw, 30px); margin-top: 4px; }
 .ch-home-go { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--ink); }
+
+/* ---- 여목 방향(스타일) ---- */
+.ys { display: grid; gap: 12px; }
+.ys-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.ys-card { text-align: left; display: grid; gap: 4px; align-content: start; padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--panel); position: relative; }
+.ys-card:hover { border-color: var(--imi); }
+.ys-card.on { border-color: var(--imi); background: color-mix(in srgb, var(--imi) 7%, var(--panel)); box-shadow: 0 0 0 1px var(--imi) inset; }
+.ys-id { position: absolute; top: 10px; right: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ys-card b { font-size: 15px; padding-right: 18px; }
+.ys-sub { font-size: 12.5px; color: var(--imi); font-weight: 500; }
+.ys-nums { font-size: 12px; color: var(--muted); font-family: var(--font-mono); line-height: 1.5; }
+.ys-clip { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.ys-clipres { font-size: 13.5px; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--ref) 8%, transparent); border-left: 3px solid var(--ref); }
+.ys-clipres[hidden] { display: none; }
+.ym-scale b { position: absolute; top: -3px; bottom: -3px; border: 2px dashed var(--ink); border-radius: 999px; opacity: .55; pointer-events: none; }
+
+/* ---- 훈련 드릴 ---- */
+.tr-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.tr-card { display: grid; gap: 4px; align-content: start; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.tr-card button { justify-self: start; margin-top: 4px; }
+.tr-best { font-size: 12.5px; font-family: var(--font-mono); color: var(--ink); }
+.tr-run { margin-top: 14px; display: grid; gap: 10px; padding: 14px; border: 2px solid var(--imi); border-radius: 10px; background: color-mix(in srgb, var(--imi) 4%, transparent); }
+.tr-run[hidden] { display: none; }
+.tr-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tr-head b { font-size: 17px; }
+.tr-head button:first-of-type { margin-left: auto; }
+.tr-how { margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted); display: grid; gap: 2px; }
+.tr-line { font-family: var(--font-display); font-size: 26px; text-align: center; padding: 8px 0; }
+.tr-line[hidden] { display: none; }
+.tr-state { font-size: 15px; min-height: 1.6em; }
+.tr-state .ok { color: var(--good); font-weight: 700; } .tr-state .no { color: var(--warn); font-weight: 700; }
+.tr-bar { height: 10px; }
+.tr-bar i { transition: width .1s; }
+.tr-reps { margin: 0; padding-left: 20px; font-size: 13.5px; display: grid; gap: 2px; }
+#drNext[hidden] { display: none; }
