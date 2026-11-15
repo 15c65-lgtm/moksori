@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611141530">
+<link rel="stylesheet" href="assets/style.css?v=202611151530">
 </head>
 <body>
 <div class="wrap">
@@ -27,6 +27,7 @@
     </label>
     <span class="ym-timer" id="timer">00:00</span>
     <span class="ym-calib" id="calibState"></span>
+    <details class="ym-load"><summary id="loadNow">오늘 목 사용 –</summary><div id="loadWeek"></div></details>
     <span class="ym-msg" id="micMsg">마이크 시작을 누르고 편하게 "아~" 해 보세요. 분석은 모두 이 기기 안에서만 해요.</span>
   </section>
 
@@ -40,6 +41,7 @@
     <div class="ys-clipres" id="clipRes" hidden></div>
   </section>
 
+  <div class="ym-rest" id="loadWarn" hidden><span id="loadWhy"></span> <button type="button" id="loadOk">알겠어요</button></div>
   <div class="ym-rest" id="water" hidden>물 한 모금 마실 시간이에요. <span id="waterWhy"></span> <button type="button" id="waterOk">마셨어요</button></div>
   <div class="ym-rest" id="rest" hidden>15분 연습했어요. 목이 무겁거나 따끔하면 물 한 모금 마시고 5분 쉬어 주세요. <button type="button" id="restOk">계속하기</button></div>
 
@@ -94,6 +96,26 @@
       <div class="lvl wide tr-bar"><i id="drBar" style="width:0%"></i></div>
       <ol class="tr-reps" id="drReps"></ol>
     </div>
+  </section>
+
+  <section class="panel" id="brSec">
+    <div class="chart-head"><h2>밝기 훈련 <span class="cap" style="margin:0">높이는 그대로, 소리만 밝게</span></h2>
+      <div class="sup-ctl">
+        <button type="button" id="brSetNow">지금 소리를 기준으로</button>
+        <label class="btnlike">기준 녹음 올리기<input type="file" id="brFile" accept="audio/*,video/*"></label>
+        <label class="ym-field">목표 <select id="brGoal"><option value="0">기준만큼</option><option value="3" selected>기준보다 조금 밝게</option><option value="6">기준보다 많이 밝게</option></select></label>
+      </div>
+    </div>
+    <p class="cap" style="margin-top:0">음을 높이면 소리가 높아지기만 하고 어둡게 남을 수 있어요. 같은 높이에서 <b>살짝 웃는 입</b>, <b>"이"에 가까운 모음</b>, <b>혀를 앞으로</b>, <b>목 안쪽이 내려가지 않게</b> 해서 막대를 오른쪽으로 밀어 보세요. 전에 밝게 잘 낸 내 녹음(예: 여목7)을 기준으로 올리면 그 느낌을 목표로 삼을 수 있어요.</p>
+    <div class="br-meter"><div class="br-track"><i id="brFill"></i><b id="brBase" hidden></b><b id="brTarget" class="tgt" hidden></b></div>
+      <div class="br-scale"><span>어두움</span><span>밝음</span></div></div>
+    <div class="br-row">
+      <div><div class="ym-lab">지금 밝기 <small>(0~100)</small></div><div class="ym-num" id="brNow">–</div></div>
+      <div><div class="ym-lab">기준</div><div class="ym-num sm" id="brBaseTxt">–</div><div class="cap" id="brBaseFrom" style="margin:0"></div></div>
+      <div><div class="ym-lab">높이</div><div class="ym-num sm" id="brPitch">–</div><div class="cap" id="brPitchOk" style="margin:0"></div></div>
+      <div class="br-game"><button type="button" class="primary-sm" id="brGo">도전 5번</button><div class="cap" id="brGame" style="margin:0">마이크를 켜고 기준을 정한 뒤 시작하세요. 한 번에 8초 안에, 처음 낸 높이를 지키면서(±1.5반음) 목표 밝기를 2초 동안 유지하면 성공이에요. 기준 녹음과 비슷한 높이에서 할수록 정확해요.</div></div>
+    </div>
+    <ol class="tr-reps" id="brReps"></ol>
   </section>
 
   <section class="ym-two">
@@ -171,9 +193,9 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611141530"></script>
-<script src="assets/coach.js?v=202611141530"></script>
-<script src="assets/yeomok-style.js?v=202611141530"></script>
+<script src="assets/voicefeat.js?v=202611151530"></script>
+<script src="assets/coach.js?v=202611151530"></script>
+<script src="assets/yeomok-style.js?v=202611151530"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -308,6 +330,7 @@ function onFrame(fr) {
   const now = performance.now();
   const item = { t: now, voiced, f0: fr.f0, res: fr.res, h1h2: fr.h1h2, clar: fr.clarity, cpp: fr.cpp };
   frames.push(item); while (frames.length && now - frames[0].t > 12500) frames.shift();
+  brFrame(fr, voiced, now); loadFrame(fr, voiced);
   if (!voiced) return;
   recent.push(item); while (recent.length > 7) recent.shift();
   if (collect) { collect.items.push(item); }
@@ -320,6 +343,110 @@ function onFrame(fr) {
     if (sess.f0.length > 20000) { sess.f0.splice(0, 5000); sess.res.splice(0, 5000); sess.reg.splice(0, 5000); }
   }
 }
+
+
+// ---- 밝기 훈련 ----
+const BR_MIN = -40, BR_MAX = -4;
+let BR = (() => { try { return JSON.parse(localStorage.getItem('moksori.yeomok.bright') || 'null') || {}; } catch (_) { return {}; } })();
+const brSave = () => { try { localStorage.setItem('moksori.yeomok.bright', JSON.stringify(BR)); } catch (_) {} };
+const brPct = b => Math.max(0, Math.min(100, (b - BR_MIN) / (BR_MAX - BR_MIN) * 100));
+const brTarget = () => Number.isFinite(BR.base) ? BR.base + (+$('brGoal').value) : NaN;
+const semi = (a, b) => 12 * Math.log2(a / b);
+let brRecent = [], brCollect = null, brG = null;
+function brRender() {
+  const t = brTarget();
+  $('brBase').hidden = !Number.isFinite(BR.base); $('brTarget').hidden = !Number.isFinite(t);
+  if (Number.isFinite(BR.base)) { $('brBase').style.left = brPct(BR.base) + '%'; $('brBaseTxt').textContent = Math.round(brPct(BR.base)); $('brBaseFrom').textContent = (BR.from || '') + (BR.f0 ? ` · ${Math.round(BR.f0)} Hz ${VF.note(BR.f0)}` : ''); }
+  if (Number.isFinite(t)) $('brTarget').style.left = brPct(t) + '%';
+}
+function brFrame(fr, voiced, now) {
+  if (voiced && Number.isFinite(fr.bright)) brRecent.push({ t: now, b: fr.bright, f0: fr.f0 });
+  while (brRecent.length && now - brRecent[0].t > 350) brRecent.shift();
+  const b = med(brRecent.map(r => r.b)), f = med(brRecent.map(r => r.f0));
+  if (brCollect && voiced && Number.isFinite(fr.bright)) brCollect.push({ b: fr.bright, f0: fr.f0 });
+  $('brFill').style.width = (Number.isFinite(b) ? brPct(b) : 0) + '%';
+  $('brNow').textContent = Number.isFinite(b) ? Math.round(brPct(b)) : '–';
+  const t = brTarget(); $('brFill').classList.toggle('ok', Number.isFinite(b) && Number.isFinite(t) && b >= t);
+  const ref = brG && brG.f0 ? brG.f0 : (BR.from === '방금 낸 소리' ? BR.f0 : 0);
+  if (Number.isFinite(f)) { $('brPitch').textContent = VF.note(f); const d = ref ? semi(f, ref) : NaN; $('brPitchOk').textContent = Number.isFinite(d) ? (Math.abs(d) <= 1.5 ? '높이 그대로 ✓' : `기준보다 ${d > 0 ? '높아요' : '낮아요'} (${d > 0 ? '+' : ''}${d.toFixed(1)}반음)`) : `${Math.round(f)} Hz`; }
+  else { $('brPitch').textContent = '–'; $('brPitchOk').textContent = ''; }
+  // 도전
+  if (brG && brG.phase === 'go') {
+    const el = (now - brG.t0) / 1000;
+    if (voiced && Number.isFinite(b)) {
+      if (!brG.f0) brG.f0 = f; // 매 도전의 첫 높이를 지키기
+      const pOk = Math.abs(semi(f, brG.f0)) <= 1.5, bOk = b >= t;
+      if (pOk && bOk) brG.hold += FRAME_SEC; brG.best = Math.max(brG.best, b); if (!pOk) brG.pitchMiss += FRAME_SEC;
+    }
+    $('brGame').textContent = `${brG.rep}번째 · ${Math.max(0, 8 - el).toFixed(1)}초 남음 · 유지 ${brG.hold.toFixed(1)} / 2초`;
+    if (brG.hold >= 2 || el >= 8) brEndRep(brG.hold >= 2);
+  } else if (brG && brG.phase === 'rest' && now - brG.t0 > 2000) { brG.phase = 'go'; brG.t0 = now; brG.hold = 0; brG.best = -99; brG.pitchMiss = 0; brG.f0 = 0; }
+}
+function brEndRep(ok) {
+  const r = { ok, best: brG.best, why: ok ? '' : brG.pitchMiss > 2 ? '높이가 기준에서 벗어났어요' : Number.isFinite(brG.best) && brG.best > -99 ? `가장 밝을 때 ${Math.round(brPct(brG.best))} (목표 ${Math.round(brPct(brTarget()))})` : '소리가 잡히지 않았어요' };
+  brG.res.push(r); $('brReps').innerHTML = brG.res.map((x, i) => `<li class="${x.ok ? 'ok' : 'no'}">${i + 1}번 ${x.ok ? '성공' : '실패'}${x.why ? ' · ' + x.why : ''}</li>`).join('');
+  if (brG.rep >= 5) { const n = brG.res.filter(x => x.ok).length; $('brGame').textContent = `끝! 5번 중 ${n}번 성공. ${n >= 4 ? '목표를 한 칸 올려 보세요.' : n <= 1 ? '목표를 「기준만큼」으로 낮추거나, "이~"로 먼저 연습해 보세요.' : '좋아요, 이 느낌을 기억하세요.'}`; BR.hist = (BR.hist || []).concat({ t: Date.now(), n, goal: +$('brGoal').value }).slice(-30); brSave(); brG = null; $('brGo').textContent = '도전 5번'; return; }
+  brG.rep++; brG.phase = 'rest'; brG.t0 = performance.now(); $('brGame').textContent = '잠깐 숨 쉬고… 다음 번';
+}
+$('brGo').addEventListener('click', () => {
+  if (brG) { brG = null; $('brGo').textContent = '도전 5번'; $('brGame').textContent = '멈췄어요.'; return; }
+  if (!mic) { $('brGame').textContent = '먼저 위의 「마이크 시작」을 눌러 주세요.'; return; }
+  if (!Number.isFinite(BR.base)) { $('brGame').textContent = '먼저 기준을 정해 주세요 (지금 소리 또는 녹음).'; return; }
+  brG = { rep: 1, phase: 'go', t0: performance.now(), hold: 0, best: -99, pitchMiss: 0, f0: 0, res: [] }; $('brReps').innerHTML = ''; $('brGo').textContent = '■ 멈춤';
+});
+$('brSetNow').addEventListener('click', () => {
+  if (!mic) { $('brGame').textContent = '먼저 위의 「마이크 시작」을 눌러 주세요.'; return; }
+  brCollect = []; $('brSetNow').disabled = true; $('brGame').textContent = '2초 동안 기준으로 삼을 소리를 내세요…';
+  setTimeout(() => {
+    const c = brCollect; brCollect = null; $('brSetNow').disabled = false;
+    if (c.length < 15) { $('brGame').textContent = '소리가 충분히 잡히지 않았어요. 다시 해 보세요.'; return; }
+    BR.base = med(c.map(x => x.b)); BR.f0 = med(c.map(x => x.f0)); BR.from = '방금 낸 소리'; brSave(); brRender(); $('brGame').textContent = '기준을 정했어요. 이제 같은 높이에서 더 밝게!';
+  }, 2000);
+});
+$('brFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  $('brGame').textContent = `「${f.name}」 분석 중…`;
+  try {
+    const ac = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const ab = await new Promise((res, rej) => { f.arrayBuffer().then(b => { const p = ac.decodeAudioData(b, res, rej); if (p && p.then) p.then(res, rej); }, rej); });
+    const dur = Math.min(ab.duration, 60), off = new OfflineAudioContext(1, Math.ceil(dur * 16000), 16000), src = off.createBufferSource(); src.buffer = ab; src.connect(off.destination); src.start();
+    const x = (await off.startRendering()).getChannelData(0), out = []; let pk = -99; const fr = [];
+    for (let i = 0; i + 1024 <= x.length; i += 512) { const r = VF.analyze(x.subarray(i, i + 1024)); fr.push(r); if (r.db > pk) pk = r.db; }
+    for (const r of fr) if (r.db > pk - 30 && r.f0 > 60 && r.clarity > 0.6 && Number.isFinite(r.bright)) out.push(r);
+    if (out.length < 20) throw new Error('short');
+    BR.base = med(out.map(r => r.bright)); BR.f0 = med(out.map(r => r.f0)); BR.from = f.name; brSave(); brRender();
+    $('brGame').textContent = `기준: ${f.name}. 이 녹음의 높이(${VF.note(BR.f0)}) 근처에서 같은 밝기를 내 보세요.`;
+  } catch (_) { $('brGame').textContent = '녹음을 읽지 못했거나 목소리가 너무 짧아요.'; }
+});
+$('brGoal').addEventListener('change', brRender);
+brRender();
+
+// ---- 목 사용 기록 ----
+const LKEY = 'moksori.voiceLoad';
+let LOAD = (() => { try { return JSON.parse(localStorage.getItem(LKEY) || '{}'); } catch (_) { return {}; } })(), loadDirty = 0, loadWarned = { h20: false, h40: false, t60: false };
+const dayKey = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function loadFrame(fr, voiced) {
+  if (!voiced) return;
+  const k = dayKey(), L = LOAD[k] || (LOAD[k] = { t: 0, h: 0 });
+  L.t += FRAME_SEC; const high = fr.f0 > 260 || (Number.isFinite(fr.h1h2) && regPos(fr.h1h2) > 0.7); if (high) L.h += FRAME_SEC;
+  if (++loadDirty % 60 === 0) loadShow();
+}
+function loadShow() {
+  const keys = Object.keys(LOAD).sort(); while (keys.length > 60) delete LOAD[keys.shift()];
+  try { localStorage.setItem(LKEY, JSON.stringify(LOAD)); } catch (_) {}
+  const L = LOAD[dayKey()] || { t: 0, h: 0 }, m = v => v >= 60 ? `${Math.floor(v / 60)}분` : `${Math.round(v)}초`;
+  $('loadNow').textContent = `오늘 목소리 ${m(L.t)} · 높은 소리 ${m(L.h)}`;
+  const days = []; for (let i = 6; i >= 0; i--) { const d = new Date(Date.now() - i * 86400000), k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; days.push([`${d.getMonth() + 1}/${d.getDate()}`, LOAD[k] || { t: 0, h: 0 }]); }
+  const mx = Math.max(60, ...days.map(d => d[1].t));
+  $('loadWeek').innerHTML = `<div class="ld-bars">${days.map(([lab, v]) => `<div class="ld-b" title="${lab}: 목소리 ${m(v.t)}, 높은 소리 ${m(v.h)}"><i style="height:${v.t / mx * 100}%"><i style="height:${v.t ? v.h / v.t * 100 : 0}%"></i></i><span>${lab}</span></div>`).join('')}</div><p class="cap" style="margin:4px 0 0">진한 부분이 높은 소리(가성 쪽)예요. 소리를 낸 시간만 세요 (쉬는 시간 뺌).</p>`;
+  let why = '';
+  if (L.h >= 2400 && !loadWarned.h40) { loadWarned.h40 = true; why = '오늘 높은 소리를 40분 넘게 냈어요. 오늘은 여기까지 하고 목을 쉬게 해 주세요.'; }
+  else if (L.h >= 1200 && !loadWarned.h20) { loadWarned.h20 = true; why = '오늘 높은 소리를 20분 넘게 냈어요. 10분쯤 말하지 말고 쉬었다가, 물 마시고 해요.'; }
+  else if (L.t >= 3600 && !loadWarned.t60) { loadWarned.t60 = true; why = '오늘 소리를 1시간 넘게 냈어요. 목이 따끔하거나 쉰 소리가 나면 바로 멈추세요.'; }
+  if (why) { $('loadWhy').textContent = why; $('loadWarn').hidden = false; }
+}
+$('loadOk').addEventListener('click', () => { $('loadWarn').hidden = true; });
+loadShow();
 
 // ---- 표시 ----
 let restShown = false, raf = 0;

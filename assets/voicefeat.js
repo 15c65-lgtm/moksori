@@ -1,5 +1,6 @@
 // 여목 연습용 실시간 프레임 분석 (16 kHz, 1024 샘플 프레임)
-// 결과: 음높이(f0), 맑음(주기성), H1-H2(진성↔가성 단서), 포먼트 F1~F3, 공명(F1~F3 기하평균)
+// 결과: 음높이(f0), 맑음(주기성), H1-H2(진성↔가성 단서), 포먼트 F1~F3, 공명(F1~F3 기하평균), 밝기(고음역 배음 비)
+// 공명은 음이 높으면(약 330 Hz 위) 배음 간격이 넓어 덜 정확함 → 그때는 밝기를 함께 볼 것
 const VF = (() => {
   const SR = 16000, N = 1024, NFFT = 2048, ORDER = 18;
   const HANN = Float32Array.from({ length: N }, (_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1)));
@@ -80,7 +81,7 @@ const VF = (() => {
   function analyze(x) {
     let e = 0; for (let i = 0; i < N; i++) e += x[i] * x[i];
     const db = 10 * Math.log10(e / N + 1e-12);
-    const out = { db, f0: 0, clarity: 0, h1h2: NaN, h1h2raw: NaN, cpp: NaN, F: null, res: NaN };
+    const out = { db, f0: 0, clarity: 0, h1h2: NaN, h1h2raw: NaN, cpp: NaN, F: null, res: NaN, bright: NaN };
     if (db < -65) return out;
     const p = pitch(x); out.f0 = p.f0; out.clarity = p.clarity;
     if (!p.f0) return out;
@@ -104,6 +105,12 @@ const VF = (() => {
       out.cpp = pk - (slope * at + icpt);
     }
     out.h1h2 = out.h1h2raw = harmonicDb(mag, p.f0, df) - harmonicDb(mag, 2 * p.f0, df);
+    // 밝기: 배음 크기로 1.5~5 kHz 대 0~1.5 kHz 에너지 비(dB). 음이 높아 포먼트 추정이 흔들릴 때도 쓸 수 있음
+    {
+      let lo = 0, hi = 0;
+      for (let k = 1; k * p.f0 <= 5000; k++) { const f = k * p.f0, a = Math.pow(10, harmonicDb(mag, f, df) / 10); if (f < 1500) lo += a; else hi += a; }
+      if (lo > 0 && hi > 0) out.bright = 10 * Math.log10(hi / lo);
+    }
     const F = formants(x);
     if (F) {
       out.F = F; out.res = Math.cbrt(F[0] * F[1] * F[2]);

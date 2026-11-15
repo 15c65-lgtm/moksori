@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611141530">
+<link rel="stylesheet" href="assets/style.css?v=202611151530">
 </head>
 <body>
 <div class="wrap">
@@ -54,6 +54,10 @@
           <button type="button" id="playBest" title="베스트 테이크 듣기 (P)">▶ 베스트</button>
           <button type="button" id="nextBtn" title="다음 줄 (→)">▶▶</button>
         </div>
+        <div class="sc-emo">
+          <label class="ym-field">감정 <select id="emoSel" aria-label="다음 테이크 감정"><option value="">정하지 않음</option></select></label>
+          <label class="tog"><input type="checkbox" id="emoCycle"> 녹음할 때마다 다음 감정으로 (감정 바꾸기 연습)</label>
+        </div>
         <div class="lvl wide"><i id="recLvl" style="width:0%"></i></div>
         <div class="cap" id="recMsg" style="margin:0">스페이스: 녹음 시작/끝 · ←→: 줄 이동 · P: 베스트 듣기</div>
       </div>
@@ -80,8 +84,9 @@
       </div>
     </div>
     <p class="cap" id="refMsg" style="margin-top:0">애니나 드라마의 원본 대사 소리를 올리면 테이크마다 원본과의 싱크로율도 계산해요.</p>
-    <div class="histwrap"><table class="hist sc-takes"><thead><tr><th>#</th><th>★</th><th>길이</th><th>말 빠르기</th><th>평균 높이</th><th>억양 폭</th><th>크기 변화</th><th>쉼</th><th id="thSync" hidden>원본 싱크로</th><th>높낮이</th><th></th></tr></thead><tbody id="takeBody"></tbody></table></div>
+    <div class="histwrap"><table class="hist sc-takes"><thead><tr><th>#</th><th>★</th><th>감정</th><th>길이</th><th>말 빠르기</th><th>평균 높이</th><th>억양 폭</th><th>크기 변화</th><th>쉼</th><th id="thSync" hidden>원본 싱크로</th><th>높낮이</th><th></th></tr></thead><tbody id="takeBody"></tbody></table></div>
     <p class="cap" id="takeNote"></p>
+    <div id="emoBox" class="sc-emobox"></div>
   </section>
 
   <section class="panel">
@@ -95,8 +100,8 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611141530"></script>
-<script src="assets/voicefeat.js?v=202611141530"></script>
+<script src="assets/core.js?v=202611151530"></script>
+<script src="assets/voicefeat.js?v=202611151530"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -283,12 +288,13 @@ async function stopRec() {
   let x = new Float32Array(r.n), o = 0; for (const c of r.chunks) { x.set(c, o); o += c.length; }
   x = trim(x);
   if (x.length < RATE * 0.4) { $('recMsg').textContent = '소리가 거의 녹음되지 않았어요.'; if (scene) sceneNext(); return; }
-  const t = { id: uid(), scriptId: curScript().id, line: r.line, lineText: lines.find(l => l.i === r.line).text, at: Date.now(), pcm: toI16(x), star: false };
+  const t = { id: uid(), scriptId: curScript().id, line: r.line, lineText: lines.find(l => l.i === r.line).text, at: Date.now(), pcm: toI16(x), star: false, emo: $('emoSel').value };
   t.stats = analyze(x, t.lineText);
   const ref = await getRef(r.line); if (ref) t.sync = syncScore(ref.x, x);
   try { await DB.put(t); } catch (_) { $('recMsg').innerHTML = '<span class="err">저장하지 못했어요.</span>'; }
   takes.push(t); renderList(); renderPrompt(); renderTakes();
   $('recMsg').textContent = `테이크 ${lineTakes(r.line).length} 저장 · ${t.stats.dur.toFixed(1)}초 · 말 빠르기 ${t.stats.rate.toFixed(1)}음절/초`;
+  if ($('emoCycle').checked) { const o = $('emoSel').options, k = Math.max(1, ($('emoSel').selectedIndex % (o.length - 1)) + 1); $('emoSel').selectedIndex = k; $('recMsg').textContent += ` · 다음 감정: ${o[k].text}`; }
   if (scene) sceneNext();
 }
 $('recBtn').addEventListener('click', () => rec ? stopRec() : startRec(false));
@@ -334,10 +340,10 @@ async function renderTakes() {
   const ref = await getRef(l.i), list = lineTakes(l.i);
   $('thSync').hidden = !ref; $('refPlay').hidden = !ref; $('refDel').hidden = !ref;
   $('refMsg').textContent = ref ? `원본: ${ref.name} · 테이크마다 원본과의 싱크로율을 보여 줘요.` : '애니나 드라마의 원본 대사 소리를 올리면 테이크마다 원본과의 싱크로율도 계산해요.';
-  if (!isMine(l)) { $('takeBody').innerHTML = `<tr><td colspan="11" class="muted">상대역 대사예요. 내 역할을 바꾸거나 「전부 내가 읽기」를 고르면 녹음할 수 있어요.</td></tr>`; $('takeNote').textContent = ''; return; }
-  if (!list.length) { $('takeBody').innerHTML = `<tr><td colspan="11" class="muted">아직 테이크가 없어요. 스페이스를 눌러 녹음해 보세요.</td></tr>`; $('takeNote').textContent = ''; return; }
+  if (!isMine(l)) { $('takeBody').innerHTML = `<tr><td colspan="12" class="muted">상대역 대사예요. 내 역할을 바꾸거나 「전부 내가 읽기」를 고르면 녹음할 수 있어요.</td></tr>`; $('takeNote').textContent = ''; $('emoBox').innerHTML = ''; return; }
+  if (!list.length) { $('takeBody').innerHTML = `<tr><td colspan="12" class="muted">아직 테이크가 없어요. 스페이스를 눌러 녹음해 보세요.</td></tr>`; $('takeNote').textContent = ''; $('emoBox').innerHTML = ''; return; }
   const f = (v, d = 1) => Number.isFinite(v) ? v.toFixed(d) : '–';
-  $('takeBody').innerHTML = list.map((t, k) => `<tr data-id="${t.id}" class="${t.star ? 'best' : ''}"><td>${k + 1}</td><td><button type="button" class="star${t.star ? ' on' : ''}" data-act="star" title="베스트로 고르기">${t.star ? '★' : '☆'}</button></td><td>${f(t.stats.dur)}초</td><td>${f(t.stats.rate)}<small>음절/초</small></td><td>${Number.isFinite(t.stats.f0) ? Math.round(t.stats.f0) + ' Hz <small>' + VF.note(t.stats.f0) + '</small>' : '–'}</td><td>${f(t.stats.into)}<small>반음</small></td><td>${f(t.stats.dyn, 0)}<small>dB</small></td><td>${t.stats.pauses}</td>${ref ? `<td><b>${t.sync == null ? '–' : t.sync}</b></td>` : ''}<td><canvas class="spark" data-id="${t.id}"></canvas></td><td class="sc-acts"><button type="button" data-act="play">▶</button><button type="button" class="del" data-act="del">삭제</button></td></tr>`).join('');
+  $('takeBody').innerHTML = list.map((t, k) => `<tr data-id="${t.id}" class="${t.star ? 'best' : ''}"><td>${k + 1}</td><td><button type="button" class="star${t.star ? ' on' : ''}" data-act="star" title="베스트로 고르기">${t.star ? '★' : '☆'}</button></td><td><select class="sc-emo-sel" data-act="emo" aria-label="감정">${emoOpts(t.emo)}</select></td><td>${f(t.stats.dur)}초</td><td>${f(t.stats.rate)}<small>음절/초</small></td><td>${Number.isFinite(t.stats.f0) ? Math.round(t.stats.f0) + ' Hz <small>' + VF.note(t.stats.f0) + '</small>' : '–'}</td><td>${f(t.stats.into)}<small>반음</small></td><td>${f(t.stats.dyn, 0)}<small>dB</small></td><td>${t.stats.pauses}</td>${ref ? `<td><b>${t.sync == null ? '–' : t.sync}</b></td>` : ''}<td><canvas class="spark" data-id="${t.id}"></canvas></td><td class="sc-acts"><button type="button" data-act="play">▶</button><button type="button" class="del" data-act="del">삭제</button></td></tr>`).join('');
   list.forEach(t => drawSpark(document.querySelector(`canvas.spark[data-id="${t.id}"]`), t.stats.contour, ref && ref.contour));
   // 테이크 비교 요약
   if (list.length >= 2) {
@@ -348,6 +354,7 @@ async function renderTakes() {
     if (Number.isFinite(a.f0) && Number.isFinite(b.f0) && Math.abs(12 * Math.log2(b.f0 / a.f0)) >= 1) d.push(`평균 높이 ${12 * Math.log2(b.f0 / a.f0) > 0 ? '+' : ''}${(12 * Math.log2(b.f0 / a.f0)).toFixed(1)}반음`);
     $('takeNote').textContent = d.length ? `방금 테이크는 바로 전 테이크보다: ${d.join(' · ')}` : '방금 테이크는 바로 전 테이크와 숫자상 비슷해요. 감정을 더 크게 바꿔 보세요.';
   } else $('takeNote').textContent = '☆를 눌러 베스트 테이크를 고르면 장면 듣기와 WAV 저장에 그 테이크가 쓰여요. 고르지 않으면 가장 최근 테이크가 쓰여요.';
+  renderEmo(list);
 }
 function drawSpark(cv, c) {
   if (!cv) return; const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = r.width * d; cv.height = r.height * d;
@@ -365,6 +372,39 @@ $('takeBody').addEventListener('click', async e => {
     await DB.del(id); takes = takes.filter(x => x.id !== id); renderList(); renderPrompt(); renderTakes();
   }
 });
+
+
+// ---------- 감정 바꾸기 ----------
+const EMOS = ['기쁨', '슬픔', '화남', '담담', '귀여움', '놀람', '무서움', '비웃음'];
+$('emoSel').innerHTML += EMOS.map(e => `<option>${e}</option>`).join('');
+try { const v = JSON.parse(localStorage.getItem('moksori.script.emo') || '{}'); $('emoSel').value = v.e || ''; $('emoCycle').checked = !!v.c; } catch (_) {}
+const emoSave = () => { try { localStorage.setItem('moksori.script.emo', JSON.stringify({ e: $('emoSel').value, c: $('emoCycle').checked })); } catch (_) {} };
+$('emoSel').addEventListener('change', () => { emoSave(); $('emoSel').blur(); }); $('emoCycle').addEventListener('change', () => { if ($('emoCycle').checked && !$('emoSel').value) $('emoSel').selectedIndex = 1; emoSave(); $('emoCycle').blur(); });
+const emoOpts = cur => '<option value="">–</option>' + EMOS.map(e => `<option${e === cur ? ' selected' : ''}>${e}</option>`).join('');
+$('takeBody').addEventListener('change', async e => {
+  if (e.target.dataset.act !== 'emo') return; const t = takes.find(x => x.id === e.target.closest('tr').dataset.id); if (!t) return;
+  t.emo = e.target.value; try { await DB.put(t); } catch (_) {} renderTakes();
+});
+function renderEmo(list) {
+  const box = $('emoBox'), by = {};
+  for (const t of list) if (t.emo) (by[t.emo] = by[t.emo] || []).push(t.stats);
+  const ks = Object.keys(by);
+  if (ks.length < 2) { box.innerHTML = list.length ? '<p class="cap">같은 줄을 감정만 바꿔 두 가지 이상 녹음하면, 감정마다 소리가 실제로 얼마나 달라졌는지 여기서 비교해 줘요.</p>' : ''; return; }
+  const m = (a, k) => med(a.map(s => s[k]).filter(Number.isFinite));
+  const rows = ks.map(k => ({ k, n: by[k].length, f0: m(by[k], 'f0'), rate: m(by[k], 'rate'), into: m(by[k], 'into'), dyn: m(by[k], 'dyn'), dur: m(by[k], 'dur') }));
+  const span = (key, f = v => v) => { const v = rows.map(r => f(r[key])).filter(Number.isFinite); return v.length > 1 ? Math.max(...v) - Math.min(...v) : 0; };
+  const hiSpan = span('f0', v => 12 * Math.log2(v / 100)), rSpan = span('rate'), iSpan = span('into'), dSpan = span('dyn');
+  const top = (key, hi) => [...rows].filter(r => Number.isFinite(r[key])).sort((a, b) => hi ? b[key] - a[key] : a[key] - b[key])[0];
+  const notes = [];
+  if (hiSpan >= 1.5) notes.push(`가장 높게: <b>${top('f0', 1).k}</b>, 가장 낮게: <b>${top('f0', 0).k}</b> (${hiSpan.toFixed(1)}반음 차이)`);
+  if (rSpan >= 0.7) notes.push(`가장 빠르게: <b>${top('rate', 1).k}</b>, 가장 느리게: <b>${top('rate', 0).k}</b>`);
+  if (iSpan >= 2) notes.push(`억양이 가장 크게 움직인 건 <b>${top('into', 1).k}</b>`);
+  if (dSpan >= 4) notes.push(`크기 변화가 가장 큰 건 <b>${top('dyn', 1).k}</b>`);
+  const weak = hiSpan < 1.5 && rSpan < 0.7 && iSpan < 2 && dSpan < 4;
+  const fmt = (v, d = 1) => Number.isFinite(v) ? v.toFixed(d) : '–';
+  box.innerHTML = `<h3 class="co-h3">감정별 비교</h3><div class="histwrap"><table class="hist"><thead><tr><th>감정</th><th>테이크</th><th>평균 높이</th><th>말 빠르기</th><th>억양 폭</th><th>크기 변화</th><th>길이</th></tr></thead><tbody>${rows.map(r => `<tr><td><b>${r.k}</b></td><td>${r.n}</td><td>${Number.isFinite(r.f0) ? Math.round(r.f0) + ' Hz' : '–'}</td><td>${fmt(r.rate)}</td><td>${fmt(r.into)}</td><td>${fmt(r.dyn, 0)}</td><td>${fmt(r.dur)}초</td></tr>`).join('')}</tbody></table></div>
+    <p class="cap">${weak ? '감정마다 숫자 차이가 아주 작아요. 듣는 사람에게는 비슷하게 들릴 수 있어요. 높이·빠르기·크기 중 하나를 확실히 바꿔 보세요.' : notes.join(' · ') + '. 차이가 작은 항목은 감정이 덜 드러난 부분이에요.'}</p>`;
+}
 
 // ---------- 원본 대사 ----------
 $('refFile').addEventListener('change', async e => {

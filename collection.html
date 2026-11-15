@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내 모음집 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=202611151530">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>내 모음집</h1>
+      <p class="sub">그동안 녹음한 성대모사를 한꺼번에 올리면, 파일 이름으로 캐릭터를 묶고 녹음한 날짜를 읽어서 캐릭터마다 얼마나 바뀌었는지 보여 줘요. 내 목소리 지도에서 아직 안 해 본 쪽도 찾아보세요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="panel co-up" id="drop">
+    <div>
+      <h2>녹음 올리기</h2>
+      <p class="cap" style="margin:4px 0 0">여러 파일을 한 번에 고르거나 여기로 끌어다 놓으세요. 폴더째 올려도 돼요. 파일 이름이 <b>방랑자-3</b>, <b>고죠2</b>처럼 되어 있으면 숫자를 떼고 같은 캐릭터로 묶어요.</p>
+    </div>
+    <div class="co-up-btns">
+      <label class="btnlike primary-like">파일 고르기<input type="file" id="files" multiple accept="audio/*,video/*,.m4a,.mp3,.wav,.aac,.ogg,.webm"></label>
+      <label class="btnlike">폴더 고르기<input type="file" id="folder" webkitdirectory multiple></label>
+      <label class="tog"><input type="checkbox" id="keepAudio" checked> 소리도 저장 (다시 듣기용)</label>
+    </div>
+    <div class="co-prog" id="prog" hidden><div class="lvl wide"><i id="progBar" style="width:0%"></i></div><span class="cap" id="progMsg" style="margin:0"></span><button type="button" id="progStop">멈춤</button></div>
+  </section>
+
+  <section class="co-tiles" id="tiles"></section>
+
+  <section class="panel">
+    <div class="chart-head">
+      <h2>내 목소리 지도</h2>
+      <div class="sup-ctl">
+        <label class="ym-field">평소 목소리 <select id="baseChar" aria-label="평소 목소리로 쓸 캐릭터"><option value="">(고르기)</option></select></label>
+        <label class="tog"><input type="checkbox" id="mapAll"> 녹음 하나하나 보기</label>
+      </div>
+    </div>
+    <canvas id="map" class="co-map" aria-label="가로는 높낮이, 세로는 밝기인 캐릭터 지도"></canvas>
+    <p class="cap" id="mapNote"></p>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head">
+      <h2>캐릭터</h2>
+      <div class="sup-ctl">
+        <label class="ym-field">정렬 <select id="sortBy"><option value="count">녹음 많은 순</option><option value="recent">최근 녹음 순</option><option value="f0">높이 순</option><option value="name">이름 순</option></select></label>
+      </div>
+    </div>
+    <div class="co-chars" id="chars"><p class="cap">아직 올린 녹음이 없어요.</p></div>
+  </section>
+
+  <section class="panel" id="detail" hidden>
+    <div class="chart-head">
+      <h2 id="dName">캐릭터</h2>
+      <div class="sup-ctl">
+        <input type="text" id="dRename" maxlength="20" placeholder="새 이름 (같은 이름이 있으면 합쳐져요)" aria-label="캐릭터 이름 바꾸기">
+        <button type="button" id="dRenameBtn">이름 바꾸기</button>
+        <button type="button" id="dClose">닫기</button>
+      </div>
+    </div>
+    <div class="co-detail">
+      <div>
+        <div class="chart-head" style="margin-bottom:6px"><h3 class="co-h3">시간에 따른 변화</h3>
+          <label class="ym-field"><select id="dMetric"><option value="f0">중심 높이</option><option value="bright">밝기</option><option value="range">높낮이 폭</option><option value="high">높은 소리 비율</option></select></label></div>
+        <canvas id="growth" class="co-growth"></canvas>
+        <p class="cap" id="growthNote"></p>
+      </div>
+      <div class="co-card">
+        <h3 class="co-h3">캐릭터 카드 <span class="cap" style="margin:0">목표를 정해 두면 원래 소리 없이도 특징을 지켰는지 볼 수 있어요</span></h3>
+        <div class="co-card-grid">
+          <label>높이 <span class="co-pair"><input type="number" id="cLo" min="50" max="1100" step="5" placeholder="최저"> ~ <input type="number" id="cHi" min="50" max="1100" step="5" placeholder="최고"> Hz</span></label>
+          <label>높낮이 폭 <select id="cRange"><option value="">상관없음</option><option value="flat">작게 (밋밋하게)</option><option value="mid">보통</option><option value="wide">크게 (생생하게)</option></select></label>
+          <label>밝기 <select id="cBright"><option value="">상관없음</option><option value="dark">어둡게</option><option value="mid">보통</option><option value="bright">밝게</option></select></label>
+          <label>소리 <select id="cHigh"><option value="">상관없음</option><option value="low">진성 위주 (낮은 쪽)</option><option value="high">높은 소리 위주 (가성 쪽)</option></select></label>
+          <label class="co-wide">메모 <input type="text" id="cMemo" maxlength="80" placeholder="예: 느긋하게, 말끝을 올림"></label>
+        </div>
+        <div class="sup-ctl"><button type="button" class="primary-sm" id="cSave">카드 저장</button><button type="button" id="cFill">지금 녹음들 평균으로 채우기</button><span class="cap" id="cMsg" style="margin:0"></span></div>
+      </div>
+    </div>
+    <div class="histwrap"><table class="hist co-takes"><thead><tr><th>녹음 날짜</th><th>파일</th><th>길이</th><th>중심 높이</th><th>높낮이 폭</th><th>밝기</th><th>높은 소리</th><th>카드</th><th>녹음 상태</th><th></th></tr></thead><tbody id="dBody"></tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>달마다 녹음한 수</h2><span class="cap" style="margin:0" id="monthNote"></span></div>
+    <canvas id="months" class="co-months"></canvas>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>녹음 상태 검사</h2><span class="cap" style="margin:0" id="qNote"></span></div>
+    <div class="co-q" id="qList"></div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:12px">숫자 읽는 법</h2>
+    <div class="tips">
+      <div><b>중심 높이</b>말소리 높이의 가운데 값이에요. 평소 남자 말소리는 대개 85~155 Hz, 여자는 165~255 Hz쯤이에요.</div>
+      <div><b>밝기 (0~100)</b>높은 배음이 얼마나 센지예요. 클수록 앞쪽에서 나는 밝고 또렷한 소리, 작을수록 어둡고 둥근 소리예요. 음이 아주 높아도 쓸 수 있어요. 여목 연습의 「밝기 훈련」과 같은 잣대예요.</div>
+      <div><b>높낮이 폭</b>말하는 동안 높이가 얼마나 오르내리는지(반음 단위)예요. 무심한 캐릭터는 작고, 감정이 큰 캐릭터는 커요.</div>
+      <div><b>높은 소리 비율</b>260 Hz 넘는 소리가 차지하는 비율이에요. 남자 목소리라면 대개 가성 쪽 소리예요.</div>
+      <div><b>저장 위치</b>녹음과 분석은 이 기기 브라우저 안에만 저장돼요. 어디에도 올라가지 않아요.</div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/voicefeat.js?v=202611151530"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const med = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const qq = (a, p) => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const RATE = 16000, HOP = 512;
+const brScore = b => Number.isFinite(b) ? Math.max(0, Math.min(100, (b + 40) / 36 * 100)) : NaN;
+const fmtD = t => { if (!t) return '날짜 모름'; const d = new Date(t); return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`; };
+
+// ---------- 저장 (IndexedDB) ----------
+const DB = (() => {
+  let p = null;
+  const open = () => p || (p = new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error('no-idb'));
+    const r = indexedDB.open('moksori-collection', 1);
+    r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('clips', { keyPath: 'id' }); d.createObjectStore('audio', { keyPath: 'id' }); d.createObjectStore('cards', { keyPath: 'char' }); };
+    r.onsuccess = () => res(r.result); r.onerror = () => { p = null; rej(r.error); };
+  }));
+  const tx = async (store, mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction(store, mode), s = t.objectStore(store); let out; const q = fn(s); if (q) q.onsuccess = () => { out = q.result; }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); };
+  return {
+    all: s => tx(s, 'readonly', st => st.getAll()).then(a => a || []),
+    get: (s, k) => tx(s, 'readonly', st => st.get(k)),
+    put: (s, v) => tx(s, 'readwrite', st => st.put(v)),
+    del: (s, k) => tx(s, 'readwrite', st => st.delete(k)),
+  };
+})();
+let clips = [], cards = {};
+async function loadAll() {
+  try { clips = await DB.all('clips'); (await DB.all('cards')).forEach(c => cards[c.char] = c); }
+  catch (_) { $('tiles').innerHTML = '<p class="err">이 브라우저에서는 모음집을 저장할 수 없어요. 시크릿 창이라면 일반 창으로 열어 주세요.</p>'; }
+  renderAll();
+}
+
+// ---------- 파일 이름 → 캐릭터 ----------
+function charOf(name) {
+  let s = name.replace(/\.[^.]+$/, '').normalize('NFC').trim();
+  if (/^(음성|voice|녹음|recording|새 녹음|record)\s*[\d_-]*\s*$/i.test(s) || /^[\d\s._,!+\-ㅋㅎㅣ¹]*$/.test(s)) return '이름 없는 녹음';
+  s = s.replace(/^[^\p{L}]+/u, '').replace(/[\s.,_!~-]+$/u, '');
+  s = s.replace(/(\s*[-_]?\s*\d+)+$/u, '').replace(/[\s.,_!~-]+$/u, '');
+  return s || '이름 없는 녹음';
+}
+
+// ---------- 녹음 날짜: mp4/m4a 'mvhd' 상자에서 읽기 ----------
+function mp4Date(buf) {
+  const u = new Uint8Array(buf), dv = new DataView(buf), n = u.length;
+  for (let i = 4; i < n - 24; i++) {
+    if (u[i] === 0x6d && u[i + 1] === 0x76 && u[i + 2] === 0x68 && u[i + 3] === 0x64) { // 'mvhd'
+      const ver = u[i + 4]; let sec;
+      if (ver === 1) sec = dv.getUint32(i + 8) * 4294967296 + dv.getUint32(i + 12); else sec = dv.getUint32(i + 8);
+      if (!sec) return 0;
+      const t = (sec - 2082844800) * 1000;
+      return t > Date.UTC(2005, 0, 1) && t < Date.now() + 86400000 ? t : 0;
+    }
+  }
+  return 0;
+}
+
+// ---------- 분석 ----------
+let actx = null;
+async function decode16k(buf) {
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+  const ab = await new Promise((res, rej) => { const p = actx.decodeAudioData(buf.slice(0), res, rej); if (p && p.then) p.then(res, rej); });
+  const dur = Math.min(ab.duration, 180), off = new OfflineAudioContext(1, Math.max(1, Math.ceil(dur * RATE)), RATE), s = off.createBufferSource();
+  s.buffer = ab; s.connect(off.destination); s.start();
+  // 낮은 웅웅 소리 검사용: 150 Hz 아래만 따로
+  const off2 = new OfflineAudioContext(1, Math.max(1, Math.ceil(dur * RATE)), RATE), s2 = off2.createBufferSource(), lp = off2.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 150; lp.Q.value = 0.7; s2.buffer = ab; s2.connect(lp); lp.connect(off2.destination); s2.start();
+  let peak = 0, clip = 0; for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < d.length; i += 3) { const a = Math.abs(d[i]); if (a > peak) peak = a; if (a > 0.985) clip++; } }
+  return { x: (await off.startRendering()).getChannelData(0), low: (await off2.startRendering()).getChannelData(0), dur: ab.duration, peak, clip };
+}
+async function analyzeClip(x, low) {
+  const fr = []; let pk = -99;
+  for (let i = 0; i + 1024 <= x.length; i += HOP) {
+    const r = VF.analyze(x.subarray(i, i + 1024)); fr.push(r); if (r.db > pk) pk = r.db;
+    if (fr.length % 400 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+  const sp = fr.map(r => r.db > pk - 30), v = fr.filter((r, i) => sp[i] && r.f0 > 60 && r.clarity > 0.6);
+  const f0 = v.map(r => r.f0), st = f0.map(h => 12 * Math.log2(h / 440) + 69);
+  const dbs = fr.map(r => r.db), floor = qq(dbs, 0.1), top = qq(dbs.filter((_, i) => sp[i]), 0.9);
+  // 조용한 틈에서 낮은 웅웅 소리 / 다른 소리 단서
+  // 가장 조용한 20% 구간 = 말 사이의 틈. 거기에 음이 있는 소리가 많으면 뒤에서 다른 소리(음악·영상)가 난 것
+  const q20 = qq(dbs, 0.2), quietIdx = []; fr.forEach((r, i) => { if (r.db <= q20) quietIdx.push(i); });
+  const quietPitched = quietIdx.filter(i => fr[i].f0 > 60 && fr[i].clarity > 0.75 && fr[i].db > -60).length / Math.max(1, quietIdx.length);
+  let lowE = 0, allE = 0;
+  for (const i of quietIdx) { const a = i * HOP; for (let j = a; j < a + 1024 && j < x.length; j++) { allE += x[j] * x[j]; if (low) lowE += low[j] * low[j]; } }
+  const humLike = allE > 0 && 10 * Math.log10(allE / Math.max(1, quietIdx.length * 1024)) > -62 ? lowE / allE : 0;
+  // 음높이 곡선(대략 0.1초 간격) — 캐릭터 카드 확인용이 아니라 그림용
+  return {
+    speech: sp.filter(Boolean).length * HOP / RATE, quietDb: q20, voiced: v.length * HOP / RATE,
+    f0: med(f0), lo: qq(f0, 0.1), hi: qq(f0, 0.9), range: st.length > 5 ? qq(st, 0.9) - qq(st, 0.1) : NaN,
+    bright: med(v.map(r => r.bright).filter(Number.isFinite)), res: med(v.filter(r => r.f0 < 330).map(r => r.res).filter(Number.isFinite)),
+    high: f0.length ? f0.filter(z => z > 260).length / f0.length : NaN,
+    snr: top - floor, silence: fr.filter(r => r.db < Math.max(pk - 30, floor + 8)).length / Math.max(1, fr.length), quietPitched, humLike, pk,
+  };
+}
+function quality(s, meta) {
+  const q = [];
+  if (meta.peak < 0.08) q.push(['소리가 아주 작아요', '마이크를 입에 더 가까이']);
+  if (meta.clip > 30) q.push(['소리가 찢어졌어요', '너무 크게 녹음됨 · 마이크에서 조금 멀리']);
+  const humNote = s.humLike > 0.8 ? ' · 주로 낮게 웅웅대는 소리예요 (바람·전기·방 울림)' : '';
+  if (s.snr < 15) q.push(['잡음이 아주 커요', `목소리와 잡음 차이 ${Math.round(s.snr)} dB${humNote} · 뒤에서 영상·음악 소리가 났는지도 확인`]);
+  else if (s.snr < 22) q.push(['잡음이 커요', `목소리와 잡음 차이 ${Math.round(s.snr)} dB${humNote} · 조용한 곳, 마이크 가까이`]);
+  else if (s.humLike > 0.85 && s.quietDb > -50) q.push(['낮게 웅웅대는 잡음', '바람·전기·방 울림 소리 · 충전기를 빼거나 장소를 바꿔 보세요']);
+  if (s.quietPitched > 0.3) q.push(['뒤에서 다른 소리', '말 사이에도 음이 있는 소리가 들려요 · 원본 영상 소리나 음악이 섞였는지 확인']);
+  if (s.silence > 0.6 && meta.dur > 6) q.push(['조용한 부분이 길어요', `전체의 ${Math.round(s.silence * 100)}% · 분석에서는 자동으로 빼요`]);
+  if (s.voiced < 0.8) q.push(['목소리가 거의 없어요', '분석 결과를 믿기 어려워요']);
+  return q;
+}
+
+// ---------- 올리기 ----------
+let busy = null;
+async function ingest(fileList) {
+  const files = [...fileList].filter(f => /^(audio|video)\//.test(f.type) || /\.(m4a|mp3|wav|aac|ogg|webm|mp4|3gp|flac)$/i.test(f.name));
+  if (!files.length) { $('progMsg').textContent = '소리 파일이 없어요.'; $('prog').hidden = false; return; }
+  if (busy) return; busy = { stop: false };
+  const keep = $('keepAudio').checked, have = new Set(clips.map(c => c.name + '|' + c.size));
+  $('prog').hidden = false; $('tally').classList.add('on'); $('tally').textContent = 'ANALYZING';
+  let done = 0, skipped = 0, failed = [];
+  for (const f of files) {
+    if (busy.stop) break;
+    $('progBar').style.width = (done / files.length * 100) + '%';
+    $('progMsg').textContent = `${done + 1} / ${files.length} · ${f.name}`;
+    if (have.has(f.name + '|' + f.size)) { skipped++; done++; continue; }
+    try {
+      const buf = await f.arrayBuffer(), date = mp4Date(buf);
+      const d = await decode16k(buf), s = await analyzeClip(d.x, d.low);
+      const c = { id: uid(), name: f.name, size: f.size, char: charOf(f.name), date: date || f.lastModified || 0, dateFrom: date ? 'file' : 'modified', added: Date.now(), dur: d.dur, s, q: quality(s, d), audio: keep };
+      await DB.put('clips', c); if (keep) await DB.put('audio', { id: c.id, blob: new Blob([buf], { type: f.type || 'audio/mp4' }) });
+      clips.push(c); have.add(f.name + '|' + f.size);
+    } catch (_) { failed.push(f.name); }
+    done++;
+    if (done % 8 === 0) renderAll();
+  }
+  $('progBar').style.width = '100%';
+  $('progMsg').textContent = `${busy.stop ? '멈췄어요. ' : '다 했어요. '}${done - skipped - failed.length}개 분석${skipped ? ` · 이미 있는 ${skipped}개 건너뜀` : ''}${failed.length ? ` · 못 읽은 파일 ${failed.length}개 (${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ' …' : ''})` : ''}`;
+  $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; busy = null;
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
+  renderAll();
+}
+$('files').addEventListener('change', e => { ingest(e.target.files); e.target.value = ''; });
+$('folder').addEventListener('change', e => { ingest(e.target.files); e.target.value = ''; });
+$('progStop').addEventListener('click', () => { if (busy) busy.stop = true; });
+const drop = $('drop');
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => ingest(e.dataTransfer.files));
+
+// ---------- 묶기 ----------
+function groups() {
+  const g = new Map();
+  for (const c of clips) { if (!g.has(c.char)) g.set(c.char, []); g.get(c.char).push(c); }
+  const out = [...g].map(([char, list]) => {
+    list.sort((a, b) => (a.date || 0) - (b.date || 0));
+    const ok = list.filter(c => c.s.voiced >= 0.8), m = k => med(ok.map(c => c.s[k]).filter(Number.isFinite));
+    return { char, list, n: list.length, first: list[0].date, last: list[list.length - 1].date, f0: m('f0'), bright: m('bright'), range: m('range'), high: m('high') };
+  });
+  return out;
+}
+const hueOf = (() => { const m = new Map(); return ch => { if (!m.has(ch)) { let h = 0; for (const c of ch) h = (h * 31 + c.charCodeAt(0)) % 360; m.set(ch, h); } return m.get(ch); }; })();
+const colOf = (ch, a = 1) => `hsla(${hueOf(ch)}, 62%, 48%, ${a})`;
+
+// ---------- 그리기 ----------
+function sizeCv(cv, h) { const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = r.width * d; cv.height = h * d; cv.style.height = h + 'px'; const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return { g, W: r.width, H: h }; }
+function renderAll() {
+  const G = groups();
+  // 요약
+  const dated = clips.filter(c => c.date), t0 = dated.length ? Math.min(...dated.map(c => c.date)) : 0, t1 = dated.length ? Math.max(...dated.map(c => c.date)) : 0;
+  const voiced = clips.reduce((a, c) => a + (c.s.voiced || 0), 0);
+  $('tiles').innerHTML = clips.length ? `
+    <div class="panel co-tile"><div class="ym-lab">녹음</div><div class="ym-num">${clips.length}</div><div class="cap" style="margin:0">개</div></div>
+    <div class="panel co-tile"><div class="ym-lab">캐릭터</div><div class="ym-num">${G.filter(g => g.char !== '이름 없는 녹음').length}</div><div class="cap" style="margin:0">명${G.some(g => g.char === '이름 없는 녹음') ? ' + 이름 없는 녹음' : ''}</div></div>
+    <div class="panel co-tile"><div class="ym-lab">기간</div><div class="co-period">${fmtD(t0)}<br>~ ${fmtD(t1)}</div></div>
+    <div class="panel co-tile"><div class="ym-lab">목소리 낸 시간</div><div class="ym-num">${voiced >= 60 ? Math.round(voiced / 60) : Math.round(voiced)}</div><div class="cap" style="margin:0">${voiced >= 60 ? '분' : '초'} (조용한 부분 뺌)</div></div>` : '';
+  // 평소 목소리 선택지
+  const bc = $('baseChar'), cur = bc.value || localStorage.getItem('moksori.col.base') || (G.find(g => g.char === '평소') ? '평소' : '');
+  bc.innerHTML = '<option value="">(고르기)</option>' + G.map(g => `<option value="${esc(g.char)}">${esc(g.char)}</option>`).join(''); bc.value = G.some(g => g.char === cur) ? cur : '';
+  renderChars(G); drawMap(G); drawMonths(); renderQ(); if (sel) renderDetail();
+}
+function renderChars(G) {
+  const by = $('sortBy').value;
+  G.sort(by === 'recent' ? (a, b) => (b.last || 0) - (a.last || 0) : by === 'f0' ? (a, b) => (a.f0 || 0) - (b.f0 || 0) : by === 'name' ? (a, b) => a.char.localeCompare(b.char, 'ko') : (a, b) => b.n - a.n);
+  if (!G.length) { $('chars').innerHTML = '<p class="cap">아직 올린 녹음이 없어요.</p>'; return; }
+  $('chars').innerHTML = G.map(g => {
+    const ok = g.list.filter(c => c.s.voiced >= 0.8 && Number.isFinite(c.s.f0) && c.date), a = ok[0], b = ok[ok.length - 1];
+    let trend = '';
+    if (a && b && a !== b) { const d = 12 * Math.log2(b.s.f0 / a.s.f0); if (Math.abs(d) >= 1) trend = `<span class="co-trend">${d > 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(1)}반음</span>`; }
+    const warn = g.list.filter(c => c.q.length).length, card = cards[g.char];
+    return `<button type="button" class="co-char${sel === g.char ? ' on' : ''}" data-char="${esc(g.char)}" style="--cc:${colOf(g.char)}">
+      <span class="co-cn">${esc(g.char)}${card ? ' <small>카드</small>' : ''}</span>
+      <span class="co-cm">${g.n}개 · ${Number.isFinite(g.f0) ? Math.round(g.f0) + ' Hz' : '–'} ${trend}</span>
+      <span class="co-cd">${g.first ? fmtD(g.first) : ''}${g.last && g.last !== g.first ? ' ~ ' + fmtD(g.last) : ''}${warn ? ` · 상태 확인 ${warn}` : ''}</span></button>`;
+  }).join('');
+}
+$('chars').addEventListener('click', e => { const b = e.target.closest('[data-char]'); if (!b) return; sel = b.dataset.char; renderAll(); $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+$('sortBy').addEventListener('change', () => renderChars(groups()));
+
+// 지도: 가로 높이(로그), 세로 밝기
+const XMIN = 70, XMAX = 700, YMIN = -40, YMAX = -4, SPLIT_X = 165, SPLIT_Y = -18;
+let mapPts = [];
+function drawMap(G) {
+  const cv = $('map'), { g, W, H } = sizeCv(cv, 380), L = 46, R = 12, T = 14, B = 34;
+  const X = f => L + (Math.log(Math.min(XMAX, Math.max(XMIN, f)) / XMIN) / Math.log(XMAX / XMIN)) * (W - L - R);
+  const Y = b => T + (1 - (Math.min(YMAX, Math.max(YMIN, b)) - YMIN) / (YMAX - YMIN)) * (H - T - B);
+  g.clearRect(0, 0, W, H); g.font = '12px "IBM Plex Sans KR", sans-serif';
+  // 네 구역
+  const zones = [[XMIN, SPLIT_X, SPLIT_Y, YMAX, '낮고 밝은 쪽'], [SPLIT_X, XMAX, SPLIT_Y, YMAX, '높고 밝은 쪽'], [XMIN, SPLIT_X, YMIN, SPLIT_Y, '낮고 어두운 쪽'], [SPLIT_X, XMAX, YMIN, SPLIT_Y, '높고 어두운 쪽']];
+  const cnt = zones.map(z => G.filter(c => c.char !== '이름 없는 녹음' && Number.isFinite(c.f0) && Number.isFinite(c.bright) && c.f0 >= z[0] && c.f0 < z[1] && c.bright >= z[2] && c.bright < z[3]).length);
+  zones.forEach((z, i) => { g.fillStyle = cnt[i] ? 'rgba(0,0,0,0)' : 'rgba(214,150,30,0.07)'; g.fillRect(X(z[0]), Y(z[3]), X(z[1]) - X(z[0]), Y(z[2]) - Y(z[3])); g.fillStyle = css('--muted'); g.textAlign = z[0] === XMIN ? 'left' : 'right'; g.textBaseline = z[3] === YMAX ? 'top' : 'bottom'; g.fillText(z[4] + (cnt[i] ? '' : ' (비어 있음)'), z[0] === XMIN ? X(z[0]) + 6 : X(z[1]) - 6, z[3] === YMAX ? Y(z[3]) + 4 : Y(z[2]) - 4); });
+  g.strokeStyle = css('--line'); g.lineWidth = 1; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(X(SPLIT_X), T); g.lineTo(X(SPLIT_X), H - B); g.moveTo(L, Y(SPLIT_Y)); g.lineTo(W - R, Y(SPLIT_Y)); g.stroke(); g.setLineDash([]);
+  // 축
+  g.fillStyle = css('--muted'); g.textAlign = 'center'; g.textBaseline = 'top';
+  for (const f of [80, 100, 150, 200, 300, 400, 600]) { g.fillText(f, X(f), H - B + 6); g.strokeStyle = css('--line'); g.beginPath(); g.moveTo(X(f), H - B); g.lineTo(X(f), H - B + 4); g.stroke(); }
+  g.fillText('중심 높이 (Hz) →', (L + W - R) / 2, H - 14);
+  g.save(); g.translate(12, (T + H - B) / 2); g.rotate(-Math.PI / 2); g.fillText('밝기 →', 0, -6); g.restore();
+  // 평소 목소리 표시
+  const base = G.find(c => c.char === $('baseChar').value);
+  mapPts = [];
+  if ($('mapAll').checked) for (const c of clips) if (c.s.voiced >= 0.8 && Number.isFinite(c.s.f0) && Number.isFinite(c.s.bright)) { g.fillStyle = colOf(c.char, 0.55); g.beginPath(); g.arc(X(c.s.f0), Y(c.s.bright), 3.2, 0, 7); g.fill(); mapPts.push({ x: X(c.s.f0), y: Y(c.s.bright), char: c.char }); }
+  const lab = [];
+  for (const c of G) {
+    if (c.char === '이름 없는 녹음' || !Number.isFinite(c.f0) || !Number.isFinite(c.bright)) continue;
+    const x = X(c.f0), y = Y(c.bright), isBase = base && c.char === base.char, sz = Math.min(11, 4 + Math.sqrt(c.n) * 1.6);
+    g.fillStyle = colOf(c.char, 0.9); g.strokeStyle = css('--panel'); g.lineWidth = 2; g.beginPath(); g.arc(x, y, sz, 0, 7); g.fill(); g.stroke();
+    if (isBase) { g.strokeStyle = css('--ink'); g.lineWidth = 2; g.beginPath(); g.arc(x, y, sz + 4, 0, 7); g.stroke(); }
+    mapPts.push({ x, y, char: c.char, r: sz });
+    lab.push({ x: x + sz + 3, y, t: c.char + (isBase ? ' (평소)' : '') });
+  }
+  // 이름표 겹침 피하기
+  lab.sort((a, b) => a.y - b.y); const used = [];
+  g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = css('--ink');
+  for (const l of lab) { let y = l.y; const w = g.measureText(l.t).width; let tries = 0; while (used.some(u => Math.abs(u.y - y) < 13 && l.x < u.x + u.w && l.x + w > u.x) && tries < 6) { y += 13; tries++; } used.push({ x: l.x, y, w }); g.fillText(l.t, Math.min(l.x, W - R - w), y); }
+  // 설명
+  const empty = zones.filter((_, i) => !cnt[i]).map(z => z[4]);
+  let note = G.length ? (empty.length ? `아직 비어 있는 곳: <b>${empty.join(', ')}</b>. 다음에 도전할 캐릭터를 이쪽에서 골라 보세요.` : '네 구역 모두에 캐릭터가 있어요. 폭넓게 하고 있어요!') : '녹음을 올리면 캐릭터가 지도에 찍혀요.';
+  if (base) { const far = G.filter(c => c !== base && Number.isFinite(c.f0)).sort((a, b) => Math.abs(Math.log(b.f0 / base.f0)) - Math.abs(Math.log(a.f0 / base.f0)))[0]; if (far) note += ` 평소 목소리에서 가장 먼 캐릭터는 <b>${esc(far.char)}</b> (${(12 * Math.log2(far.f0 / base.f0)).toFixed(1)}반음)예요.`; }
+  $('mapNote').innerHTML = note;
+}
+$('baseChar').addEventListener('change', () => { localStorage.setItem('moksori.col.base', $('baseChar').value); drawMap(groups()); });
+$('mapAll').addEventListener('change', () => drawMap(groups()));
+$('map').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; const p = mapPts.filter(p => Math.hypot(p.x - x, p.y - y) < (p.r || 5) + 4).pop(); if (p) { sel = p.char; renderAll(); $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+
+function drawMonths() {
+  const cv = $('months'), { g, W, H } = sizeCv(cv, 150), dated = clips.filter(c => c.date);
+  g.clearRect(0, 0, W, H);
+  if (!dated.length) { $('monthNote').textContent = ''; return; }
+  const key = t => { const d = new Date(t); return d.getFullYear() * 12 + d.getMonth(); };
+  const k0 = Math.min(...dated.map(c => key(c.date))), k1 = Math.max(...dated.map(c => key(c.date))), n = k1 - k0 + 1, cnt = new Array(n).fill(0);
+  dated.forEach(c => cnt[key(c.date) - k0]++);
+  const mx = Math.max(...cnt), L = 28, B = 22, bw = (W - L) / n;
+  g.font = '11px "IBM Plex Sans KR", sans-serif'; g.textAlign = 'center';
+  cnt.forEach((v, i) => { const h = v / mx * (H - B - 16); g.fillStyle = css('--imi'); g.fillRect(L + i * bw + bw * 0.15, H - B - h, bw * 0.7, h); if (v) { g.fillStyle = css('--ink'); g.textBaseline = 'bottom'; g.fillText(v, L + i * bw + bw / 2, H - B - h - 2); } const y = Math.floor((k0 + i) / 12), m = (k0 + i) % 12 + 1; if (n <= 18 || m % 3 === 1) { g.fillStyle = css('--muted'); g.textBaseline = 'top'; g.fillText(m === 1 || i === 0 ? `${String(y).slice(2)}.${m}` : `${m}월`, L + i * bw + bw / 2, H - B + 5); } });
+  const best = cnt.indexOf(mx);
+  $('monthNote').textContent = `가장 많이 녹음한 달: ${Math.floor((k0 + best) / 12)}년 ${(k0 + best) % 12 + 1}월 (${mx}개)${clips.length - dated.length ? ` · 날짜 모름 ${clips.length - dated.length}개` : ''}`;
+}
+
+function renderQ() {
+  const bad = clips.filter(c => c.q.length);
+  const kinds = {}; bad.forEach(c => c.q.forEach(([k]) => kinds[k] = (kinds[k] || 0) + 1));
+  $('qNote').textContent = clips.length ? `${clips.length}개 중 ${bad.length}개에 확인할 점이 있어요` : '';
+  $('qList').innerHTML = clips.length ? (Object.keys(kinds).length ? Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<details class="co-qi"><summary><b>${esc(k)}</b> <span class="cap" style="margin:0">${n}개</span></summary><ul>${bad.filter(c => c.q.some(q => q[0] === k)).slice(0, 40).map(c => `<li><button type="button" class="linkish" data-open="${esc(c.char)}">${esc(c.name)}</button> <span class="cap" style="margin:0">${esc(c.q.find(q => q[0] === k)[1])}</span></li>`).join('')}</ul></details>`).join('') : '<p class="cap">모든 녹음 상태가 좋아요.</p>') : '<p class="cap">녹음을 올리면 잡음, 웅웅대는 소리, 뒤에서 들리는 다른 소리, 너무 긴 조용한 부분을 찾아 줘요.</p>';
+}
+$('qList').addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (!b) return; sel = b.dataset.open; renderAll(); $('detail').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+
+// ---------- 캐릭터 자세히 ----------
+let sel = null, playing = null;
+const RANGE = { flat: [0, 9], mid: [7, 15], wide: [13, 99] }, BRIGHT = { dark: [-99, -21], mid: [-23, -14], bright: [-16, 99] };
+function cardCheck(card, s) {
+  if (!card) return null; const r = [];
+  if (card.lo || card.hi) r.push(['높이', Number.isFinite(s.f0) && (!card.lo || s.f0 >= card.lo) && (!card.hi || s.f0 <= card.hi)]);
+  if (card.range) r.push(['높낮이', Number.isFinite(s.range) && s.range >= RANGE[card.range][0] && s.range <= RANGE[card.range][1]]);
+  if (card.bright) r.push(['밝기', Number.isFinite(s.bright) && s.bright >= BRIGHT[card.bright][0] && s.bright <= BRIGHT[card.bright][1]]);
+  if (card.high) r.push(['소리', Number.isFinite(s.high) && (card.high === 'high' ? s.high >= 0.5 : s.high < 0.3)]);
+  return r.length ? r : null;
+}
+function renderDetail() {
+  const g = groups().find(x => x.char === sel); if (!g) { $('detail').hidden = true; sel = null; return; }
+  $('detail').hidden = false; $('dName').textContent = `${g.char} · ${g.n}개`; $('dName').style.color = colOf(g.char);
+  const card = cards[g.char] || {};
+  $('cLo').value = card.lo || ''; $('cHi').value = card.hi || ''; $('cRange').value = card.range || ''; $('cBright').value = card.bright || ''; $('cHigh').value = card.high || ''; $('cMemo').value = card.memo || ''; $('cMsg').textContent = '';
+  const f = (v, d = 1) => Number.isFinite(v) ? v.toFixed(d) : '–';
+  $('dBody').innerHTML = [...g.list].reverse().map(c => {
+    const chk = cardCheck(cards[g.char], c.s), okN = chk ? chk.filter(x => x[1]).length : 0;
+    return `<tr data-id="${c.id}"><td>${fmtD(c.date)}${c.dateFrom === 'modified' ? '<small title="파일 안에 녹음 날짜가 없어 파일 수정 날짜를 썼어요">*</small>' : ''}</td><td class="co-fn">${esc(c.name)}</td><td>${f(c.dur, 0)}초</td>
+      <td>${Number.isFinite(c.s.f0) ? Math.round(c.s.f0) + ' Hz <small>' + VF.note(c.s.f0) + '</small>' : '–'}</td><td>${f(c.s.range)}<small>반음</small></td><td>${Number.isFinite(c.s.bright) ? Math.round(brScore(c.s.bright)) : '–'}</td><td>${Number.isFinite(c.s.high) ? Math.round(c.s.high * 100) + '%' : '–'}</td>
+      <td>${chk ? `<span class="co-chk ${okN === chk.length ? 'ok' : okN ? 'mid' : 'no'}" title="${esc(chk.map(x => (x[1] ? '✓ ' : '✗ ') + x[0]).join(' · '))}">${okN}/${chk.length}</span>` : '–'}</td>
+      <td>${c.q.length ? `<span class="co-warn" title="${esc(c.q.map(q => q[0] + ': ' + q[1]).join('\n'))}">${esc(c.q[0][0])}${c.q.length > 1 ? ` 외 ${c.q.length - 1}` : ''}</span>` : '<span class="co-good">좋음</span>'}</td>
+      <td class="sc-acts">${c.audio ? '<button type="button" data-act="play">▶</button>' : ''}<select data-act="move" aria-label="다른 캐릭터로 옮기기"><option value="">옮기기…</option>${groups().filter(x => x.char !== g.char).map(x => `<option>${esc(x.char)}</option>`).join('')}</select><button type="button" class="del" data-act="del">삭제</button></td></tr>`;
+  }).join('');
+  drawGrowth(g);
+}
+function drawGrowth(gr) {
+  const cv = $('growth'), { g, W, H } = sizeCv(cv, 220), k = $('dMetric').value;
+  const val = c => k === 'high' ? c.s.high * 100 : k === 'bright' ? brScore(c.s.bright) : c.s[k];
+  const pts = gr.list.filter(c => c.date && c.s.voiced >= 0.8 && Number.isFinite(val(c)));
+  g.clearRect(0, 0, W, H); g.font = '11px "IBM Plex Sans KR", sans-serif';
+  const unit = { f0: 'Hz', bright: '', range: '반음', high: '%' }[k];
+  if (pts.length < 2) { g.fillStyle = css('--muted'); g.textAlign = 'center'; g.fillText(pts.length ? '녹음이 2개 이상 있어야 변화를 그릴 수 있어요' : '날짜가 있는 녹음이 없어요', W / 2, H / 2); $('growthNote').textContent = ''; return; }
+  const L = 44, R = 12, T = 12, B = 26, t0 = pts[0].date, t1 = pts[pts.length - 1].date || t0 + 1;
+  let v0 = Math.min(...pts.map(val)), v1 = Math.max(...pts.map(val)); const pad = (v1 - v0) * 0.15 || 5; v0 -= pad; v1 += pad;
+  const X = t => L + (t1 === t0 ? 0.5 : (t - t0) / (t1 - t0)) * (W - L - R), Y = v => T + (1 - (v - v0) / (v1 - v0)) * (H - T - B);
+  g.strokeStyle = css('--line'); g.fillStyle = css('--muted'); g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let i = 0; i <= 4; i++) { const v = v0 + (v1 - v0) * i / 4; g.beginPath(); g.moveTo(L, Y(v)); g.lineTo(W - R, Y(v)); g.stroke(); g.fillText(Math.round(v) + (unit === '%' ? '%' : ''), L - 6, Y(v)); }
+  g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(fmtD(t0), L + 30, H - B + 6); g.fillText(fmtD(t1), W - R - 30, H - B + 6);
+  // 카드 목표 띠
+  const card = cards[gr.char];
+  if (card && k === 'f0' && (card.lo || card.hi)) { g.fillStyle = 'rgba(40,160,90,0.12)'; const a = Y(Math.min(v1, card.hi || v1)), b = Y(Math.max(v0, card.lo || v0)); g.fillRect(L, a, W - L - R, b - a); }
+  // 이동 평균 선 + 점
+  const col = colOf(gr.char);
+  g.strokeStyle = col; g.lineWidth = 2; g.beginPath();
+  const wn = pts.length >= 6 ? 2 : 0;
+  pts.forEach((c, i) => { const w = pts.slice(Math.max(0, i - wn), i + wn + 1).map(val), y = Y(med(w)); i ? g.lineTo(X(c.date), y) : g.moveTo(X(c.date), y); }); g.stroke();
+  pts.forEach(c => { g.fillStyle = col; g.globalAlpha = 0.55; g.beginPath(); g.arc(X(c.date), Y(val(c)), 3.5, 0, 7); g.fill(); g.globalAlpha = 1; });
+  const n = Math.max(1, Math.round(pts.length / 3)), a = med(pts.slice(0, n).map(val)), b = med(pts.slice(-n).map(val));
+  const diff = k === 'f0' ? `${(12 * Math.log2(b / a)).toFixed(1)}반음 (${Math.round(a)} → ${Math.round(b)} Hz)` : `${(b - a > 0 ? '+' : '') + (b - a).toFixed(1)}${unit} (${a.toFixed(1)} → ${b.toFixed(1)})`;
+  const name = { f0: '중심 높이', bright: '밝기', range: '높낮이 폭', high: '높은 소리 비율' }[k];
+  $('growthNote').textContent = `처음 ${n}개와 최근 ${n}개를 비교하면 ${name}가 ${diff} 바뀌었어요. 선은 앞뒤 녹음을 묶은 흐름이에요.`;
+}
+$('dMetric').addEventListener('change', () => { const g = groups().find(x => x.char === sel); if (g) drawGrowth(g); });
+$('dClose').addEventListener('click', () => { sel = null; $('detail').hidden = true; renderAll(); });
+$('dRenameBtn').addEventListener('click', async () => {
+  const to = $('dRename').value.trim(); if (!to || !sel) return;
+  for (const c of clips) if (c.char === sel) { c.char = to; await DB.put('clips', c); }
+  if (cards[sel] && !cards[to]) { const cd = { ...cards[sel], char: to }; await DB.put('cards', cd); cards[to] = cd; }
+  if (cards[sel]) { await DB.del('cards', sel); delete cards[sel]; }
+  sel = to; $('dRename').value = ''; renderAll();
+});
+$('dBody').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return; const id = b.closest('tr').dataset.id, c = clips.find(x => x.id === id); if (!c) return;
+  if (b.dataset.act === 'play') {
+    if (playing) { playing.pause(); const was = playing.dataset.id; playing = null; if (was === id) return; }
+    const a = await DB.get('audio', id); if (!a) return; const el = new Audio(URL.createObjectURL(a.blob)); el.dataset.id = id; el.play(); playing = el; el.onended = () => { playing = null; };
+  } else if (b.dataset.act === 'del') {
+    if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '삭제'; }, 3000); return; }
+    await DB.del('clips', id); await DB.del('audio', id); clips = clips.filter(x => x.id !== id); renderAll();
+  }
+});
+$('dBody').addEventListener('change', async e => {
+  if (e.target.dataset.act !== 'move' || !e.target.value) return; const c = clips.find(x => x.id === e.target.closest('tr').dataset.id); if (!c) return;
+  c.char = e.target.value; await DB.put('clips', c); renderAll();
+});
+$('cSave').addEventListener('click', async () => {
+  if (!sel) return; const num = id => { const v = +$(id).value; return v > 0 ? v : null; };
+  const cd = { char: sel, lo: num('cLo'), hi: num('cHi'), range: $('cRange').value, bright: $('cBright').value, high: $('cHigh').value, memo: $('cMemo').value.trim() };
+  if (cd.lo && cd.hi && cd.lo > cd.hi) [cd.lo, cd.hi] = [cd.hi, cd.lo];
+  const empty = !cd.lo && !cd.hi && !cd.range && !cd.bright && !cd.high && !cd.memo;
+  if (empty) { await DB.del('cards', sel); delete cards[sel]; } else { await DB.put('cards', cd); cards[sel] = cd; }
+  renderAll(); $('cMsg').textContent = empty ? '카드를 비웠어요.' : '저장했어요. 표의 「카드」 칸에 몇 개 맞췄는지 나와요.';
+});
+$('cFill').addEventListener('click', () => {
+  const g = groups().find(x => x.char === sel); if (!g) return; const ok = g.list.filter(c => c.s.voiced >= 0.8);
+  const lo = med(ok.map(c => c.s.lo).filter(Number.isFinite)), hi = med(ok.map(c => c.s.hi).filter(Number.isFinite));
+  if (Number.isFinite(lo)) $('cLo').value = Math.round(lo / 5) * 5; if (Number.isFinite(hi)) $('cHi').value = Math.round(hi / 5) * 5;
+  if (Number.isFinite(g.range)) $('cRange').value = g.range < 9 ? 'flat' : g.range < 15 ? 'mid' : 'wide';
+  if (Number.isFinite(g.bright)) $('cBright').value = g.bright < -21 ? 'dark' : g.bright < -15 ? 'mid' : 'bright';
+  if (Number.isFinite(g.high)) $('cHigh').value = g.high >= 0.5 ? 'high' : g.high < 0.3 ? 'low' : '';
+  $('cMsg').textContent = '지금 녹음들 값으로 채웠어요. 원래 캐릭터에 맞게 고친 뒤 저장하세요.';
+});
+
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderAll, 150); });
+loadAll();
+})();
+</script>
+</body>
+</html>
