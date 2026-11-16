@@ -71,7 +71,7 @@ const VF = (() => {
       const p = env[i - 1], q = env[i], s = env[i + 1], d = p - 2 * q + s, off = d ? 0.5 * (p - s) / d : 0;
       peaks.push(fmin + (i + off) * step);
     }
-    const F1 = peaks.find(f => f >= 250 && f <= 1100);
+    const F1 = peaks.find(f => f >= 250 && f <= 1300);
     const F2 = F1 && peaks.find(f => f > F1 + 150 && f >= 700 && f <= 2900);
     const F3 = F2 && peaks.find(f => f > F2 + 200 && f >= 1700 && f <= 4000);
     if (!F1 || !F2 || !F3) return null;

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611151530">
+<link rel="stylesheet" href="assets/style.css?v=202611161200">
 </head>
 <body>
 <div class="wrap">
@@ -118,6 +118,32 @@
     <ol class="tr-reps" id="brReps"></ol>
   </section>
 
+  <section class="panel" id="rmSec">
+    <div class="chart-head"><h2>「아~」 울림 재기 <span class="cap" style="margin:0">여목에서 가장 중요한 두 숫자</span></h2></div>
+    <p class="cap" style="margin-top:0">마이크를 켜고 편한 높이(200~250 Hz쯤)에서 <b>「아~」</b>를 길게 내 보세요. 높이를 올리는 것보다 이 두 울림을 오른쪽 칸으로 옮기는 게 여자 목소리로 들리는 데 더 중요해요. 꼭 「아」로 재야 해요(다른 모음은 값이 달라요).</p>
+    <div class="rm-line"><div class="ym-lab">첫 번째 울림 <small>목 안 공간 · 목울대 높이</small></div>
+      <div class="rm-track" id="rmT1"><span class="rm-band m" data-a="400" data-b="700">남자</span><span class="rm-band f" data-a="800" data-b="1100">여자</span><span class="rm-band c" data-a="1100" data-b="1300">아이</span><b id="rmM1" hidden></b></div>
+      <div class="ym-num sm" id="rmV1">–</div></div>
+    <div class="rm-line"><div class="ym-lab">두 번째 울림 <small>입 안 공간 · 혀 높이</small></div>
+      <div class="rm-track" id="rmT2"><span class="rm-band m" data-a="1050" data-b="1250">남자</span><span class="rm-band f" data-a="1500" data-b="1700">여자</span><span class="rm-band c" data-a="1900" data-b="2200">아이</span><b id="rmM2" hidden></b></div>
+      <div class="ym-num sm" id="rmV2">–</div></div>
+    <p class="rm-msg" id="rmMsg">마이크를 켜고 「아~」를 길게 내 보세요.</p>
+    <h3 class="rm-h3">소리로 들어 보기 <span class="cap" style="margin:0">컴퓨터로 만든 「아~」 소리</span></h3>
+    <p class="cap" style="margin-top:0">사람 목소리가 아니라 기계로 만든 소리라서 조금 로봇 같아요. 그래도 <b>높이가 같아도 울림만 바꾸면 다르게 들린다</b>는 건 귀로 확인할 수 있어요.</p>
+    <div class="rm-play">
+      <label class="ym-field">높이 <select id="rmHz"><option value="120">120 Hz (남자 말소리)</option><option value="160">160 Hz (헷갈리는 구간)</option><option value="220" selected>220 Hz (여자 말소리)</option><option value="300">300 Hz (높음)</option></select></label>
+      <button type="button" data-rm="m">남자 울림</button>
+      <button type="button" data-rm="f">여자 울림</button>
+      <button type="button" data-rm="c">아이 울림</button>
+      <button type="button" data-rm="seq" class="primary-sm">셋을 이어서 듣기</button>
+    </div>
+    <div class="rm-play">
+      <button type="button" data-rm="trap">흔한 실수: 높이만 올린 소리 → 울림까지 바꾼 소리</button>
+      <button type="button" data-rm="low">낮은 높이(160 Hz)인데 여자 울림</button>
+    </div>
+    <p class="cap" id="rmPlayMsg" style="margin-bottom:0"></p>
+  </section>
+
   <section class="ym-two">
     <div class="panel">
       <h2>기준 녹음</h2>
@@ -193,9 +219,9 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611151530"></script>
-<script src="assets/coach.js?v=202611151530"></script>
-<script src="assets/yeomok-style.js?v=202611151530"></script>
+<script src="assets/voicefeat.js?v=202611161200"></script>
+<script src="assets/coach.js?v=202611161200"></script>
+<script src="assets/yeomok-style.js?v=202611161200"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -330,7 +356,7 @@ function onFrame(fr) {
   const now = performance.now();
   const item = { t: now, voiced, f0: fr.f0, res: fr.res, h1h2: fr.h1h2, clar: fr.clarity, cpp: fr.cpp };
   frames.push(item); while (frames.length && now - frames[0].t > 12500) frames.shift();
-  brFrame(fr, voiced, now); loadFrame(fr, voiced);
+  brFrame(fr, voiced, now); rmFrame(fr, voiced, now); loadFrame(fr, voiced);
   if (!voiced) return;
   recent.push(item); while (recent.length > 7) recent.shift();
   if (collect) { collect.items.push(item); }
@@ -420,6 +446,46 @@ $('brFile').addEventListener('change', async e => {
 });
 $('brGoal').addEventListener('change', brRender);
 brRender();
+
+// ---- 「아~」 울림 재기 ----
+const RM = { 1: [300, 1400], 2: [800, 2400] };
+const rmX = (k, hz) => Math.max(0, Math.min(100, (hz - RM[k][0]) / (RM[k][1] - RM[k][0]) * 100));
+document.querySelectorAll('.rm-band').forEach(el => { const k = el.parentElement.id === 'rmT1' ? 1 : 2, a = +el.dataset.a, b = +el.dataset.b; el.style.left = rmX(k, a) + '%'; el.style.width = (rmX(k, b) - rmX(k, a)) + '%'; });
+let rmRecent = [], rmLast = 0;
+function rmFrame(fr, voiced, now) {
+  if (voiced && fr.F && fr.F[0] > 0 && fr.F[1] > 0) rmRecent.push({ t: now, a: fr.F[0], b: fr.F[1], f0: fr.f0 });
+  while (rmRecent.length && now - rmRecent[0].t > 600) rmRecent.shift();
+  if (now - rmLast < 120) return; rmLast = now;
+  if (rmRecent.length < 5) { $('rmM1').hidden = $('rmM2').hidden = true; $('rmV1').textContent = $('rmV2').textContent = '–'; if (mic) $('rmMsg').textContent = '「아~」를 길게 내 보세요.'; return; }
+  const a = med(rmRecent.map(r => r.a)), b = med(rmRecent.map(r => r.b)), f = med(rmRecent.map(r => r.f0));
+  $('rmM1').hidden = $('rmM2').hidden = false; $('rmM1').style.left = rmX(1, a) + '%'; $('rmM2').style.left = rmX(2, b) + '%';
+  $('rmV1').textContent = Math.round(a) + ' Hz'; $('rmV2').textContent = Math.round(b) + ' Hz';
+  const w1 = a < 700 ? '첫 번째 울림은 아직 남자 쪽이에요. 침 삼킬 때처럼 목울대를 살짝 올려 보세요.' : a < 800 ? '첫 번째 울림이 거의 다 왔어요. 800을 넘기면 여자 칸이에요.' : a <= 1100 ? '첫 번째 울림이 여자 칸에 들어왔어요 ✓' : '첫 번째 울림이 아이 목소리 쪽이에요.';
+  const w2 = b < 1350 ? '두 번째 울림은 남자 쪽이에요. 살짝 웃는 입으로, 혀를 높여 보세요.' : b < 1500 ? '두 번째 울림이 가까워졌어요. 입을 조금 더 작게 해 보세요.' : b <= 1800 ? '두 번째 울림이 여자 칸에 들어왔어요 ✓' : '두 번째 울림이 아이 목소리 쪽이에요.';
+  const hi = f > 300 ? `<b class="warn">지금 높이(${Math.round(f)} Hz)가 너무 높아서 값이 정확하지 않아요. 300 Hz 아래로 낮춰서 재 보세요.</b><br>` : '';
+  const ok = a >= 800 && a <= 1100 && b >= 1500 && b <= 1800;
+  $('rmMsg').innerHTML = hi + (ok ? '<b class="good">두 울림 모두 여자 칸이에요. 이 느낌 그대로 짧은 말을 해 보세요.</b>' : w1 + '<br>' + w2);
+}
+const RMV = { m: [651, 1156, 2500, 3500], f: [945, 1582, 2900, 3900], c: [1170, 2070, 3300, 4300] }, RMN = { m: '남자 울림', f: '여자 울림', c: '아이 울림' };
+function rmTone(ac, kind, hz, at, dur) { // 톱니 소리(성대 흉내)를 울림 네 개에 통과시켜 「아」를 만든다
+  const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(hz * 0.97, at); o.frequency.linearRampToValueAtTime(hz, at + 0.15); o.frequency.linearRampToValueAtTime(hz * 0.94, at + dur);
+  const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = 5.2; lg.gain.value = hz * 0.012; l.connect(lg); lg.connect(o.frequency);
+  const tilt = ac.createBiquadFilter(); tilt.type = 'lowpass'; tilt.frequency.value = 1100; tilt.Q.value = 0.5; o.connect(tilt);
+  const env = ac.createGain(); env.gain.setValueAtTime(0, at); env.gain.linearRampToValueAtTime(0.5, at + 0.08); env.gain.setValueAtTime(0.5, at + dur - 0.2); env.gain.linearRampToValueAtTime(0, at + dur);
+  const bw = [90, 110, 150, 220], g = [1, 0.7, 0.3, 0.15];
+  RMV[kind].forEach((F, i) => { const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = F; bp.Q.value = F / bw[i]; const gg = ac.createGain(); gg.gain.value = g[i] * 3; tilt.connect(bp); bp.connect(gg); gg.connect(env); });
+  env.connect(ac.destination); o.start(at); l.start(at); o.stop(at + dur + 0.05); l.stop(at + dur + 0.05);
+}
+async function rmPlay(list) {
+  const C = window.AudioContext || window.webkitAudioContext; actx = actx || new C(); if (actx.state === 'suspended') await actx.resume();
+  let t = actx.currentTime + 0.05; for (const [k, hz] of list) { rmTone(actx, k, hz, t, 1.3); t += 1.55; }
+  $('rmPlayMsg').textContent = '지금 나오는 소리: ' + list.map(([k, hz]) => `${hz} Hz ${RMN[k]}`).join(' → ');
+}
+document.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
+  const hz = +$('rmHz').value, k = b.dataset.rm;
+  if (mic) { $('rmPlayMsg').textContent = '마이크가 켜져 있으면 스피커 소리가 같이 재져요. 이어폰을 쓰거나 마이크를 잠깐 꺼 주세요.'; }
+  rmPlay(k === 'seq' ? [['m', hz], ['f', hz], ['c', hz]] : k === 'trap' ? [['m', 120], ['m', 220], ['f', 220]] : k === 'low' ? [['m', 160], ['f', 160]] : [[k, hz]]);
+}));
 
 // ---- 목 사용 기록 ----
 const LKEY = 'moksori.voiceLoad';
