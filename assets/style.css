@@ -377,7 +377,7 @@ canvas.sup-cv { width: 100%; height: 170px; display: block; margin: 6px 0 10px; 
 @media (max-width: 860px) { .sc-main { grid-template-columns: 1fr; } }
 .sc-list-wrap { display: grid; gap: 8px; }
 .sc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 470px; overflow-y: auto; }
-.sc-li { display: grid; grid-template-columns: 64px 1fr 34px; gap: 8px; align-items: baseline; padding: 7px 8px; border-radius: 6px; font-size: 14px; cursor: pointer; color: var(--muted); }
+.sc-li { display: grid; grid-template-columns: 64px 1fr auto 34px; gap: 8px; align-items: baseline; padding: 7px 8px; border-radius: 6px; font-size: 14px; cursor: pointer; color: var(--muted); }
 .sc-li:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
 .sc-li.mine { color: var(--ink); }
 .sc-li.on { background: color-mix(in srgb, var(--imi) 10%, transparent); box-shadow: inset 3px 0 0 var(--imi); }
@@ -514,3 +514,22 @@ button.linkish { border: 0; background: none; padding: 0; font: inherit; color: 
 .gd-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .rm-track > b.ref { width: 12px; height: 12px; top: 50%; bottom: auto; margin: -6px 0 0 -6px; transform: rotate(45deg); border-radius: 2px; background: var(--imi); transition: none; }
 .rm-model { margin-top: 2px; }
+
+/* 대본: 유튜브 · 자막 · 찾기 */
+.sc-sub { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sc-sub input[type=password] { width: 220px; max-width: 100%; font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; }
+.sc-how { font-size: 14px; } .sc-how summary { cursor: pointer; font-weight: 600; } .sc-how ol { margin: 8px 0; padding-left: 20px; line-height: 1.8; }
+.sc-yt { display: grid; gap: 10px; }
+.sc-yt[hidden], .sc-find[hidden] { display: none; }
+.sc-yt-frame { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
+.sc-yt-frame iframe, .sc-yt-frame > div { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.sc-t { font-family: var(--font-mono, monospace); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.sc-find { display: grid; gap: 10px; }
+.sc-find textarea { font: inherit; font-size: 14.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; resize: vertical; }
+.sc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.sc-tag { font-size: 13px; padding: 4px 10px; border-radius: 999px; }
+.sc-tag.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.sc-bank { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.sc-bk { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; align-content: start; }
+.sc-bk-x { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-bk button { justify-self: start; margin-top: 4px; }

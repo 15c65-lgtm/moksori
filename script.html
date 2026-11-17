@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611171300">
+<link rel="stylesheet" href="assets/style.css?v=202611171400">
 </head>
 <body>
 <div class="wrap">
@@ -24,6 +24,7 @@
     <label class="ym-field">대본 <select id="scSel" aria-label="대본 선택"></select></label>
     <button type="button" id="scNew">+ 새 대본</button>
     <button type="button" id="scEditBtn">대본 편집</button>
+    <button type="button" id="scFind">연습 대본 찾기</button>
     <label class="ym-field">내 역할 <select id="roleSel" aria-label="내 역할"></select></label>
     <label class="tog"><input type="checkbox" id="ttsOn" checked> 상대역 읽어 주기</label>
     <span class="cap" id="topMsg" style="margin:0"></span>
@@ -32,8 +33,21 @@
   <section class="panel sc-edit" id="editBox" hidden>
     <div class="chart-head"><h2>대본 편집</h2><div class="sup-ctl"><button type="button" class="primary-sm" id="edSave">저장</button><button type="button" id="edCancel">닫기</button><button type="button" class="del" id="edDel">이 대본 삭제</button></div></div>
     <input type="text" id="edTitle" maxlength="40" placeholder="대본 제목" aria-label="대본 제목">
+    <input type="text" id="edYt" placeholder="유튜브 주소 (선택) — 넣으면 원본 영상을 옆에 띄워서 줄마다 반복해 들을 수 있어요" aria-label="유튜브 주소">
     <textarea id="edText" rows="12" spellcheck="false" aria-label="대본 내용"></textarea>
-    <p class="cap">한 줄에 대사 하나. <b>역할: 대사</b> 형식이면 역할을 알아봐요. 괄호만 있는 줄은 지문, 대사 앞 <b>(웃으며)</b> 같은 괄호는 연기 지시로 보여 줘요. 맨 윗줄 <b># 제목</b>은 장면 제목이에요.</p>
+    <div class="sc-sub"><button type="button" id="edConv">붙여 넣은 자막을 대본으로 바꾸기</button><label class="btnlike">자막 파일 열기 (.srt .vtt)<input type="file" id="edSubFile" accept=".srt,.vtt,.txt,text/plain"></label><span class="cap" id="edConvMsg" style="margin:0"></span></div>
+    <details class="sc-how"><summary>유튜브 자막 가져오는 법</summary><ol><li>유튜브 영상 아래 설명란에서 <b>더보기</b>를 누르고 맨 아래 <b>스크립트 표시</b>를 눌러요.</li><li>오른쪽에 뜬 자막을 마우스로 처음부터 끝까지 끌어서 복사해요.</li><li>여기 큰 칸에 붙여 넣고 <b>붙여 넣은 자막을 대본으로 바꾸기</b>를 눌러요. 시간이 <b>[0:12]</b>처럼 줄 앞에 붙어요.</li><li>위 칸에 그 영상 주소를 넣고 저장하면, 줄을 고를 때마다 그 부분만 반복해서 들을 수 있어요.</li></ol><p class="cap">사이트가 자막이나 소리를 자동으로 받아올 수는 없어요(유튜브가 막아 놨어요). 역할 이름은 자막에 없으니 필요하면 줄 앞에 <b>이름:</b>을 직접 붙여 주세요.</p></details>
+    <p class="cap">한 줄에 대사 하나. <b>역할: 대사</b> 형식이면 역할을 알아봐요. 줄 맨 앞 <b>[0:12]</b>나 <b>[0:12-0:15]</b>는 영상에서 그 대사가 나오는 시간이에요. 괄호만 있는 줄은 지문, 대사 앞 <b>(웃으며)</b> 같은 괄호는 연기 지시로 보여 줘요. 맨 윗줄 <b># 제목</b>은 장면 제목이에요.</p>
+  </section>
+
+  <section class="panel sc-find" id="findBox" hidden>
+    <div class="chart-head"><h2>연습 대본 찾기</h2><div class="sup-ctl"><button type="button" id="findClose">닫기</button></div></div>
+    <div class="sc-tags" id="findTags"></div>
+    <div class="sc-bank" id="findList"></div>
+    <h3 class="co-h3">원하는 대본 만들어 달라고 하기</h3>
+    <p class="cap" style="margin-top:0">어떤 장면이 필요한지 적으면 Claude가 새로 써 줘요. 실제 애니·드라마 대사를 그대로 가져오지는 않아요(그건 「+ 새 대본」에서 자막을 붙여 넣어 주세요). 내 Anthropic API 키를 쓰고, 키는 이 브라우저에만 저장돼요.</p>
+    <textarea id="aiAsk" rows="2" placeholder="예: 차갑지만 속은 따뜻한 여자 캐릭터가 후배를 혼내다가 걱정하는 장면, 2명, 10줄" aria-label="원하는 대본"></textarea>
+    <div class="sc-sub"><input type="password" id="aiKey" placeholder="sk-ant-…" autocomplete="off" aria-label="Anthropic API 키"><button type="button" class="primary-sm" id="aiGo">대본 만들기</button><span class="cap" id="aiMsg" style="margin:0"></span></div>
   </section>
 
   <section class="sc-main">
@@ -42,6 +56,16 @@
       <ol class="sc-list" id="lineList"></ol>
     </div>
     <div class="sc-right">
+      <div class="panel sc-yt" id="ytBox" hidden>
+        <div class="sc-yt-frame"><div id="ytPlayer"></div></div>
+        <div class="sc-ctl">
+          <button type="button" class="primary-sm" id="ytLine">▶ 이 줄 듣기</button>
+          <label class="tog"><input type="checkbox" id="ytLoop"> 반복</label>
+          <label class="ym-field">빠르기 <select id="ytRate"><option value="0.5">0.5배</option><option value="0.75">0.75배</option><option value="1" selected>1배</option></select></label>
+          <button type="button" id="ytStamp" title="영상을 틀어 놓고, 이 줄이 시작될 때 누르세요">⏱ 지금이 이 줄 시작</button>
+        </div>
+        <div class="cap" id="ytMsg" style="margin:0"></div>
+      </div>
       <div class="panel sc-prompt" id="prompt">
         <div class="sc-pos"><span class="pill-z" id="pRole"></span><span class="cap" style="margin:0" id="pIdx"></span></div>
         <div class="sc-prev" id="pPrev"></div>
@@ -100,8 +124,8 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611171300"></script>
-<script src="assets/voicefeat.js?v=202611171300"></script>
+<script src="assets/core.js?v=202611171400"></script>
+<script src="assets/voicefeat.js?v=202611171400"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -151,10 +175,36 @@ const DB = (() => {
 })();
 
 // ---------- 대본 해석 ----------
+const TIME_RE = /^\[\s*((?:\d+:)?\d+:\d+(?:\.\d+)?)(?:\s*[-~]\s*((?:\d+:)?\d+:\d+(?:\.\d+)?))?\s*\]\s*/;
+const toSec = t => t.split(':').reduce((a, v) => a * 60 + parseFloat(v), 0);
+const fmtT = (x, dec) => { const m = Math.floor(x / 60), r = x - m * 60; return m + ':' + (dec ? r.toFixed(1).padStart(4, '0') : String(Math.floor(r)).padStart(2, '0')); };
+const ytId = u => { const m = String(u || '').match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/) || String(u || '').trim().match(/^([\w-]{11})$/); return m ? m[1] : ''; };
+// 붙여 넣은 자막(유튜브 스크립트 창, SRT, VTT)을 [시간] 대사 줄로 바꾼다
+function convertSubs(text) {
+  const rows = text.replace(/\r/g, '').split('\n').map(r => r.trim()), out = [];
+  const arrow = /^(\d+:\d+(?::\d+)?[.,]?\d*)\s*-->\s*(\d+:\d+(?::\d+)?[.,]?\d*)/, stamp = /^((?:\d+:)?\d{1,2}:\d{2})$/, inline = /^((?:\d+:)?\d{1,2}:\d{2})\s+(\S.*)$/;
+  const clean = t => t.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  if (rows.some(r => arrow.test(r))) {
+    for (let i = 0; i < rows.length; i++) { const m = rows[i].match(arrow); if (!m) continue; const buf = []; let j = i + 1; while (j < rows.length && rows[j] && !arrow.test(rows[j])) { buf.push(rows[j]); j++; } if (buf.length && /^\d+$/.test(buf[buf.length - 1]) && j < rows.length && !rows[j] ) {} const tx = clean(buf.join(' ')); if (tx) out.push(`[${fmtT(toSec(m[1].replace(',', '.')), true)}-${fmtT(toSec(m[2].replace(',', '.')), true)}] ${tx}`); i = j - 1; }
+  } else {
+    let cur = null;
+    for (const r of rows) { if (!r) continue; let m;
+      if ((m = r.match(stamp))) { cur = { t: m[1], tx: [] }; out.push(cur); }
+      else if ((m = r.match(inline))) { cur = { t: m[1], tx: [m[2]] }; out.push(cur); }
+      else if (cur) cur.tx.push(r); }
+    const good = out.filter(o => clean(o.tx.join(' ')));
+    if (good.length < 2) return null;
+    return good.map(o => `[${o.t}] ${clean(o.tx.join(' '))}`).join('\n');
+  }
+  return out.length >= 1 ? out.join('\n') : null;
+}
 function parse(text) {
   const items = []; let title = '', pendingDir = '';
-  for (let raw of text.split(/\r?\n/)) {
-    const line = raw.trim(); if (!line) continue;
+  const rows = text.split(/\r?\n/);
+  for (let ri = 0; ri < rows.length; ri++) {
+    let line = rows[ri].trim(); if (!line) continue;
+    let t0 = null, t1 = null; const tm = line.match(TIME_RE);
+    if (tm) { t0 = toSec(tm[1]); t1 = tm[2] ? toSec(tm[2]) : null; line = line.slice(tm[0].length).trim(); if (!line) continue; }
     if (/^#/.test(line)) { title = line.replace(/^#+\s*/, ''); continue; }
     if (/^[(（].*[)）]$/.test(line)) { items.push({ type: 'dir', text: line.slice(1, -1).trim() }); continue; }
     let role = '', body = line;
@@ -163,7 +213,7 @@ function parse(text) {
     let note = '';
     const d = body.match(/^[(（]([^)）]{1,40})[)）]\s*(.+)$/);
     if (d) { note = d[1].trim(); body = d[2].trim(); }
-    items.push({ type: 'line', role, text: body, note });
+    items.push({ type: 'line', role, text: body, note, t0, t1, src: ri });
   }
   return { title, items };
 }
@@ -181,7 +231,7 @@ function loadScript() {
   if (!roles.includes(s.role) && s.role !== '*') { s.role = roles[0] || '*'; saveST(); }
   $('roleSel').value = s.role;
   $('scSel').innerHTML = ST.list.map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join(''); $('scSel').value = s.id;
-  $('scTitle').textContent = P.title || s.title;
+  $('scTitle').textContent = P.title || s.title; ytSetup();
   idx = Math.min(idx, Math.max(0, lines.length - 1));
   if (lines.length && !isMine(lines[idx])) { const k = lines.findIndex(isMine); if (k >= 0) idx = k; }
   return refreshTakes();
@@ -198,7 +248,7 @@ function renderList() {
   $('lineList').innerHTML = P.items.map((it, k) => {
     if (it.type === 'dir') return `<li class="sc-li dir">(${esc(it.text)})</li>`;
     const li = lines.findIndex(l => l.i === k), l = lines[li], n = lineTakes(k).length, star = lineTakes(k).some(t => t.star);
-    return `<li class="sc-li${isMine(l) ? ' mine' : ''}${li === idx ? ' on' : ''}" data-li="${li}"><span class="sc-role">${esc(l.role || '나')}</span><span class="sc-txt">${l.note ? `<em>(${esc(l.note)})</em> ` : ''}${esc(l.text)}</span><span class="sc-n">${isMine(l) ? (n ? `${star ? '★' : ''}${n}` : '–') : ''}</span></li>`;
+    return `<li class="sc-li${isMine(l) ? ' mine' : ''}${li === idx ? ' on' : ''}" data-li="${li}"><span class="sc-role">${esc(l.role || '나')}</span><span class="sc-txt">${l.note ? `<em>(${esc(l.note)})</em> ` : ''}${esc(l.text)}</span><span class="sc-t">${l.t0 != null ? fmtT(l.t0) : ''}</span><span class="sc-n">${isMine(l) ? (n ? `${star ? '★' : ''}${n}` : '–') : ''}</span></li>`;
   }).join('');
   const on = $('lineList').querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest' });
 }
@@ -216,6 +266,7 @@ function renderPrompt() {
   $('pNext').textContent = nextItem ? `다음 · ${nextItem.role ? nextItem.role + ': ' : ''}${nextItem.text}` : '마지막 줄이에요';
   $('recBtn').disabled = !isMine(l) && !scene;
   $('playBest').disabled = !bestTake(l.i);
+  ytShowLine();
 }
 function go(d) { if (scene) return; const n = idx + d; if (n < 0 || n >= lines.length) return; idx = n; renderList(); renderPrompt(); renderTakes(); }
 $('prevBtn').addEventListener('click', () => go(-1)); $('nextBtn').addEventListener('click', () => go(1));
@@ -226,14 +277,17 @@ $('scSel').addEventListener('change', () => { ST.cur = $('scSel').value; idx = 0
 function openEdit(isNew) {
   const s = isNew ? null : curScript();
   $('editBox').hidden = false; $('edTitle').value = s ? s.title : ''; $('edText').value = s ? s.text : '# 새 장면\n나: 첫 대사를 여기에 써요.\n상대: 상대역 대사는 기계 음성이 읽어 줘요.';
+  $('edYt').value = s && s.yt ? 'https://youtu.be/' + s.yt : ''; $('edConvMsg').textContent = '';
   $('editBox').dataset.mode = isNew ? 'new' : 'edit'; $('edDel').hidden = isNew; $('edTitle').focus();
 }
 $('scNew').addEventListener('click', () => openEdit(true)); $('scEditBtn').addEventListener('click', () => openEdit(false));
 $('edCancel').addEventListener('click', () => { $('editBox').hidden = true; });
 $('edSave').addEventListener('click', async () => {
   const text = $('edText').value, title = $('edTitle').value.trim() || (parse(text).title) || '제목 없는 대본';
-  if ($('editBox').dataset.mode === 'new') { const id = uid(); ST.list.push({ id, title, text, role: '' }); ST.cur = id; idx = 0; }
-  else { const s = curScript(); const changed = s.text !== text; s.title = title; s.text = text; if (changed) $('topMsg').textContent = '대본을 고쳤어요. 줄 순서가 바뀌었다면 예전 테이크가 다른 줄에 붙어 보일 수 있어요.'; }
+  const yt = ytId($('edYt').value);
+  if ($('edYt').value.trim() && !yt) { $('edConvMsg').innerHTML = '<span class="err">유튜브 주소를 알아보지 못했어요. 영상 주소를 그대로 붙여 주세요.</span>'; return; }
+  if ($('editBox').dataset.mode === 'new') { const id = uid(); ST.list.push({ id, title, text, role: '', yt }); ST.cur = id; idx = 0; }
+  else { const s = curScript(); const changed = s.text.replace(/^\s*\[[^\]]*\]\s*/gm, '') !== text.replace(/^\s*\[[^\]]*\]\s*/gm, ''); s.title = title; s.text = text; s.yt = yt; if (changed) $('topMsg').textContent = '대본을 고쳤어요. 줄 순서가 바뀌었다면 예전 테이크가 다른 줄에 붙어 보일 수 있어요.'; }
   saveST(); $('editBox').hidden = true; await loadScript();
 });
 $('edDel').addEventListener('click', async e => {
@@ -242,6 +296,102 @@ $('edDel').addEventListener('click', async e => {
   ST.list = ST.list.filter(x => x.id !== s.id); ST.cur = ST.list[0] && ST.list[0].id; saveST(); $('editBox').hidden = true;
   if (!ST.list.length) { const id = uid(); ST.list.push({ id, title: '편의점 앞에서 (예시)', text: SAMPLE, role: '하루' }); ST.cur = id; saveST(); }
   idx = 0; loadScript();
+});
+
+
+// ---------- 자막 → 대본 ----------
+function doConvert(text) {
+  const c = convertSubs(text);
+  if (!c) { $('edConvMsg').innerHTML = '<span class="err">시간이 붙은 자막을 찾지 못했어요. 유튜브 스크립트 창에서 시간까지 같이 복사해 주세요.</span>'; return; }
+  $('edText').value = (/^#/.test(text.trim()) ? text.trim().split('\n')[0] + '\n' : '') + c;
+  $('edConvMsg').textContent = `${c.split('\n').length}줄로 바꿨어요. 필요 없는 줄은 지우고, 역할이 있으면 줄 앞에 「이름:」을 붙여 주세요.`;
+}
+$('edConv').addEventListener('click', () => doConvert($('edText').value));
+$('edSubFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; doConvert(await f.text()); if (!$('edTitle').value) $('edTitle').value = f.name.replace(/\.[^.]+$/, '').slice(0, 40); });
+
+// ---------- 유튜브 원본 영상 ----------
+let ytP = null, ytReady = false, ytVid = '', ytTimer = null, ytSeg = null, ytApi = null;
+function ytLoadApi() { return ytApi || (ytApi = new Promise((res, rej) => { if (window.YT && YT.Player) return res(); const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(); }; const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; sc.onerror = () => { ytApi = null; rej(new Error('yt')); }; document.head.appendChild(sc); })); }
+async function ytSetup() {
+  const id = curScript().yt || ''; $('ytBox').hidden = !id; ytStop();
+  if (!id || id === ytVid) return;
+  ytVid = id; $('ytMsg').textContent = '영상을 불러오는 중…';
+  try {
+    await ytLoadApi();
+    if (ytP && ytReady) { ytP.cueVideoById(id); $('ytMsg').textContent = ''; ytShowLine(); return; }
+    ytP = new YT.Player('ytPlayer', { videoId: id, playerVars: { playsinline: 1, rel: 0 }, events: {
+      onReady: () => { ytReady = true; $('ytMsg').textContent = ''; ytShowLine(); },
+      onError: () => { $('ytMsg').innerHTML = '<span class="err">이 영상은 다른 사이트에서 틀 수 없게 막혀 있거나 주소가 틀렸어요. 다른 영상으로 해 보세요.</span>'; } } });
+  } catch (_) { ytVid = ''; $('ytMsg').innerHTML = '<span class="err">유튜브에 연결하지 못했어요. 인터넷이나 차단 프로그램을 확인해 주세요.</span>'; }
+}
+function ytSegOf(l) { if (!l || l.t0 == null) return null; const nx = lines.find(x => x.t0 != null && x.t0 > l.t0 + 0.2); return [l.t0, l.t1 != null && l.t1 > l.t0 ? l.t1 : nx ? Math.min(nx.t0, l.t0 + 15) : l.t0 + 5]; }
+function ytShowLine() {
+  if ($('ytBox').hidden) return; const l = lines[idx], sg = ytSegOf(l);
+  $('ytLine').disabled = !sg;
+  if (!ytSeg) $('ytMsg').textContent = sg ? `이 줄: ${fmtT(sg[0], true)} ~ ${fmtT(sg[1], true)}` : '이 줄에는 시간이 없어요. 영상을 틀어 놓고 이 대사가 시작될 때 「⏱ 지금이 이 줄 시작」을 누르면 시간이 붙고 다음 줄로 넘어가요.';
+}
+function ytStop() { if (ytTimer) { clearInterval(ytTimer); ytTimer = null; } ytSeg = null; $('ytLine').textContent = '▶ 이 줄 듣기'; }
+function ytPlayLine() {
+  if (!ytReady) return; if (ytSeg) { ytStop(); try { ytP.pauseVideo(); } catch (_) {} ytShowLine(); return; }
+  const sg = ytSegOf(lines[idx]); if (!sg) return;
+  ytSeg = sg; stopPlay(); ytP.setPlaybackRate(+$('ytRate').value); ytP.seekTo(sg[0], true); ytP.playVideo(); $('ytLine').textContent = '■ 멈춤';
+  ytTimer = setInterval(() => { let t; try { t = ytP.getCurrentTime(); } catch (_) { return; } if (t >= ytSeg[1] || t < ytSeg[0] - 1) { if ($('ytLoop').checked) ytP.seekTo(ytSeg[0], true); else { ytP.pauseVideo(); ytStop(); ytShowLine(); } } }, 80);
+}
+$('ytLine').addEventListener('click', ytPlayLine);
+$('ytRate').addEventListener('change', () => { if (ytReady) try { ytP.setPlaybackRate(+$('ytRate').value); } catch (_) {} $('ytRate').blur(); });
+$('ytLoop').addEventListener('change', () => $('ytLoop').blur());
+$('ytStamp').addEventListener('click', () => {
+  const l = lines[idx]; if (!ytReady || !l) return; let t; try { t = ytP.getCurrentTime(); } catch (_) { return; }
+  t = Math.max(0, t - 0.25); // 누르는 데 걸리는 시간만큼 앞으로
+  const s = curScript(), rows = s.text.split(/\r?\n/), raw = rows[l.src], lead = raw.match(/^\s*/)[0], rest = raw.trim().replace(TIME_RE, '');
+  rows[l.src] = `${lead}[${fmtT(t, true)}] ${rest}`; s.text = rows.join('\n'); saveST();
+  P = parse(s.text); lines = P.items.map((it, i) => ({ ...it, i })).filter(it => it.type === 'line');
+  if (idx < lines.length - 1) idx++; renderList(); renderPrompt(); renderTakes();
+});
+
+// ---------- 연습 대본 찾기 ----------
+const BANK = [
+  { t: '늦은 사과', tags: ['슬픔', '2명'], x: '# 늦은 사과\n(해 질 무렵, 학교 옥상)\n서연: …왔네.\n지호: (숨을 고르며) 미안. 진작 왔어야 했는데.\n서연: 됐어. 이제 와서 뭐.\n지호: 그날 내가 한 말, 진심 아니었어.\n서연: (작게) 알아. 아는데도 아팠어.\n지호: …다시는 안 그럴게.\n서연: 그 말, 믿어도 돼?' },
+  { t: '시험 끝난 날', tags: ['기쁨', '2명'], x: '# 시험 끝난 날\n(교문 앞)\n유나: 끝났다! 진짜 끝났어!\n도윤: (웃으며) 목소리 좀 낮춰. 다 쳐다보잖아.\n유나: 몰라, 오늘은 내 마음대로 할 거야.\n도윤: 그래서, 뭐부터 할 건데?\n유나: 떡볶이! 그다음 노래방! 그다음은… 자고 싶다.\n도윤: 마지막이 제일 진심 같은데.\n유나: 들켰네.' },
+  { t: '약속을 어긴 친구', tags: ['화남', '2명'], x: '# 약속을 어긴 친구\n(카페, 한 시간째 기다린 뒤)\n하린: 지금 몇 시인지는 알아?\n태오: 미안, 버스가…\n하린: 버스 탓 하지 마. 이번이 세 번째야.\n태오: (작게) 진짜 미안해.\n하린: 미안하면 다야? 나는 네 시간이 아니라 내 시간이 아까워.\n태오: …할 말이 없다.\n하린: 그래, 없겠지.' },
+  { t: '한밤의 복도', tags: ['무서움', '2명'], x: '# 한밤의 복도\n(불 꺼진 학교 복도)\n민서: (속삭이며) 방금… 들었어?\n준우: 뭘?\n민서: 발소리. 우리 말고.\n준우: 장난치지 마.\n민서: 장난 아니야. 저기, 끝에… 누가 서 있어.\n준우: (떨리는 목소리로) 뛰자.\n민서: 다리가… 안 움직여.' },
+  { t: '츤데레의 도시락', tags: ['귀여움', '캐릭터', '2명'], x: '# 도시락\n(점심시간, 교실)\n리아: 이거. 남아서 가져온 거야. 오해하지 마.\n현: 도시락? 나 주는 거야?\n리아: 남았다고 했잖아! 두 번 말하게 하지 마.\n현: (웃으며) 계란말이가 하트 모양인데.\n리아: 그, 그건 틀이 그렇게 생긴 거야!\n현: 고마워. 잘 먹을게.\n리아: (작게) …맛없으면 말해. 다음엔 더 잘할 테니까.' },
+  { t: '차가운 선배', tags: ['담담', '캐릭터', '2명'], x: '# 보고\n(늦은 밤 사무실)\n선배: 보고서, 다시 써 와.\n후배: 어디가 잘못됐는지…\n선배: 세 번째 장. 숫자가 안 맞아.\n후배: 죄송합니다. 바로 고치겠습니다.\n선배: (잠시 쉬고) 저녁은 먹었어?\n후배: 아직요.\n선배: 먹고 해. 급한 거 아니니까.' },
+  { t: '어린아이와 길고양이', tags: ['귀여움', '캐릭터', '혼자'], x: '# 고양이야\n(골목, 아이가 쪼그려 앉아)\n아이: 고양이야, 너 어디서 왔어?\n아이: (손을 내밀며) 괜찮아, 나 안 무서워.\n아이: 우와, 꼬리가 엄청 길다!\n아이: 배고파? 내 과자 줄까? 아, 고양이는 과자 먹으면 안 된댔지.\n아이: 내일도 올게. 꼭 여기 있어야 해. 약속!' },
+  { t: '악당의 한마디', tags: ['비웃음', '캐릭터', '혼자'], x: '# 늦었군\n(무너진 성, 높은 곳에서)\n악당: 드디어 왔군. 생각보다 오래 걸렸어.\n악당: (낮게 웃으며) 그 표정, 아직도 이길 수 있다고 믿는 건가.\n악당: 네 친구들은 벌써 포기했다.\n악당: 마지막으로 묻지. 내 편에 서겠나?\n악당: …그럴 줄 알았다. 그럼, 시작하지.' },
+  { t: '놀라운 소식', tags: ['놀람', '2명'], x: '# 합격\n(전화 통화)\n지안: 여보세요? 왜 이렇게 숨이 차?\n수호: 나… 붙었어.\n지안: 뭐?\n수호: 붙었다고! 합격!\n지안: 거짓말! 진짜야? 진짜로?\n수호: 방금 확인했어. 손이 아직도 떨려.\n지안: 야, 거기 그대로 있어. 지금 갈게!' },
+  { t: '뉴스 읽기', tags: ['담담', '발음', '혼자'], x: '# 저녁 뉴스\n아나운서: 오늘 오후 전국 대부분 지역에 비가 내렸습니다.\n아나운서: 기상청은 내일 아침까지 중부 지방을 중심으로 비가 이어지겠다고 밝혔습니다.\n아나운서: 출근길 교통안전에 각별히 유의하시기 바랍니다.\n아나운서: 다음 소식입니다.' },
+  { t: '작별 인사', tags: ['슬픔', '혼자'], x: '# 정류장에서\n(버스 정류장, 혼잣말처럼)\n나: 잘 가. 건강하고.\n나: (웃으려 애쓰며) 연락은… 안 해도 돼. 바쁠 테니까.\n나: 그래도 가끔, 여기 생각나면.\n나: 아니다. 얼른 타. 버스 가겠다.\n나: …고마웠어.' },
+  { t: '감정 바꾸기 한 줄', tags: ['연습', '혼자'], x: '# 같은 말, 다른 마음\n(아래 줄을 감정을 바꿔 가며 읽어요)\n나: 그래, 알았어.\n나: 정말 네가 한 거야?\n나: 여기서 기다릴게.\n나: 이제 다 끝났어.' },
+];
+let findTag = '';
+function renderFind() {
+  const tags = [...new Set(BANK.flatMap(b => b.tags))];
+  $('findTags').innerHTML = ['', ...tags].map(t => `<button type="button" class="sc-tag${t === findTag ? ' on' : ''}" data-tag="${t}">${t || '전체'}</button>`).join('');
+  $('findList').innerHTML = BANK.map((b, i) => ({ b, i })).filter(o => !findTag || o.b.tags.includes(findTag)).map(({ b, i }) => { const ls = b.x.split('\n').filter(r => /[:：]/.test(r)); return `<div class="sc-bk"><b>${esc(b.t)}</b><span class="cap" style="margin:0">${b.tags.join(' · ')} · ${ls.length}줄</span><span class="sc-bk-x">${esc(ls[0].replace(/^[^:：]+[:：]\s*/, ''))}</span><button type="button" data-bank="${i}">가져오기</button></div>`; }).join('');
+}
+$('scFind').addEventListener('click', () => { $('findBox').hidden = !$('findBox').hidden; if (!$('findBox').hidden) { renderFind(); try { $('aiKey').value = localStorage.getItem('moksori.anthropicKey') || ''; } catch (_) {} } });
+$('findClose').addEventListener('click', () => { $('findBox').hidden = true; });
+$('findTags').addEventListener('click', e => { const b = e.target.closest('[data-tag]'); if (b) { findTag = b.dataset.tag; renderFind(); } });
+$('findList').addEventListener('click', async e => { const b = e.target.closest('[data-bank]'); if (!b) return; const k = BANK[+b.dataset.bank], id = uid(); ST.list.push({ id, title: k.t, text: k.x, role: '' }); ST.cur = id; idx = 0; saveST(); $('findBox').hidden = true; await loadScript(); $('topMsg').textContent = `「${k.t}」 대본을 가져왔어요.`; });
+$('aiKey').addEventListener('change', () => { try { localStorage.setItem('moksori.anthropicKey', $('aiKey').value.trim()); } catch (_) {} });
+$('aiGo').addEventListener('click', async () => {
+  const key = $('aiKey').value.trim(), ask = $('aiAsk').value.trim();
+  if (!ask) { $('aiMsg').textContent = '어떤 장면이 필요한지 먼저 적어 주세요.'; return; }
+  if (!key) { $('aiMsg').innerHTML = '<span class="err">API 키를 넣어 주세요.</span>'; return; }
+  let model = 'claude-haiku-5-5'; try { model = localStorage.getItem('moksori.anthropicKey.model') || model; } catch (_) {}
+  $('aiGo').disabled = true; $('aiMsg').textContent = '쓰는 중…';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model, max_tokens: 1200, system: '너는 성우 지망생의 연기 연습용 대본을 쓰는 작가야. 요청에 맞는 짧은 한국어 장면을 새로 지어서 써. 실제 작품의 대사나 등장인물 이름은 쓰지 마. 형식은 반드시 이렇게: 첫 줄 "# 제목", 지문은 괄호만 있는 한 줄 "(장소, 상황)", 대사는 "이름: 대사", 연기 지시는 대사 앞 괄호 "이름: (웃으며) 대사". 한 줄은 한 호흡에 말할 길이로, 감정이 바뀌는 지점을 넣어. 청소년이 연습하기 알맞은 내용으로. 설명이나 머리말 없이 대본만 출력해.', messages: [{ role: 'user', content: ask }] }) });
+    let j = null; try { j = await res.json(); } catch (_) {}
+    if (!res.ok) { const m = j && j.error && j.error.message || ''; throw new Error(res.status === 401 ? 'API 키가 맞지 않아요.' : res.status === 429 ? '요청이 너무 많아요. 잠시 뒤에 다시 해 보세요.' : /credit|balance/i.test(m) ? 'API 크레딧이 부족해요.' : `오류 (${res.status}) ${m}`); }
+    const text = (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').replace(/^```\w*\n?|```$/g, '').trim();
+    if (!parse(text).items.some(it => it.type === 'line')) throw new Error('대본 형식으로 받지 못했어요. 다시 눌러 보세요.');
+    $('findBox').hidden = true; openEdit(true); $('edText').value = text; $('edTitle').value = parse(text).title.slice(0, 40); $('edConvMsg').textContent = '만든 대본이에요. 고칠 곳을 고치고 저장을 누르세요.'; $('aiMsg').textContent = '';
+  } catch (err) { $('aiMsg').innerHTML = `<span class="err">${esc(err.message === 'Failed to fetch' ? '네트워크에 연결하지 못했어요.' : err.message)}</span>`; }
+  $('aiGo').disabled = false;
 });
 
 // ---------- 마이크 / 녹음 ----------
