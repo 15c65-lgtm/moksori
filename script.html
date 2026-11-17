@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611171400">
+<link rel="stylesheet" href="assets/style.css?v=202611171600">
 </head>
 <body>
 <div class="wrap">
@@ -25,6 +25,7 @@
     <button type="button" id="scNew">+ 새 대본</button>
     <button type="button" id="scEditBtn">대본 편집</button>
     <button type="button" id="scFind">연습 대본 찾기</button>
+    <button type="button" id="rmOpen">👥 같이 읽기</button>
     <label class="ym-field">내 역할 <select id="roleSel" aria-label="내 역할"></select></label>
     <label class="tog"><input type="checkbox" id="ttsOn" checked> 상대역 읽어 주기</label>
     <span class="cap" id="topMsg" style="margin:0"></span>
@@ -38,6 +39,37 @@
     <div class="sc-sub"><button type="button" id="edConv">붙여 넣은 자막을 대본으로 바꾸기</button><label class="btnlike">자막 파일 열기 (.srt .vtt)<input type="file" id="edSubFile" accept=".srt,.vtt,.txt,text/plain"></label><span class="cap" id="edConvMsg" style="margin:0"></span></div>
     <details class="sc-how"><summary>유튜브 자막 가져오는 법</summary><ol><li>유튜브 영상 아래 설명란에서 <b>더보기</b>를 누르고 맨 아래 <b>스크립트 표시</b>를 눌러요.</li><li>오른쪽에 뜬 자막을 마우스로 처음부터 끝까지 끌어서 복사해요.</li><li>여기 큰 칸에 붙여 넣고 <b>붙여 넣은 자막을 대본으로 바꾸기</b>를 눌러요. 시간이 <b>[0:12]</b>처럼 줄 앞에 붙어요.</li><li>위 칸에 그 영상 주소를 넣고 저장하면, 줄을 고를 때마다 그 부분만 반복해서 들을 수 있어요.</li></ol><p class="cap">사이트가 자막이나 소리를 자동으로 받아올 수는 없어요(유튜브가 막아 놨어요). 역할 이름은 자막에 없으니 필요하면 줄 앞에 <b>이름:</b>을 직접 붙여 주세요.</p></details>
     <p class="cap">한 줄에 대사 하나. <b>역할: 대사</b> 형식이면 역할을 알아봐요. 줄 맨 앞 <b>[0:12]</b>나 <b>[0:12-0:15]</b>는 영상에서 그 대사가 나오는 시간이에요. 괄호만 있는 줄은 지문, 대사 앞 <b>(웃으며)</b> 같은 괄호는 연기 지시로 보여 줘요. 맨 윗줄 <b># 제목</b>은 장면 제목이에요.</p>
+  </section>
+
+  <section class="panel sc-room" id="roomBox" hidden>
+    <div class="chart-head"><h2>같이 읽기 <span class="cap" style="margin:0">멀리 있는 친구와 각자 폰으로</span></h2><div class="sup-ctl"><button type="button" id="rmClose">닫기</button></div></div>
+    <div id="rmOut">
+      <p class="cap" style="margin-top:0">방을 만들면 지금 고른 대본이 친구에게 그대로 넘어가요. 각자 역할을 고르고 시작하면, 차례가 온 사람의 폰이 자동으로 녹음하고 다음 줄로 넘겨요. 서로 목소리는 통화처럼 들려요. 끝나면 둘 목소리를 합친 장면을 듣고 저장할 수 있어요.</p>
+      <div class="sc-sub">
+        <input type="text" id="rmNick" maxlength="10" placeholder="내 이름" aria-label="내 이름">
+        <button type="button" class="primary-sm" id="rmCreate">방 만들기</button>
+        <span class="cap" style="margin:0">또는</span>
+        <input type="text" id="rmCode" maxlength="6" placeholder="방 코드" aria-label="방 코드" class="rm-code-in">
+        <button type="button" id="rmJoin">들어가기</button>
+      </div>
+    </div>
+    <div id="rmIn" hidden>
+      <div class="rm-head"><div><div class="ym-lab">방 코드</div><div class="rm-code" id="rmCodeTxt"></div></div><button type="button" id="rmCopy">초대 링크 복사</button><button type="button" id="rmLeave">나가기</button></div>
+      <div class="rm-mem" id="rmMem"></div>
+      <div class="sc-sub">
+        <label class="ym-field">내 역할 <select id="rmRole" aria-label="내 역할"></select></label>
+        <button type="button" id="rmMute">🎙 내 목소리 켜짐</button>
+        <button type="button" id="rmHear" hidden>🔈 친구 소리 켜기</button>
+      </div>
+      <div class="sc-sub">
+        <button type="button" class="primary-sm" id="rmStart">▶ 같이 읽기 시작</button>
+        <button type="button" id="rmStop" hidden>■ 멈춤</button>
+        <button type="button" id="rmPlay">▶ 합친 장면 듣기</button>
+        <button type="button" id="rmWav">합친 장면 WAV 저장</button>
+      </div>
+      <p class="rm-msg" id="rmMsg"></p>
+      <p class="cap" id="rmNote" style="margin:0">아무도 안 맡은 역할은 기계 음성이 읽어요(저장 파일에는 안 들어가요). 녹음한 소리는 친구에게 보내지기만 하고 서버에 저장되지 않아요.</p>
+    </div>
   </section>
 
   <section class="panel sc-find" id="findBox" hidden>
@@ -124,8 +156,8 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611171400"></script>
-<script src="assets/voicefeat.js?v=202611171400"></script>
+<script src="assets/core.js?v=202611171600"></script>
+<script src="assets/voicefeat.js?v=202611171600"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -443,6 +475,7 @@ async function stopRec() {
   const ref = await getRef(r.line); if (ref) t.sync = syncScore(ref.x, x);
   try { await DB.put(t); } catch (_) { $('recMsg').innerHTML = '<span class="err">저장하지 못했어요.</span>'; }
   takes.push(t); renderList(); renderPrompt(); renderTakes();
+  if (scene && scene.mode === 'group') groupKeep(r.line, t.pcm);
   $('recMsg').textContent = `테이크 ${lineTakes(r.line).length} 저장 · ${t.stats.dur.toFixed(1)}초 · 말 빠르기 ${t.stats.rate.toFixed(1)}음절/초`;
   if ($('emoCycle').checked) { const o = $('emoSel').options, k = Math.max(1, ($('emoSel').selectedIndex % (o.length - 1)) + 1); $('emoSel').selectedIndex = k; $('recMsg').textContent += ` · 다음 감정: ${o[k].text}`; }
   if (scene) sceneNext();
@@ -612,18 +645,18 @@ $('runScene').addEventListener('click', async () => {
   scene = { mode: 'rehearse', token: Math.random() }; sceneUI(true, '장면 연습 중… 내 차례에는 자동으로 녹음돼요.'); sceneStep();
 });
 async function sceneStep() {
-  if (!scene) return; const tk = scene.token, l = lines[idx];
+  if (!scene) return; if (scene.mode === 'group') return groupStep(); const tk = scene.token, l = lines[idx];
   renderList(); renderPrompt();
   if (!isMine(l)) { await speak(l.text, l.role); if (scene && scene.token === tk) sceneNext(); }
   else { await new Promise(r => setTimeout(r, 250)); if (scene && scene.token === tk) startRec(true); }
 }
 function sceneNext() {
-  if (!scene) return;
+  if (!scene) return; if (scene.mode === 'group') return groupNext();
   if (idx >= lines.length - 1) { endScene('장면 끝! 줄마다 테이크를 비교하고 ☆로 베스트를 골라 보세요.'); return; }
   idx++; renderTakes(); sceneStep();
 }
-function endScene(msg) { const was = scene; scene = null; if (rec) stopRec(); stopPlay(); sceneUI(false, msg); renderList(); renderPrompt(); renderTakes(); }
-$('stopScene').addEventListener('click', () => endScene('멈췄어요.'));
+function endScene(msg) { const was = scene; scene = null; if (was && was.mode === 'group') groupUI(false); if (rec) stopRec(); stopPlay(); sceneUI(false, msg); renderList(); renderPrompt(); renderTakes(); }
+$('stopScene').addEventListener('click', () => { if (scene && scene.mode === 'group') { roomSend({ t: 'stop' }); } endScene('멈췄어요.'); });
 $('playScene').addEventListener('click', async () => {
   if (!lines.length) return;
   scene = { mode: 'play', token: Math.random() }; const tk = scene.token; sceneUI(true, '장면을 들려 드리는 중… (내 대사는 베스트 테이크)');
@@ -649,10 +682,247 @@ $('exportWav').addEventListener('click', () => {
   $('sceneMsg').textContent = `내 대사 ${parts.length}줄을 WAV 파일로 저장했어요.`;
 });
 
+
+// ---------- 같이 읽기 (방) ----------
+const SB_URL = 'https://zvbxjaapuppzmoanqhsq.supabase.co', SB_KEY = 'sb_publishable_gJ1HABK7qwWqGk_KQ0uzXQ_kaINRuwO';
+const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
+let room = null;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rmMsg = h => { $('rmMsg').innerHTML = h; };
+try { $('rmNick').value = localStorage.getItem('moksori.nick') || ''; } catch (_) {}
+const qs = new URLSearchParams(location.search);
+if (qs.get('room')) { $('roomBox').hidden = false; $('rmCode').value = qs.get('room').toUpperCase().slice(0, 6); }
+$('rmOpen').addEventListener('click', () => { $('roomBox').hidden = !$('roomBox').hidden; });
+$('rmClose').addEventListener('click', () => { $('roomBox').hidden = true; });
+
+// 연결 통로: 보통은 Supabase 실시간 채널, 시험용으로 ?local=1이면 같은 브라우저 탭끼리
+function loadSb() { return window.supabase ? Promise.resolve() : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js'; sc.onload = res; sc.onerror = () => rej(new Error('net')); document.head.appendChild(sc); }); }
+async function openWire(code, me, onMsg, onMembers) {
+  if (qs.get('local')) {
+    const bc = new BroadcastChannel('moksori-room-' + code), seen = new Map(); let state = {};
+    const beat = () => bc.postMessage({ k: 'p', id: me.id, st: state });
+    const emit = () => { const now = Date.now(); for (const [id, v] of seen) if (now - v.t > 4000) seen.delete(id); onMembers([{ ...state, id: me.id }, ...[...seen.values()].map(v => v.st)]); };
+    bc.onmessage = e => { const d = e.data; if (d.k === 'p') { const had = seen.has(d.id); seen.set(d.id, { t: Date.now(), st: { ...d.st, id: d.id } }); if (!had || JSON.stringify(d.st) !== JSON.stringify((seen.get(d.id) || {}).st)) emit(); } else if (d.k === 'bye') { seen.delete(d.id); emit(); } else if (d.k === 'm') onMsg(d.m); };
+    const iv = setInterval(() => { beat(); emit(); }, 1000);
+    return { send: async m => bc.postMessage({ k: 'm', m }), track: async st => { state = st; beat(); emit(); }, close: () => { clearInterval(iv); bc.postMessage({ k: 'bye', id: me.id }); bc.close(); } };
+  }
+  await loadSb();
+  const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false, storageKey: 'moksori.room' } });
+  const ch = sb.channel('moksori-room-' + code, { config: { broadcast: { self: false }, presence: { key: me.id } } });
+  ch.on('broadcast', { event: 'm' }, ({ payload }) => onMsg(payload));
+  ch.on('presence', { event: 'sync' }, () => { const st = ch.presenceState(); onMembers(Object.keys(st).map(k => ({ ...st[k][0], id: k }))); });
+  await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timeout')), 10000); ch.subscribe(s => { if (s === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') { clearTimeout(to); rej(new Error(s)); } }); });
+  return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), track: st => ch.track(st), close: () => { try { ch.untrack(); sb.removeChannel(ch); } catch (_) {} } };
+}
+const roomSend = m => { if (room) { m.from = room.me.id; return room.wire.send(m); } };
+const meIsHost = () => room && room.host === room.me.id;
+const nameOf = id => { const m = room && room.members.find(x => x.id === id); return m ? m.name : '친구'; };
+
+async function enterRoom(code, create) {
+  const nick = $('rmNick').value.trim(); if (!nick) { $('rmNick').focus(); $('rmNick').placeholder = '이름을 먼저 적어 주세요'; return; }
+  try { localStorage.setItem('moksori.nick', nick); } catch (_) {}
+  if (!(await ensureMic())) { $('rmMsg').innerHTML = ''; $('recMsg').scrollIntoView({ block: 'center' }); return; }
+  $('rmCreate').disabled = $('rmJoin').disabled = true;
+  const me = { id: Math.random().toString(36).slice(2, 10), name: nick, at: Date.now() };
+  room = { code, me, host: create ? me.id : null, members: [], peers: {}, audio: new Map(), parts: new Map(), seq: 0, role: '', muted: false, gotScript: create, wire: null };
+  try { room.wire = await openWire(code, me, onRoomMsg, onMembers); }
+  catch (e) { room = null; $('rmCreate').disabled = $('rmJoin').disabled = false; $('rmOut').querySelector('.cap').innerHTML = '<span class="err">방에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 해 보세요.</span>'; return; }
+  room.outTrack = mic.stream.getAudioTracks()[0].clone();
+  $('rmOut').hidden = true; $('rmIn').hidden = false; $('rmCodeTxt').textContent = code;
+  history.replaceState(null, '', location.pathname + '?room=' + code + (qs.get('local') ? '&local=1' : ''));
+  if (create) { const s = curScript(); room.role = (lines.find(l => l.role) || {}).role || ''; s.role = room.role || '*'; saveST(); loadScript(); }
+  await trackMe(); renderRoom();
+  if (!create) {
+    rmMsg('방장에게 대본을 받는 중…'); roomSend({ t: 'hello' });
+    const c0 = room; setTimeout(() => { if (room === c0 && !room.gotScript) { if (room.members.length < 2) rmMsg('<span class="err">이 방에 아무도 없어요. 방 코드를 다시 확인해 주세요.</span>'); else roomSend({ t: 'hello' }); } }, 6000);
+  }
+  else rmMsg('친구에게 방 코드나 초대 링크를 보내 주세요.');
+  setRoomLock(!create);
+}
+$('rmCreate').addEventListener('click', () => { const c = Array.from({ length: 5 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 31)]).join(''); enterRoom(c, true); });
+$('rmJoin').addEventListener('click', () => { const c = $('rmCode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); if (c.length < 4) { $('rmCode').focus(); return; } enterRoom(c, false); });
+$('rmCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('rmJoin').click(); });
+const trackMe = () => room.wire.track({ name: room.me.name, at: room.me.at, role: room.role, host: room.host === room.me.id });
+function setRoomLock(on) { for (const id of ['scSel', 'scNew', 'scEditBtn', 'scFind', 'roleSel']) $(id).disabled = on; }
+
+function leaveRoom(msg) {
+  if (!room) return; if (scene && scene.mode === 'group') endScene('멈췄어요.');
+  for (const id in room.peers) closePeer(id);
+  try { room.outTrack.stop(); } catch (_) {} try { room.wire.close(); } catch (_) {}
+  room = null; setRoomLock(false); $('rmIn').hidden = true; $('rmOut').hidden = false; $('rmCreate').disabled = $('rmJoin').disabled = false;
+  history.replaceState(null, '', location.pathname + (qs.get('local') ? '?local=1' : '')); if (msg) $('topMsg').textContent = msg;
+}
+$('rmLeave').addEventListener('click', () => leaveRoom('방에서 나왔어요.'));
+window.addEventListener('pagehide', () => { if (room) try { room.wire.close(); } catch (_) {} });
+$('rmCopy').addEventListener('click', async () => {
+  const url = location.origin + location.pathname + '?room=' + room.code + (qs.get('local') ? '&local=1' : '');
+  try { await navigator.clipboard.writeText(url); rmMsg('초대 링크를 복사했어요. 카톡 같은 데 붙여 넣어 보내세요.'); } catch (_) { rmMsg('링크: ' + esc(url)); }
+});
+
+function onMembers(list) {
+  if (!room) return;
+  const ids = new Set(list.map(m => m.id));
+  room.members = list.sort((a, b) => a.at - b.at);
+  const flagged = room.members.find(m => m.host && m.id !== room.me.id);
+  if (flagged && room.host !== room.me.id) room.host = flagged.id;
+  if (room.host && ids.has(room.host)) room.hostSeen = room.host;
+  else if (room.host && room.hostSeen === room.host && !ids.has(room.host)) { // 방장이 나감 → 가장 먼저 들어온 사람이 이어받기
+    room.host = room.members[0].id;
+    if (room.host === room.me.id) { rmMsg('방장이 나가서 내가 방장이 됐어요.'); setRoomLock(false); room.gotScript = true; trackMe(); }
+  }
+  for (const id in room.peers) if (!ids.has(id)) closePeer(id);
+  if (room.role && room.members.some(m => m.id !== room.me.id && m.role === room.role && m.at < room.me.at)) { // 역할이 겹치면 늦게 온 사람이 바꾸기
+    const was = room.role; room.role = freeRole(); const s = curScript(); s.role = room.role || '__구경__'; saveST(); renderList(); renderPrompt(); trackMe();
+    rmMsg(`「${esc(was)}」은 다른 사람이 맡아서 ${room.role ? `「${esc(room.role)}」로 바꿨어요.` : '구경으로 바꿨어요.'}`);
+  }
+  for (const m of room.members) if (m.id !== room.me.id && room.me.id < m.id && !room.peers[m.id]) callPeer(m.id);
+  if (scene && scene.mode === 'group' && !rec) groupStatus();
+  renderRoom();
+}
+function renderRoom() {
+  if (!room) return;
+  const roles = [...new Set(lines.map(l => l.role).filter(Boolean))];
+  const taken = new Map(room.members.filter(m => m.id !== room.me.id && m.role).map(m => [m.role, m.name]));
+  $('rmRole').innerHTML = roles.map(r => `<option value="${esc(r)}"${taken.has(r) ? ' disabled' : ''}>${esc(r)}${taken.has(r) ? ` (${esc(taken.get(r))})` : ''}</option>`).join('') + '<option value="">구경만 하기</option>';
+  $('rmRole').value = room.role;
+  $('rmMem').innerHTML = room.members.map(m => { const p = room.peers[m.id], me = m.id === room.me.id; return `<span class="rm-p${me ? ' me' : ''}"><b>${esc(m.name)}${me ? ' (나)' : ''}${m.id === room.host ? ' 👑' : ''}</b><span>${m.role ? esc(m.role) : '구경'}</span>${me ? '' : `<i class="${p && p.state === 'ok' ? 'ok' : p && p.state === 'bad' ? 'bad' : ''}">${p && p.state === 'ok' ? '목소리 연결됨' : p && p.state === 'bad' ? '목소리 안 들림' : '목소리 연결 중'}</i>`}</span>`; }).join('');
+  const n = room.audio.size; $('rmPlay').disabled = $('rmWav').disabled = !n;
+  $('rmStart').disabled = room.members.length < 1 || !room.gotScript;
+}
+$('rmRole').addEventListener('change', () => {
+  const r = $('rmRole').value; if (r && room.members.some(m => m.id !== room.me.id && m.role === r)) { renderRoom(); return; }
+  room.role = r; const s = curScript(); s.role = r || '__구경__'; saveST(); renderList(); renderPrompt(); trackMe(); $('rmRole').blur();
+});
+$('rmMute').addEventListener('click', () => { room.muted = !room.muted; room.outTrack.enabled = !room.muted; $('rmMute').textContent = room.muted ? '🔇 내 목소리 꺼짐' : '🎙 내 목소리 켜짐'; $('rmMute').classList.toggle('on', room.muted); });
+$('rmHear').addEventListener('click', () => { for (const id in room.peers) { const a = room.peers[id].audio; if (a) a.play().catch(() => {}); } $('rmHear').hidden = true; });
+
+// 대본 주고받기
+function sendScript() { if (!meIsHost()) return; const s = curScript(); roomSend({ t: 'script', id: s.id, title: s.title, text: s.text, yt: s.yt || '', taken: [room.role, ...room.members.filter(m => m.id !== room.me.id).map(m => m.role)].filter(Boolean) }); }
+function freeRole(extra) { const taken = new Set([...(extra || []), ...room.members.filter(x => x.id !== room.me.id).map(x => x.role)]); return [...new Set(lines.map(l => l.role).filter(Boolean))].find(r => !taken.has(r)) || ''; }
+async function onRoomMsg(m) {
+  if (!room || m.from === room.me.id) return;
+  if (m.t === 'hello') { if (meIsHost()) sendScript(); }
+  else if (m.t === 'script') {
+    if (meIsHost() || (room.host && m.from !== room.host)) return; room.host = m.from;
+    let s = ST.list.find(x => x.id === m.id);
+    if (!s) { s = { id: m.id, title: m.title, text: m.text, role: '', yt: m.yt }; ST.list.push(s); }
+    if (s.text !== m.text) room.audio.clear();
+    s.title = m.title; s.text = m.text; s.yt = m.yt; ST.cur = s.id;
+    const roles = [...new Set(parse(s.text).items.filter(it => it.type === 'line').map(it => it.role).filter(Boolean))];
+    const taken = new Set([...(m.taken || []), ...room.members.filter(x => x.id !== room.me.id).map(x => x.role)]);
+    if (!roles.includes(room.role) || taken.has(room.role)) { room.role = roles.find(r => !taken.has(r)) || ''; trackMe(); }
+    s.role = room.role || '__구경__'; saveST(); room.gotScript = true; idx = 0; await loadScript(); renderRoom();
+    if (!(scene && scene.mode === 'group')) rmMsg(`「${esc(s.title)}」 대본을 받았어요. 역할을 확인하고 시작을 기다려요.`);
+  }
+  else if (m.t === 'sig') onSig(m);
+  else if (m.t === 'go') { if (m.seq <= room.seq && scene && scene.mode === 'group') return; room.seq = m.seq; applyGo(m.idx); }
+  else if (m.t === 'stop') { if (scene && scene.mode === 'group') endScene(`${esc(nameOf(m.from))}님이 멈췄어요.`); rmMsg(`${esc(nameOf(m.from))}님이 멈췄어요.`); }
+  else if (m.t === 'end') { if (scene && scene.mode === 'group') endScene('장면 끝!'); rmMsg('장면 끝! 「합친 장면 듣기」로 들어 보세요.' + pendingNote()); }
+  else if (m.t === 'aud') onAudPart(m);
+}
+const _loadScript = loadScript;
+loadScript = async function () { const r = await _loadScript(); if (room) { renderRoom(); if (meIsHost()) { const s = curScript(); const key = s.id + ':' + s.text.length + ':' + s.text.slice(0, 50); if (room.sentKey !== key) { room.sentKey = key; room.audio.clear(); sendScript(); } } } return r; };
+
+// 목소리 (WebRTC, 서로 직접 연결)
+function peer(id) {
+  let p = room.peers[id]; if (p) return p;
+  const pc = new RTCPeerConnection({ iceServers: ICE }); p = room.peers[id] = { pc, audio: null, state: 'wait', q: [] };
+  const ms = new MediaStream([room.outTrack]); pc.addTrack(room.outTrack, ms);
+  pc.onicecandidate = e => { if (e.candidate) roomSend({ t: 'sig', to: id, ice: e.candidate.toJSON() }); };
+  pc.ontrack = e => { if (!p.audio) { p.audio = new Audio(); p.audio.autoplay = true; p.audio.playsInline = true; } p.audio.srcObject = e.streams[0] || new MediaStream([e.track]); p.audio.play().catch(() => { $('rmHear').hidden = false; }); };
+  pc.onconnectionstatechange = () => { const s = pc.connectionState; p.state = s === 'connected' ? 'ok' : s === 'failed' || s === 'disconnected' ? 'bad' : 'wait'; if (s === 'failed') rmMsg(`${esc(nameOf(id))}님과 목소리를 직접 연결하지 못했어요(학교·회사 와이파이나 일부 데이터 망에서 막혀요). 읽기 진행과 녹음 합치기는 그대로 되니까, 전화를 따로 켜 두고 하세요.`); renderRoom(); };
+  return p;
+}
+async function callPeer(id) { try { const p = peer(id), o = await p.pc.createOffer(); await p.pc.setLocalDescription(o); roomSend({ t: 'sig', to: id, sdp: { type: p.pc.localDescription.type, sdp: p.pc.localDescription.sdp } }); } catch (_) {} }
+async function onSig(m) {
+  if (m.to !== room.me.id) return; const p = peer(m.from);
+  try {
+    if (m.sdp) {
+      await p.pc.setRemoteDescription(m.sdp);
+      for (const c of p.q.splice(0)) try { await p.pc.addIceCandidate(c); } catch (_) {}
+      if (m.sdp.type === 'offer') { const a = await p.pc.createAnswer(); await p.pc.setLocalDescription(a); roomSend({ t: 'sig', to: m.from, sdp: { type: a.type, sdp: p.pc.localDescription.sdp } }); }
+    } else if (m.ice) { if (!p.pc.remoteDescription) p.q.push(m.ice); else try { await p.pc.addIceCandidate(m.ice); } catch (_) {} }
+  } catch (_) {}
+}
+function closePeer(id) { const p = room.peers[id]; if (!p) return; try { p.pc.close(); } catch (_) {} if (p.audio) { p.audio.pause(); p.audio.srcObject = null; } delete room.peers[id]; }
+
+// 함께 읽기 진행
+function ownerOf(l) {
+  if (!l.role) return room.host;
+  const m = room.members.find(x => x.role === l.role); return m ? m.id : null; // null = 기계 음성
+}
+function groupUI(on) { $('rmStart').hidden = on; $('rmStop').hidden = !on; $('rmPlay').hidden = $('rmWav').hidden = on; $('rmRole').disabled = on; sceneUI(on, on ? '같이 읽는 중…' : undefined); }
+function groupStatus() {
+  const l = lines[idx]; if (!l) return; const o = ownerOf(l);
+  rmMsg(o === room.me.id ? '<b>내 차례예요.</b> 말을 마치고 잠깐 멈추면 다음 줄로 넘어가요.' : o ? `<b>${esc(nameOf(o))}</b>님 차례 — 듣는 중` : `기계 음성이 「${esc(l.role)}」 대사를 읽는 중`);
+}
+function applyGo(i) {
+  if (!room || i < 0 || i >= lines.length) return;
+  if (!(scene && scene.mode === 'group')) { stopPlay(); scene = { mode: 'group', token: Math.random() }; groupUI(true); }
+  scene.token = Math.random(); if (rec) { rec.auto = false; stopRec(); }
+  idx = i; renderTakes(); groupStep();
+}
+async function groupStep() {
+  if (!scene || !room) return; const tk = scene.token, l = lines[idx], o = ownerOf(l);
+  renderList(); renderPrompt(); groupStatus();
+  if (o === room.me.id) { await sleep(250); if (scene && scene.token === tk) startRec(true); }
+  else if (!o) { await speak(l.text, l.role); if (scene && scene.token === tk && meIsHost()) groupNext(); }
+}
+function groupNext() {
+  if (!scene || !room) return;
+  if (idx >= lines.length - 1) { roomSend({ t: 'end' }); endScene('장면 끝!'); rmMsg('장면 끝! 「합친 장면 듣기」로 들어 보세요.' + pendingNote()); return; }
+  room.seq++; roomSend({ t: 'go', idx: idx + 1, seq: room.seq }); applyGo(idx + 1);
+}
+$('rmStart').addEventListener('click', () => {
+  if (!lines.length) return; const mine = lines.filter(l => ownerOf(l) === room.me.id).length;
+  if (!room.role && !meIsHost()) { rmMsg('구경만 하는 중이에요. 역할을 고르면 같이 읽을 수 있어요.'); }
+  room.seq += 1 + Math.floor(Math.random() * 3); const start = idx >= lines.length - 1 ? 0 : idx;
+  roomSend({ t: 'go', idx: start, seq: room.seq }); applyGo(start);
+  if (!mine) rmMsg('내 대사가 없어요. 역할을 확인해 보세요.');
+});
+$('rmStop').addEventListener('click', () => { roomSend({ t: 'stop' }); endScene('멈췄어요.'); rmMsg('멈췄어요.'); });
+
+// 녹음 주고받기 (μ-law로 절반 크기, 나눠서 보냄)
+const MU = (() => { const enc = v => { let s = v < 0 ? 0x80 : 0; v = Math.min(32635, Math.abs(v)) + 132; let e = 7; for (let m = 0x4000; (v & m) === 0 && e > 0; e--, m >>= 1); return ~(s | (e << 4) | ((v >> (e + 3)) & 0x0f)) & 0xff; };
+  const dec = u => { u = ~u & 0xff; const s = u & 0x80, e = (u >> 4) & 7, m = u & 0x0f; let v = ((m << 3) + 132) << e; v -= 132; return s ? -v : v; };
+  const D = new Int16Array(256); for (let i = 0; i < 256; i++) D[i] = dec(i); return { enc, D }; })();
+const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = s => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+async function groupKeep(line, pcm) {
+  room.audio.set(line, { who: room.me.name, pcm }); renderRoom();
+  const u = new Uint8Array(pcm.length); for (let i = 0; i < pcm.length; i++) u[i] = MU.enc(pcm[i]);
+  const str = b64(u), CH = 45000, n = Math.ceil(str.length / CH), aid = Math.random().toString(36).slice(2, 8);
+  for (let k = 0; k < n; k++) { await roomSend({ t: 'aud', line, aid, k, n, who: room.me.name, d: str.slice(k * CH, (k + 1) * CH) }); await sleep(90); }
+}
+function onAudPart(m) {
+  const key = m.from + ':' + m.aid; let e = room.parts.get(key); if (!e) { e = { n: m.n, got: new Array(m.n), c: 0 }; room.parts.set(key, e); }
+  if (!e.got[m.k]) { e.got[m.k] = m.d; e.c++; }
+  if (e.c === e.n) { room.parts.delete(key); const u = unb64(e.got.join('')), pcm = new Int16Array(u.length); for (let i = 0; i < u.length; i++) pcm[i] = MU.D[u[i]]; room.audio.set(m.line, { who: m.who, pcm }); renderRoom(); }
+}
+const pendingNote = () => room && room.parts.size ? ' (친구 녹음을 아직 받는 중이에요)' : '';
+$('rmPlay').addEventListener('click', async () => {
+  if (!room || !room.audio.size) return; scene = { mode: 'play', token: Math.random() }; const tk = scene.token; groupUI(true); sceneUI(true, '합친 장면을 들려 드리는 중…'); $('rmStop').hidden = true;
+  for (let k = 0; k < lines.length; k++) {
+    if (!scene || scene.token !== tk) return; idx = k; renderList(); renderPrompt();
+    const a = room.audio.get(lines[k].i); if (a) await playPcm(toF32(a.pcm)); else if (!ownerOf(lines[k])) await speak(lines[k].text, lines[k].role);
+    await sleep(250);
+  }
+  if (scene && scene.token === tk) { endScene('장면 듣기 끝.'); }
+});
+$('rmWav').addEventListener('click', () => {
+  const gap = Math.round(RATE * 0.5), parts = lines.map(l => room.audio.get(l.i)).filter(Boolean).map(a => toF32(a.pcm));
+  if (!parts.length) return; const len = parts.reduce((a, p) => a + p.length + gap, 0), all = new Float32Array(len); let o = 0; for (const p of parts) { all.set(p, o); o += p.length + gap; }
+  const buf = new ArrayBuffer(44 + len * 2), v = new DataView(buf), w = (p, s) => { for (let i = 0; i < s.length; i++) v.setUint8(p + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + len * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, RATE, true); v.setUint32(28, RATE * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, len * 2, true);
+  for (let i = 0; i < len; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, all[i])) * 32767, true);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })); a.download = `${curScript().title.replace(/[\\/:*?"<>|]/g, '')}-같이읽기.wav`; document.body.appendChild(a); a.click(); a.remove();
+  rmMsg(`${parts.length}줄을 합쳐서 저장했어요.` + (lines.some(l => !ownerOf(l) && !room.audio.get(l.i)) ? ' 기계 음성 줄은 빠져 있어요.' : ''));
+});
+
 // ---------- 단축키 ----------
 document.addEventListener('keydown', e => {
   if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-  if (e.code === 'Space') { e.preventDefault(); if (scene && scene.mode === 'rehearse') { if (rec) stopRec(); return; } if (!lines[idx] || !isMine(lines[idx])) return; rec ? stopRec() : startRec(false); }
+  if (e.code === 'Space') { e.preventDefault(); if (scene && (scene.mode === 'rehearse' || scene.mode === 'group')) { if (rec) stopRec(); return; } if (!lines[idx] || !isMine(lines[idx])) return; rec ? stopRec() : startRec(false); }
   else if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
   else if (e.key === 'p' || e.key === 'P') { const t = lines[idx] && bestTake(lines[idx].i); if (t) playPcm(toF32(t.pcm)); }

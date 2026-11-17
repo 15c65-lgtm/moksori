@@ -533,3 +533,21 @@ button.linkish { border: 0; background: none; padding: 0; font: inherit; color: 
 .sc-bk { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; align-content: start; }
 .sc-bk-x { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-bk button { justify-self: start; margin-top: 4px; }
+
+/* 대본: 같이 읽기 */
+.sc-room { display: grid; gap: 12px; }
+.sc-room[hidden], #rmIn[hidden], #rmOut[hidden] { display: none; }
+#rmIn { display: grid; gap: 12px; }
+.sc-room input[type=text] { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; width: 140px; }
+.sc-room .rm-code-in { width: 110px; text-transform: uppercase; letter-spacing: .12em; font-family: var(--font-mono, monospace); }
+.rm-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.rm-head > div { margin-right: auto; }
+.rm-code { font-family: var(--font-mono, monospace); font-size: 30px; font-weight: 600; letter-spacing: .18em; }
+.rm-mem { display: flex; flex-wrap: wrap; gap: 8px; }
+.rm-p { display: grid; gap: 2px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 120px; font-size: 13.5px; }
+.rm-p.me { border-color: var(--imi); }
+.rm-p span { color: var(--muted); }
+.rm-p i { font-style: normal; font-size: 12px; color: var(--warn); }
+.rm-p i.ok { color: var(--good); } .rm-p i.bad { color: var(--bad); }
+#rmMute.on { background: var(--bad); color: #fff; border-color: var(--bad); }
+.rm-msg { margin: 0; min-height: 1.6em; }
