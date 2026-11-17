@@ -502,3 +502,15 @@ button.linkish { border: 0; background: none; padding: 0; font: inherit; color: 
 .rm-h3 { margin: 22px 0 6px; font-size: 16px; }
 .rm-play { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
 @media (max-width: 760px) { .rm-line { grid-template-columns: 1fr 70px; } .rm-line .ym-lab { grid-column: 1 / -1; } }
+
+/* 따라 하기 · 본보기 */
+.gd-dots { display: flex; gap: 6px; align-items: center; }
+.gd-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.gd-dots i.done { background: color-mix(in srgb, var(--good) 60%, var(--line)); } .gd-dots i.on { background: var(--imi); }
+.gd-card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.gd-card h3 { margin: 2px 0 8px; font-size: 19px; } .gd-card p { margin: 0 0 10px; line-height: 1.7; }
+.gd-n { font-size: 12px; color: var(--muted); font-weight: 600; }
+.gd-stat { min-height: 1.7em; } .gd-stat .good { color: var(--good); }
+.gd-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.rm-track > b.ref { width: 12px; height: 12px; top: 50%; bottom: auto; margin: -6px 0 0 -6px; transform: rotate(45deg); border-radius: 2px; background: var(--imi); transition: none; }
+.rm-model { margin-top: 2px; }

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611161200">
+<link rel="stylesheet" href="assets/style.css?v=202611171300">
 </head>
 <body>
 <div class="wrap">
@@ -118,15 +118,33 @@
     <ol class="tr-reps" id="brReps"></ol>
   </section>
 
+  <section class="panel" id="gdSec">
+    <div class="chart-head"><h2>따라 하기 5분 <span class="cap" style="margin:0">처음이면 여기부터</span></h2><div class="gd-dots" id="gdDots"></div></div>
+    <div class="gd-card">
+      <div class="gd-n" id="gdN">1 / 6</div>
+      <h3 id="gdTitle"></h3>
+      <p id="gdText"></p>
+      <p class="gd-stat" id="gdStat"></p>
+      <div class="gd-btns"><button type="button" id="gdPrev">← 이전</button><button type="button" class="primary-sm" id="gdAct" hidden></button><button type="button" id="gdNext">다음 →</button></div>
+    </div>
+    <ol class="tr-reps" id="gdHist"></ol>
+  </section>
+
   <section class="panel" id="rmSec">
     <div class="chart-head"><h2>「아~」 울림 재기 <span class="cap" style="margin:0">여목에서 가장 중요한 두 숫자</span></h2></div>
     <p class="cap" style="margin-top:0">마이크를 켜고 편한 높이(200~250 Hz쯤)에서 <b>「아~」</b>를 길게 내 보세요. 높이를 올리는 것보다 이 두 울림을 오른쪽 칸으로 옮기는 게 여자 목소리로 들리는 데 더 중요해요. 꼭 「아」로 재야 해요(다른 모음은 값이 달라요).</p>
     <div class="rm-line"><div class="ym-lab">첫 번째 울림 <small>목 안 공간 · 목울대 높이</small></div>
-      <div class="rm-track" id="rmT1"><span class="rm-band m" data-a="400" data-b="700">남자</span><span class="rm-band f" data-a="800" data-b="1100">여자</span><span class="rm-band c" data-a="1100" data-b="1300">아이</span><b id="rmM1" hidden></b></div>
+      <div class="rm-track" id="rmT1"><span class="rm-band m" data-a="400" data-b="700">남자</span><span class="rm-band f" data-a="800" data-b="1100">여자</span><span class="rm-band c" data-a="1100" data-b="1300">아이</span><b id="rmR1" class="ref" hidden></b><b id="rmM1" hidden></b></div>
       <div class="ym-num sm" id="rmV1">–</div></div>
     <div class="rm-line"><div class="ym-lab">두 번째 울림 <small>입 안 공간 · 혀 높이</small></div>
-      <div class="rm-track" id="rmT2"><span class="rm-band m" data-a="1050" data-b="1250">남자</span><span class="rm-band f" data-a="1500" data-b="1700">여자</span><span class="rm-band c" data-a="1900" data-b="2200">아이</span><b id="rmM2" hidden></b></div>
+      <div class="rm-track" id="rmT2"><span class="rm-band m" data-a="1050" data-b="1250">남자</span><span class="rm-band f" data-a="1500" data-b="1700">여자</span><span class="rm-band c" data-a="1900" data-b="2200">아이</span><b id="rmR2" class="ref" hidden></b><b id="rmM2" hidden></b></div>
       <div class="ym-num sm" id="rmV2">–</div></div>
+    <div class="rm-play rm-model">
+      <label class="btnlike">내 녹음을 본보기로 올리기<input type="file" id="rmFile" accept="audio/*,video/*"></label>
+      <button type="button" id="rmModelPlay" hidden>▶ 본보기 듣기</button>
+      <button type="button" id="rmModelDel" hidden>지우기</button>
+      <span class="cap" id="rmModelTxt" style="margin:0">잘 됐던 내 녹음(예: 여목7)을 올리면 그 소리의 울림이 ◆로 찍혀요. 진짜 내 목소리라서 가장 따라 하기 쉬운 본보기예요.</span>
+    </div>
     <p class="rm-msg" id="rmMsg">마이크를 켜고 「아~」를 길게 내 보세요.</p>
     <h3 class="rm-h3">소리로 들어 보기 <span class="cap" style="margin:0">컴퓨터로 만든 「아~」 소리</span></h3>
     <p class="cap" style="margin-top:0">사람 목소리가 아니라 기계로 만든 소리라서 조금 로봇 같아요. 그래도 <b>높이가 같아도 울림만 바꾸면 다르게 들린다</b>는 건 귀로 확인할 수 있어요.</p>
@@ -219,9 +237,9 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611161200"></script>
-<script src="assets/coach.js?v=202611161200"></script>
-<script src="assets/yeomok-style.js?v=202611161200"></script>
+<script src="assets/voicefeat.js?v=202611171300"></script>
+<script src="assets/coach.js?v=202611171300"></script>
+<script src="assets/yeomok-style.js?v=202611171300"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -454,6 +472,7 @@ document.querySelectorAll('.rm-band').forEach(el => { const k = el.parentElement
 let rmRecent = [], rmLast = 0;
 function rmFrame(fr, voiced, now) {
   if (voiced && fr.F && fr.F[0] > 0 && fr.F[1] > 0) rmRecent.push({ t: now, a: fr.F[0], b: fr.F[1], f0: fr.f0 });
+  if (gdCollect && voiced && fr.F && fr.F[0] > 0 && fr.F[1] > 0) gdCollect.push({ a: fr.F[0], b: fr.F[1], f0: fr.f0 });
   while (rmRecent.length && now - rmRecent[0].t > 600) rmRecent.shift();
   if (now - rmLast < 120) return; rmLast = now;
   if (rmRecent.length < 5) { $('rmM1').hidden = $('rmM2').hidden = true; $('rmV1').textContent = $('rmV2').textContent = '–'; if (mic) $('rmMsg').textContent = '「아~」를 길게 내 보세요.'; return; }
@@ -486,6 +505,82 @@ document.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', 
   if (mic) { $('rmPlayMsg').textContent = '마이크가 켜져 있으면 스피커 소리가 같이 재져요. 이어폰을 쓰거나 마이크를 잠깐 꺼 주세요.'; }
   rmPlay(k === 'seq' ? [['m', hz], ['f', hz], ['c', hz]] : k === 'trap' ? [['m', 120], ['m', 220], ['f', 220]] : k === 'low' ? [['m', 160], ['f', 160]] : [[k, hz]]);
 }));
+// ---- 본보기 녹음 (내 녹음을 목표로) ----
+const mdb = () => new Promise((res, rej) => { const r = indexedDB.open('moksori-yeomok', 1); r.onupgradeneeded = () => r.result.createObjectStore('ref'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const mdbDo = async (mode, fn) => { const d = await mdb(); return new Promise((res, rej) => { const t = d.transaction('ref', mode), q = fn(t.objectStore('ref')); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }); };
+let MODEL = null, modelAudio = null;
+function modelShow() {
+  const on = !!MODEL; $('rmModelPlay').hidden = $('rmModelDel').hidden = !on; $('rmR1').hidden = $('rmR2').hidden = !(on && MODEL.a);
+  if (!on) { $('rmModelTxt').textContent = '잘 됐던 내 녹음(예: 여목7)을 올리면 그 소리의 울림이 ◆로 찍혀요. 진짜 내 목소리라서 가장 따라 하기 쉬운 본보기예요.'; return; }
+  if (MODEL.a) { $('rmR1').style.left = rmX(1, MODEL.a) + '%'; $('rmR2').style.left = rmX(2, MODEL.b) + '%'; }
+  $('rmModelTxt').textContent = `본보기: ${MODEL.name}` + (MODEL.a ? ` · 울림 ${Math.round(MODEL.a)} / ${Math.round(MODEL.b)} Hz · 높이 ${Math.round(MODEL.f0)} Hz` : '') + (MODEL.f0 > 300 ? ' (높이가 높아서 울림 값은 대략이에요)' : '') + ' — 말소리 전체의 값이라 「아~」만 낼 때보다 조금 낮게 나와요.';
+}
+$('rmFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  $('rmModelTxt').textContent = `「${f.name}」 분석 중…`;
+  try {
+    const ac = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const ab = await new Promise((res, rej) => { f.arrayBuffer().then(b => { const p = ac.decodeAudioData(b, res, rej); if (p && p.then) p.then(res, rej); }, rej); });
+    const dur = Math.min(ab.duration, 60), off = new OfflineAudioContext(1, Math.ceil(dur * 16000), 16000), src = off.createBufferSource(); src.buffer = ab; src.connect(off.destination); src.start();
+    const x = (await off.startRendering()).getChannelData(0), fr = []; let pk = -99;
+    for (let i = 0; i + 1024 <= x.length; i += 512) { const r = VF.analyze(x.subarray(i, i + 1024)); fr.push(r); if (r.db > pk) pk = r.db; }
+    const v = fr.filter(r => r.db > pk - 30 && r.f0 > 60 && r.clarity > 0.6), w = v.filter(r => r.F);
+    if (v.length < 20) throw new Error('short');
+    MODEL = { name: f.name, blob: f, f0: med(v.map(r => r.f0)), a: w.length >= 10 ? med(w.map(r => r.F[0])) : 0, b: w.length >= 10 ? med(w.map(r => r.F[1])) : 0 };
+    try { await mdbDo('readwrite', st => st.put(MODEL, 'model')); } catch (_) {}
+    modelShow();
+  } catch (_) { $('rmModelTxt').textContent = '녹음을 읽지 못했거나 목소리가 너무 짧아요.'; }
+});
+$('rmModelPlay').addEventListener('click', () => {
+  if (modelAudio && !modelAudio.paused) { modelAudio.pause(); $('rmModelPlay').textContent = '▶ 본보기 듣기'; return; }
+  modelAudio = new Audio(URL.createObjectURL(MODEL.blob)); modelAudio.onended = () => { $('rmModelPlay').textContent = '▶ 본보기 듣기'; };
+  modelAudio.play(); $('rmModelPlay').textContent = '■ 멈춤';
+});
+$('rmModelDel').addEventListener('click', async () => { if (modelAudio) modelAudio.pause(); MODEL = null; try { await mdbDo('readwrite', st => st.delete('model')); } catch (_) {} modelShow(); });
+mdbDo('readonly', st => st.get('model')).then(m => { if (m && m.blob) { MODEL = m; modelShow(); } }).catch(() => {});
+
+// ---- 따라 하기 ----
+let gdCollect = null, GD = { i: 0, base: null, busy: false };
+let GDH = (() => { try { return JSON.parse(localStorage.getItem('moksori.yeomok.guide') || '[]'); } catch (_) { return []; } })();
+const GDS = [
+  { t: '평소 목소리로 「아~」 재기', x: '먼저 지금 내 소리를 재 둘게요. 위의 「마이크 시작」을 누르고, 아무것도 바꾸지 말고 평소 말하는 목소리로 「아~」를 3초쯤 내세요. 마지막에 얼마나 달라졌는지 이 값과 비교해요.', act: '평소 「아~」 재기 (3초)' },
+  { t: '목울대 찾기', x: '손가락을 목 앞 튀어나온 곳(목울대)에 살짝 대고 침을 삼켜 보세요. 위로 쑥 올라갔다가 내려와요. 하품을 하면 반대로 내려가요. 이 「올라간 느낌」이 오늘 찾을 자리예요. 손으로 누르지는 마세요.' },
+  { t: '큰 개 → 작은 개', x: '목소리 없이 숨으로만 헐떡여요. 큰 개는 「허, 허」: 입을 크게, 혀는 바닥에. 작은 개는 「헤, 헤」: 입을 작게, 혀를 위로. 숨소리가 얇고 높아지면 맞게 한 거예요. 다섯 번씩 오가 보세요.' },
+  { t: '미끄러져서 멈추기', x: '숨소리로 「허어어~에에」 하고 큰 개에서 작은 개로 천천히 넘어가요. 맨 끝(가장 작은 개)에서 3초 멈춰 있어요. 목이 조이거나 숨이 막히면 너무 간 거니까 조금 풀어요. 세 번 해 보세요.' },
+  { t: '소리 얹기', x: '작은 개 자리에서 멈춘 채로, 아주 작게 「에~」 소리를 얹어요. 되면 그대로 「아~」로 바꿔요. 높이는 일부러 올리지 말고 편한 높이로. 소리가 얇고 앞쪽에서 나는 느낌이면 좋아요.' },
+  { t: '다시 「아~」 재기', x: '방금 그 자리에서 「아~」를 3초쯤 내세요. 처음 잰 값과 비교해 드려요.', act: '바뀐 「아~」 재기 (3초)' },
+];
+function gdRender() {
+  const st = GDS[GD.i];
+  $('gdN').textContent = `${GD.i + 1} / ${GDS.length}`; $('gdTitle').textContent = st.t; $('gdText').textContent = st.x;
+  $('gdAct').hidden = !st.act; if (st.act) $('gdAct').textContent = st.act;
+  $('gdPrev').disabled = GD.i === 0; $('gdNext').textContent = GD.i === GDS.length - 1 ? '처음부터 다시' : '다음 →';
+  $('gdDots').innerHTML = GDS.map((_, k) => `<i class="${k === GD.i ? 'on' : k < GD.i ? 'done' : ''}"></i>`).join('');
+  $('gdStat').innerHTML = GD.i === 0 && GD.base ? `평소 값: 울림 <b>${Math.round(GD.base.a)} / ${Math.round(GD.base.b)} Hz</b> · 높이 ${Math.round(GD.base.f0)} Hz` : GD.i === GDS.length - 1 && !GD.base ? '처음 값이 없어요. 1단계에서 평소 「아~」를 먼저 재면 비교할 수 있어요.' : '';
+}
+function gdHist() { $('gdHist').innerHTML = GDH.slice(-5).reverse().map(h => { const d = new Date(h.t); return `<li class="${h.da > 0 && h.db > 0 ? 'ok' : ''}">${d.getMonth() + 1}/${d.getDate()} · 첫 번째 울림 ${Math.round(h.a0)} → ${Math.round(h.a1)} · 두 번째 울림 ${Math.round(h.b0)} → ${Math.round(h.b1)} Hz</li>`; }).join(''); }
+$('gdPrev').addEventListener('click', () => { if (GD.i > 0) { GD.i--; gdRender(); } });
+$('gdNext').addEventListener('click', () => { GD.i = GD.i === GDS.length - 1 ? 0 : GD.i + 1; gdRender(); });
+$('gdAct').addEventListener('click', () => {
+  if (GD.busy) return;
+  if (!mic) { $('gdStat').textContent = '먼저 위의 「마이크 시작」을 눌러 주세요.'; return; }
+  GD.busy = true; gdCollect = []; $('gdAct').disabled = true; $('gdStat').textContent = '듣는 중… 「아~」를 길게 내세요.';
+  setTimeout(() => {
+    const c = gdCollect; gdCollect = null; GD.busy = false; $('gdAct').disabled = false;
+    if (c.length < 12) { $('gdStat').textContent = '소리가 충분히 잡히지 않았어요. 조금 더 크게, 「아~」를 길게 내 보세요.' + (c.length ? '' : ' (높이가 너무 높으면 울림이 안 잡혀요.)'); return; }
+    const r = { a: med(c.map(x => x.a)), b: med(c.map(x => x.b)), f0: med(c.map(x => x.f0)) };
+    if (GD.i === 0) { GD.base = r; gdRender(); return; }
+    if (!GD.base) { $('gdStat').innerHTML = `지금 값: 울림 <b>${Math.round(r.a)} / ${Math.round(r.b)} Hz</b>. 처음 값이 없어서 비교는 못 했어요.`; return; }
+    const da = r.a - GD.base.a, db = r.b - GD.base.b, ds = semi(r.f0, GD.base.f0), sg = v => (v > 0 ? '+' : '') + Math.round(v);
+    const up1 = da > GD.base.a * 0.05, up2 = db > GD.base.b * 0.05;
+    let msg = up1 && up2 ? '<b class="good">두 울림이 다 올라갔어요. 이 느낌을 기억하고 짧은 말에 써 보세요.</b>' : up1 ? '첫 번째 울림은 올라갔어요. 두 번째는 입을 더 작게, 혀를 더 높게 해 보세요.' : up2 ? '두 번째 울림은 올라갔어요. 첫 번째는 목울대를 조금 더 올려 보세요(3단계 다시).' : '아직 평소와 비슷해요. 3·4단계에서 숨소리가 확실히 얇아지는지 먼저 확인해 보세요.';
+    if (ds > 4) msg += '<br>높이도 같이 많이 올라갔어요(' + sg(ds) + '반음). 다음엔 높이는 편하게 두고 울림만 바꿔 보세요.';
+    $('gdStat').innerHTML = `첫 번째 울림 <b>${Math.round(GD.base.a)} → ${Math.round(r.a)} Hz</b> (${sg(da)}) · 두 번째 울림 <b>${Math.round(GD.base.b)} → ${Math.round(r.b)} Hz</b> (${sg(db)})<br>` + msg;
+    GDH.push({ t: Date.now(), a0: GD.base.a, b0: GD.base.b, a1: r.a, b1: r.b, da, db }); GDH = GDH.slice(-30); try { localStorage.setItem('moksori.yeomok.guide', JSON.stringify(GDH)); } catch (_) {} gdHist();
+  }, 3000);
+});
+gdRender(); gdHist();
+
 
 // ---- 목 사용 기록 ----
 const LKEY = 'moksori.voiceLoad';
