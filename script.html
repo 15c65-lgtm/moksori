@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611171600">
+<link rel="stylesheet" href="assets/style.css?v=202611191430">
 </head>
 <body>
 <div class="wrap">
@@ -36,7 +36,7 @@
     <input type="text" id="edTitle" maxlength="40" placeholder="대본 제목" aria-label="대본 제목">
     <input type="text" id="edYt" placeholder="유튜브 주소 (선택) — 넣으면 원본 영상을 옆에 띄워서 줄마다 반복해 들을 수 있어요" aria-label="유튜브 주소">
     <textarea id="edText" rows="12" spellcheck="false" aria-label="대본 내용"></textarea>
-    <div class="sc-sub"><button type="button" id="edConv">붙여 넣은 자막을 대본으로 바꾸기</button><label class="btnlike">자막 파일 열기 (.srt .vtt)<input type="file" id="edSubFile" accept=".srt,.vtt,.txt,text/plain"></label><span class="cap" id="edConvMsg" style="margin:0"></span></div>
+    <div class="sc-sub"><button type="button" id="edConv">붙여 넣은 자막을 대본으로 바꾸기</button><button type="button" id="edExport">사이트 대본용 코드 복사</button><label class="btnlike">자막 파일 열기 (.srt .vtt)<input type="file" id="edSubFile" accept=".srt,.vtt,.txt,text/plain"></label><span class="cap" id="edConvMsg" style="margin:0"></span></div>
     <details class="sc-how"><summary>유튜브 자막 가져오는 법</summary><ol><li>유튜브 영상 아래 설명란에서 <b>더보기</b>를 누르고 맨 아래 <b>스크립트 표시</b>를 눌러요.</li><li>오른쪽에 뜬 자막을 마우스로 처음부터 끝까지 끌어서 복사해요.</li><li>여기 큰 칸에 붙여 넣고 <b>붙여 넣은 자막을 대본으로 바꾸기</b>를 눌러요. 시간이 <b>[0:12]</b>처럼 줄 앞에 붙어요.</li><li>위 칸에 그 영상 주소를 넣고 저장하면, 줄을 고를 때마다 그 부분만 반복해서 들을 수 있어요.</li></ol><p class="cap">사이트가 자막이나 소리를 자동으로 받아올 수는 없어요(유튜브가 막아 놨어요). 역할 이름은 자막에 없으니 필요하면 줄 앞에 <b>이름:</b>을 직접 붙여 주세요.</p></details>
     <p class="cap">한 줄에 대사 하나. <b>역할: 대사</b> 형식이면 역할을 알아봐요. 줄 맨 앞 <b>[0:12]</b>나 <b>[0:12-0:15]</b>는 영상에서 그 대사가 나오는 시간이에요. 괄호만 있는 줄은 지문, 대사 앞 <b>(웃으며)</b> 같은 괄호는 연기 지시로 보여 줘요. 맨 윗줄 <b># 제목</b>은 장면 제목이에요.</p>
   </section>
@@ -74,6 +74,7 @@
 
   <section class="panel sc-find" id="findBox" hidden>
     <div class="chart-head"><h2>연습 대본 찾기</h2><div class="sup-ctl"><button type="button" id="findClose">닫기</button></div></div>
+    <p class="cap" style="margin:0">사이트에 들어 있는 대본이에요. 내가 만든 대본도 「대본 편집」 → 「사이트 대본용 코드 복사」로 여기에 넣을 수 있어요(저장소의 <b>assets/scripts.js</b>에 붙여 넣기).</p>
     <div class="sc-tags" id="findTags"></div>
     <div class="sc-bank" id="findList"></div>
     <h3 class="co-h3">원하는 대본 만들어 달라고 하기</h3>
@@ -156,8 +157,9 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611171600"></script>
-<script src="assets/voicefeat.js?v=202611171600"></script>
+<script src="assets/core.js?v=202611191430"></script>
+<script src="assets/voicefeat.js?v=202611191430"></script>
+<script src="assets/scripts.js?v=202611191430"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -382,30 +384,35 @@ $('ytStamp').addEventListener('click', () => {
 });
 
 // ---------- 연습 대본 찾기 ----------
-const BANK = [
-  { t: '늦은 사과', tags: ['슬픔', '2명'], x: '# 늦은 사과\n(해 질 무렵, 학교 옥상)\n서연: …왔네.\n지호: (숨을 고르며) 미안. 진작 왔어야 했는데.\n서연: 됐어. 이제 와서 뭐.\n지호: 그날 내가 한 말, 진심 아니었어.\n서연: (작게) 알아. 아는데도 아팠어.\n지호: …다시는 안 그럴게.\n서연: 그 말, 믿어도 돼?' },
-  { t: '시험 끝난 날', tags: ['기쁨', '2명'], x: '# 시험 끝난 날\n(교문 앞)\n유나: 끝났다! 진짜 끝났어!\n도윤: (웃으며) 목소리 좀 낮춰. 다 쳐다보잖아.\n유나: 몰라, 오늘은 내 마음대로 할 거야.\n도윤: 그래서, 뭐부터 할 건데?\n유나: 떡볶이! 그다음 노래방! 그다음은… 자고 싶다.\n도윤: 마지막이 제일 진심 같은데.\n유나: 들켰네.' },
-  { t: '약속을 어긴 친구', tags: ['화남', '2명'], x: '# 약속을 어긴 친구\n(카페, 한 시간째 기다린 뒤)\n하린: 지금 몇 시인지는 알아?\n태오: 미안, 버스가…\n하린: 버스 탓 하지 마. 이번이 세 번째야.\n태오: (작게) 진짜 미안해.\n하린: 미안하면 다야? 나는 네 시간이 아니라 내 시간이 아까워.\n태오: …할 말이 없다.\n하린: 그래, 없겠지.' },
-  { t: '한밤의 복도', tags: ['무서움', '2명'], x: '# 한밤의 복도\n(불 꺼진 학교 복도)\n민서: (속삭이며) 방금… 들었어?\n준우: 뭘?\n민서: 발소리. 우리 말고.\n준우: 장난치지 마.\n민서: 장난 아니야. 저기, 끝에… 누가 서 있어.\n준우: (떨리는 목소리로) 뛰자.\n민서: 다리가… 안 움직여.' },
-  { t: '츤데레의 도시락', tags: ['귀여움', '캐릭터', '2명'], x: '# 도시락\n(점심시간, 교실)\n리아: 이거. 남아서 가져온 거야. 오해하지 마.\n현: 도시락? 나 주는 거야?\n리아: 남았다고 했잖아! 두 번 말하게 하지 마.\n현: (웃으며) 계란말이가 하트 모양인데.\n리아: 그, 그건 틀이 그렇게 생긴 거야!\n현: 고마워. 잘 먹을게.\n리아: (작게) …맛없으면 말해. 다음엔 더 잘할 테니까.' },
-  { t: '차가운 선배', tags: ['담담', '캐릭터', '2명'], x: '# 보고\n(늦은 밤 사무실)\n선배: 보고서, 다시 써 와.\n후배: 어디가 잘못됐는지…\n선배: 세 번째 장. 숫자가 안 맞아.\n후배: 죄송합니다. 바로 고치겠습니다.\n선배: (잠시 쉬고) 저녁은 먹었어?\n후배: 아직요.\n선배: 먹고 해. 급한 거 아니니까.' },
-  { t: '어린아이와 길고양이', tags: ['귀여움', '캐릭터', '혼자'], x: '# 고양이야\n(골목, 아이가 쪼그려 앉아)\n아이: 고양이야, 너 어디서 왔어?\n아이: (손을 내밀며) 괜찮아, 나 안 무서워.\n아이: 우와, 꼬리가 엄청 길다!\n아이: 배고파? 내 과자 줄까? 아, 고양이는 과자 먹으면 안 된댔지.\n아이: 내일도 올게. 꼭 여기 있어야 해. 약속!' },
-  { t: '악당의 한마디', tags: ['비웃음', '캐릭터', '혼자'], x: '# 늦었군\n(무너진 성, 높은 곳에서)\n악당: 드디어 왔군. 생각보다 오래 걸렸어.\n악당: (낮게 웃으며) 그 표정, 아직도 이길 수 있다고 믿는 건가.\n악당: 네 친구들은 벌써 포기했다.\n악당: 마지막으로 묻지. 내 편에 서겠나?\n악당: …그럴 줄 알았다. 그럼, 시작하지.' },
-  { t: '놀라운 소식', tags: ['놀람', '2명'], x: '# 합격\n(전화 통화)\n지안: 여보세요? 왜 이렇게 숨이 차?\n수호: 나… 붙었어.\n지안: 뭐?\n수호: 붙었다고! 합격!\n지안: 거짓말! 진짜야? 진짜로?\n수호: 방금 확인했어. 손이 아직도 떨려.\n지안: 야, 거기 그대로 있어. 지금 갈게!' },
-  { t: '뉴스 읽기', tags: ['담담', '발음', '혼자'], x: '# 저녁 뉴스\n아나운서: 오늘 오후 전국 대부분 지역에 비가 내렸습니다.\n아나운서: 기상청은 내일 아침까지 중부 지방을 중심으로 비가 이어지겠다고 밝혔습니다.\n아나운서: 출근길 교통안전에 각별히 유의하시기 바랍니다.\n아나운서: 다음 소식입니다.' },
-  { t: '작별 인사', tags: ['슬픔', '혼자'], x: '# 정류장에서\n(버스 정류장, 혼잣말처럼)\n나: 잘 가. 건강하고.\n나: (웃으려 애쓰며) 연락은… 안 해도 돼. 바쁠 테니까.\n나: 그래도 가끔, 여기 생각나면.\n나: 아니다. 얼른 타. 버스 가겠다.\n나: …고마웠어.' },
-  { t: '감정 바꾸기 한 줄', tags: ['연습', '혼자'], x: '# 같은 말, 다른 마음\n(아래 줄을 감정을 바꿔 가며 읽어요)\n나: 그래, 알았어.\n나: 정말 네가 한 거야?\n나: 여기서 기다릴게.\n나: 이제 다 끝났어.' },
-];
+const BANK = (window.SCRIPT_BANK || []).map(b => ({ ...b, t: b.title, x: b.text, tags: b.tags || [] }));
 let findTag = '';
 function renderFind() {
   const tags = [...new Set(BANK.flatMap(b => b.tags))];
   $('findTags').innerHTML = ['', ...tags].map(t => `<button type="button" class="sc-tag${t === findTag ? ' on' : ''}" data-tag="${t}">${t || '전체'}</button>`).join('');
-  $('findList').innerHTML = BANK.map((b, i) => ({ b, i })).filter(o => !findTag || o.b.tags.includes(findTag)).map(({ b, i }) => { const ls = b.x.split('\n').filter(r => /[:：]/.test(r)); return `<div class="sc-bk"><b>${esc(b.t)}</b><span class="cap" style="margin:0">${b.tags.join(' · ')} · ${ls.length}줄</span><span class="sc-bk-x">${esc(ls[0].replace(/^[^:：]+[:：]\s*/, ''))}</span><button type="button" data-bank="${i}">가져오기</button></div>`; }).join('');
+  $('findList').innerHTML = BANK.map((b, i) => ({ b, i })).filter(o => !findTag || o.b.tags.includes(findTag)).map(({ b, i }) => {
+    const ls = b.x.split('\n').filter(r => /[:：]/.test(r) && !/^\s*[#(（]/.test(r)), have = ST.list.some(x => x.bank === b.id);
+    const sub = [b.work, b.character].filter(Boolean).join(' · ');
+    return `<div class="sc-bk"><b>${esc(b.t)}</b>${sub ? `<span class="sc-bk-w">${esc(sub)}</span>` : ''}<span class="cap" style="margin:0">${b.tags.map(esc).join(' · ')} · ${ls.length}줄${b.youtube ? ' · 영상 있음' : ''}</span><span class="sc-bk-x">${esc((ls[0] || '').replace(/^[^:：]+[:：]\s*/, ''))}</span><button type="button" data-bank="${i}">${have ? '내 목록에서 열기' : '가져오기'}</button></div>`;
+  }).join('') || '<p class="cap">이 태그의 대본이 없어요.</p>';
 }
 $('scFind').addEventListener('click', () => { $('findBox').hidden = !$('findBox').hidden; if (!$('findBox').hidden) { renderFind(); try { $('aiKey').value = localStorage.getItem('moksori.anthropicKey') || ''; } catch (_) {} } });
 $('findClose').addEventListener('click', () => { $('findBox').hidden = true; });
 $('findTags').addEventListener('click', e => { const b = e.target.closest('[data-tag]'); if (b) { findTag = b.dataset.tag; renderFind(); } });
-$('findList').addEventListener('click', async e => { const b = e.target.closest('[data-bank]'); if (!b) return; const k = BANK[+b.dataset.bank], id = uid(); ST.list.push({ id, title: k.t, text: k.x, role: '' }); ST.cur = id; idx = 0; saveST(); $('findBox').hidden = true; await loadScript(); $('topMsg').textContent = `「${k.t}」 대본을 가져왔어요.`; });
+$('findList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-bank]'); if (!b) return; const k = BANK[+b.dataset.bank], old = ST.list.find(x => x.bank === k.id);
+  if (old) { ST.cur = old.id; idx = 0; saveST(); $('findBox').hidden = true; await loadScript(); $('topMsg').textContent = `「${k.t}」 대본을 열었어요. 전에 녹음한 테이크도 그대로 있어요.`; return; }
+  const id = uid(); ST.list.push({ id, bank: k.id, title: k.t, text: k.x, role: '', yt: k.youtube || '' }); ST.cur = id; idx = 0; saveST(); $('findBox').hidden = true; await loadScript(); $('topMsg').textContent = `「${k.t}」 대본을 가져왔어요.`;
+});
+$('edExport').addEventListener('click', async () => {
+  const text = $('edText').value.trim(), title = $('edTitle').value.trim() || parse(text).title || '제목 없는 대본';
+  if (!parse(text).items.some(it => it.type === 'line')) { $('edConvMsg').innerHTML = '<span class="err">대사가 없어요.</span>'; return; }
+  const roles = [...new Set(parse(text).items.filter(it => it.type === 'line').map(it => it.role).filter(Boolean))];
+  const tags = [roles.length <= 1 ? '혼자' : roles.length + '명'], yt = ytId($('edYt').value);
+  const id = 'my-' + Date.now().toString(36);
+  const code = `  {\n    id: ${JSON.stringify(id)},\n    title: ${JSON.stringify(title)},\n    tags: ${JSON.stringify(tags)},   // 감정 태그를 더 넣어 보세요: 기쁨 슬픔 화남 담담 귀여움 놀람 무서움 비웃음 캐릭터\n    // work: '작품 이름', character: '캐릭터 이름',\n${yt ? `    youtube: ${JSON.stringify(yt)},\n` : ''}    text: \`${text.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')}\`,\n  },\n`;
+  try { await navigator.clipboard.writeText(code); $('edConvMsg').textContent = '복사했어요. 저장소의 assets/scripts.js 맨 끝 ]; 바로 위에 붙여 넣고 커밋하면 모두에게 보여요.'; }
+  catch (_) { $('edText').value = code; $('edConvMsg').textContent = '복사가 막혀서 큰 칸에 코드를 넣어 뒀어요. 직접 복사한 뒤 「닫기」를 누르세요(저장은 누르지 마세요).'; }
+});
 $('aiKey').addEventListener('change', () => { try { localStorage.setItem('moksori.anthropicKey', $('aiKey').value.trim()); } catch (_) {} });
 $('aiGo').addEventListener('click', async () => {
   const key = $('aiKey').value.trim(), ask = $('aiAsk').value.trim();
