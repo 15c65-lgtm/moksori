@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>노래 연습 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=202611222000">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>노래 연습</h1>
+      <p class="sub">반주나 원곡을 틀어 놓고 노래하면 내 음정이 그래프로 그려져요. 목소리만 있는 가이드 파일을 넣으면 정답 음정과 겹쳐 보여 주고 줄마다 정확도를 매겨요. 가사는 직접 붙여 넣고, 시간은 노래를 들으며 버튼으로 찍어요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="panel sc-top">
+    <label class="ym-field">노래 <select id="sgSel" aria-label="노래 선택"></select></label>
+    <button type="button" id="sgNew">+ 새 노래</button>
+    <button type="button" id="sgEditBtn">노래 설정</button>
+    <span class="cap" id="topMsg" style="margin:0"></span>
+  </section>
+
+  <section class="panel sg-edit" id="editBox" hidden>
+    <div class="chart-head"><h2>노래 설정</h2><div class="sup-ctl"><button type="button" class="primary-sm" id="edSave">저장</button><button type="button" id="edCancel">닫기</button><button type="button" class="del" id="edDel">이 노래 삭제</button></div></div>
+    <input type="text" id="edTitle" maxlength="40" placeholder="노래 제목" aria-label="노래 제목">
+    <div class="sg-src">
+      <div><div class="ym-lab">① 틀 소리 (반주 또는 원곡)</div>
+        <div class="sc-sub"><label class="btnlike">음악 파일 올리기<input type="file" id="edTrack" accept="audio/*,video/*"></label><span class="cap" id="edTrackTxt" style="margin:0"></span></div>
+        <input type="text" id="edYt" placeholder="또는 유튜브 주소 (파일이 없을 때)" aria-label="유튜브 주소"></div>
+      <div><div class="ym-lab">② 정답 음정 (선택)</div>
+        <div class="sc-sub"><label class="btnlike">가이드 파일 올리기<input type="file" id="edGuide" accept="audio/*,video/*"></label><button type="button" id="edGuideSame">①번 파일로 만들기</button><span class="cap" id="edGuideTxt" style="margin:0"></span></div>
+        <p class="cap" style="margin:4px 0 0">목소리만 있는 파일(가이드 보컬, 내가 잘 부른 녹음)이 가장 정확해요. 원곡으로 만들면 악기 소리가 섞여서 대략만 맞아요. 반주(MR)로는 만들 수 없어요.</p></div>
+    </div>
+    <div class="ym-lab" style="margin-top:6px">③ 가사</div>
+    <textarea id="edLyrics" rows="10" spellcheck="false" placeholder="가사를 한 줄씩 붙여 넣으세요. 시간은 비워 두고, 노래를 들으며 「⏱ 지금 이 줄」로 찍으면 돼요.&#10;[0:12.5] 처럼 시간이 붙은 가사(LRC)도 그대로 읽어요." aria-label="가사"></textarea>
+    <p class="cap" style="margin:0">가사는 이 기기에만 저장돼요. 사이트에 미리 넣어 두지 않는 건 가사에 저작권이 있어서예요.</p>
+  </section>
+
+  <section class="sg-main">
+    <div class="panel sg-stage">
+      <div class="sg-yt" id="ytBox" hidden><div id="ytPlayer"></div></div>
+      <div class="sg-lyric"><div class="sg-prev" id="lyPrev"></div><div class="sg-now" id="lyNow">노래를 고르거나 「+ 새 노래」로 만들어 주세요.</div><div class="sg-next" id="lyNext"></div></div>
+      <canvas id="pitchCv" class="sg-cv" height="260" aria-label="음정 그래프"></canvas>
+      <div class="sg-bar"><span id="tNow">0:00</span><input type="range" id="seek" min="0" max="100" step="0.1" value="0" aria-label="재생 위치"><span id="tLen">0:00</span></div>
+      <div class="sc-ctl">
+        <button type="button" class="primary-sm" id="playBtn">▶ 재생</button>
+        <button type="button" id="back5">−5초</button>
+        <button type="button" id="lineLoop">🔁 이 줄 반복</button>
+        <button type="button" id="stampBtn" title="가사 줄이 시작될 때 누르세요 (Enter)">⏱ 지금 이 줄</button>
+        <label class="tog"><input type="checkbox" id="recOn" checked> 내 노래 녹음</label>
+      </div>
+      <div class="sc-sub">
+        <label class="ym-field">정답 음정 키 <select id="keySel"></select></label>
+        <label class="tog"><input type="checkbox" id="octFree" checked> 옥타브 차이는 맞은 걸로 (남자가 여자 노래 등)</label>
+        <label class="tog"><input type="checkbox" id="phones"> 이어폰 쓰는 중</label>
+        <label class="ym-field">반주 크기 <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8" aria-label="반주 크기"></label>
+      </div>
+      <p class="cap" id="playMsg" style="margin:0">스피커로 틀면 마이크에 반주가 섞여요. 되도록 이어폰을 끼고 「이어폰 쓰는 중」을 켜 주세요.</p>
+    </div>
+    <div class="sg-side">
+      <div class="panel">
+        <div class="chart-head"><h2>음정 정확도</h2></div>
+        <div class="sg-score"><div><div class="ym-num" id="accNow">–</div><div class="ym-lab">지금 줄</div></div><div><div class="ym-num" id="accAll">–</div><div class="ym-lab">이번 판 전체</div></div><div><div class="ym-num sm" id="centNow">–</div><div class="ym-lab">지금 어긋남</div></div></div>
+        <p class="cap" id="accNote" style="margin-bottom:0">정답 음정이 있을 때 ±50센트(반음의 절반) 안이면 맞은 걸로 쳐요.</p>
+        <ol class="sg-lines" id="lineScores"></ol>
+      </div>
+      <div class="panel">
+        <div class="chart-head"><h2>내 녹음</h2></div>
+        <div class="sc-sub"><button type="button" id="myPlay" disabled>▶ 내 목소리만</button><button type="button" id="mixPlay" disabled>▶ 반주와 같이</button><button type="button" id="mixSave" disabled>WAV 저장</button></div>
+        <label class="ym-field" style="margin-top:8px">싱크 맞추기 <input type="range" id="sync" min="-400" max="400" step="10" value="0" aria-label="싱크 맞추기"> <span id="syncTxt">0 ms</span></label>
+        <p class="cap" id="myMsg" style="margin-bottom:0">재생하는 동안 부른 노래가 남아요. 반주와 어긋나 들리면 싱크를 옮겨 보세요.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>음 맞추기</h2><span class="cap" style="margin:0">들려 준 음을 따라 불러서 1초 동안 버티기</span></div>
+    <div class="sc-sub">
+      <label class="ym-field">낮은 음 <select id="drLo"></select></label>
+      <label class="ym-field">높은 음 <select id="drHi"></select></label>
+      <label class="ym-field">기준 <select id="drTol"><option value="50">쉬움 (±50센트)</option><option value="30" selected>보통 (±30센트)</option><option value="15">어려움 (±15센트)</option></select></label>
+      <button type="button" class="primary-sm" id="drGo">10번 도전</button>
+    </div>
+    <div class="sg-drill">
+      <div><div class="ym-lab">목표 음</div><div class="ym-num" id="drTarget">–</div></div>
+      <div class="sg-needle"><div class="sg-needle-t"><i id="drNeedle"></i></div><div class="br-scale"><span>낮아요</span><span>맞음</span><span>높아요</span></div></div>
+      <div><div class="ym-lab">버틴 시간</div><div class="ym-num sm" id="drHold">–</div></div>
+    </div>
+    <p class="cap" id="drMsg">「10번 도전」을 누르면 음이 1초 동안 나오고, 이어서 그 음을 불러요. 5초 안에 1초 동안 맞게 버티면 성공이에요.</p>
+    <ol class="tr-reps" id="drReps"></ol>
+  </section>
+</div>
+
+<script src="assets/voicefeat.js?v=202611222000"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const midiOf = f => 69 + 12 * Math.log2(f / 440), hzOf = m => 440 * 2 ** ((m - 69) / 12);
+const EN = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'], KO = ['도', '도#', '레', '레#', '미', '파', '파#', '솔', '솔#', '라', '라#', '시'];
+const nm = m => { m = Math.round(m); return `${KO[((m % 12) + 12) % 12]} ${EN[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`; };
+const fmtT = x => { x = Math.max(0, x || 0); return `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, '0')}`; };
+const ytId = u => { const m = String(u || '').match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/) || String(u || '').trim().match(/^([\w-]{11})$/); return m ? m[1] : ''; };
+
+// ---------- 저장 ----------
+const LKEY = 'moksori.songs';
+let SG = { list: [], cur: null }; try { SG = Object.assign(SG, JSON.parse(localStorage.getItem(LKEY) || '{}')); } catch (_) {}
+const saveSG = () => { try { localStorage.setItem(LKEY, JSON.stringify(SG)); } catch (_) {} };
+const song = () => SG.list.find(s => s.id === SG.cur) || null;
+const DB = (() => { let p = null; const open = () => p || (p = new Promise((res, rej) => { const r = indexedDB.open('moksori-sing', 1); r.onupgradeneeded = () => r.result.createObjectStore('files', { keyPath: 'key' }); r.onsuccess = () => res(r.result); r.onerror = () => { p = null; rej(r.error); }; }));
+  const tx = async (mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction('files', mode), q = fn(t.objectStore('files')); let out; if (q) q.onsuccess = () => { out = q.result; }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); };
+  return { get: k => tx('readonly', s => s.get(k)), put: v => tx('readwrite', s => s.put(v)), del: k => tx('readwrite', s => s.delete(k)) }; })();
+
+// ---------- 가사 ----------
+const TRE = /^\s*\[(\d+):(\d+(?:\.\d+)?)\]\s*/;
+function parseLy(text) { return String(text || '').split(/\r?\n/).map(r => r.trim()).filter(r => r && !/^\[(ar|ti|al|by|offset|length):/i.test(r)).map(r => { const m = r.match(TRE); return m ? { t: +m[1] * 60 + +m[2], text: r.slice(m[0].length) } : { t: null, text: r }; }).filter(l => l.text); }
+const lyToText = ly => ly.map(l => (l.t != null ? `[${Math.floor(l.t / 60)}:${(l.t % 60).toFixed(2).padStart(5, '0')}] ` : '') + l.text).join('\n');
+let LY = [];
+function lineAt(t) { let k = -1; for (let i = 0; i < LY.length; i++) if (LY[i].t != null && LY[i].t <= t + 0.05) k = i; return k; }
+
+// ---------- 오디오 ----------
+let actx = null, track = null, guide = null, src = null, gain = null, startAt = 0, offset = 0, playingT = false, yt = null, ytReady = false;
+const ctx = () => { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); return actx; };
+async function decode(blob) { const ab = await blob.arrayBuffer(); return new Promise((res, rej) => { const p = ctx().decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }); }
+const useYt = () => !track && !!(song() && song().yt);
+const dur = () => track ? track.duration : useYt() && ytReady ? (yt.getDuration() || 0) : 0;
+function now() { if (track) return playingT ? actx.currentTime - startAt : offset; if (useYt() && ytReady) { try { return yt.getCurrentTime() || 0; } catch (_) { return 0; } } return 0; }
+function play() {
+  if (track) { stopSrc(); src = actx.createBufferSource(); src.buffer = track; gain = gain || actx.createGain(); gain.gain.value = +$('vol').value; src.connect(gain); gain.connect(actx.destination); startAt = actx.currentTime - offset; src.start(0, Math.max(0, offset)); src.onended = () => { if (src && playingT && now() >= track.duration - 0.05) { playingT = false; offset = 0; onStop(true); } }; playingT = true; }
+  else if (useYt() && ytReady) { yt.setVolume(Math.round(+$('vol').value * 100)); yt.playVideo(); }
+}
+function pause() { if (track) { offset = now(); stopSrc(); playingT = false; } else if (useYt() && ytReady) yt.pauseVideo(); }
+function stopSrc() { if (src) { src.onended = null; try { src.stop(); } catch (_) {} src = null; } }
+function seekTo(t) { t = Math.max(0, Math.min(dur() || 0, t)); if (track) { const was = playingT; if (was) { stopSrc(); playingT = false; } offset = t; if (was) play(); } else if (useYt() && ytReady) yt.seekTo(t, true); markSeek(); }
+const isPlaying = () => track ? playingT : useYt() && ytReady ? yt.getPlayerState() === 1 : false;
+$('vol').addEventListener('input', () => { if (gain) gain.gain.value = +$('vol').value; if (useYt() && ytReady) yt.setVolume(Math.round(+$('vol').value * 100)); });
+
+// 유튜브
+let ytApi = null;
+function ytLoadApi() { return ytApi || (ytApi = new Promise((res, rej) => { if (window.YT && YT.Player) return res(); window.onYouTubeIframeAPIReady = () => res(); const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; sc.onerror = () => { ytApi = null; rej(new Error('yt')); }; document.head.appendChild(sc); })); }
+async function ytSetup(id) {
+  $('ytBox').hidden = !id; if (!id) return;
+  try { await ytLoadApi(); if (yt && ytReady) { yt.cueVideoById(id); return; } ytReady = false; yt = new YT.Player('ytPlayer', { videoId: id, playerVars: { playsinline: 1, rel: 0 }, events: { onReady: () => { ytReady = true; }, onStateChange: e => { if (e.data === 1) onStart(); else if (e.data === 2 || e.data === 0) onStop(e.data === 0); } } }); }
+  catch (_) { $('playMsg').innerHTML = '<span class="err">유튜브에 연결하지 못했어요.</span>'; }
+}
+
+// ---------- 정답 음정 만들기 (20ms 간격) ----------
+const HOP = 0.02;
+async function contourOf(blob, onProg) {
+  const ab = await decode(blob), d = Math.min(ab.duration, 600), off = new OfflineAudioContext(1, Math.ceil(d * 16000), 16000), s = off.createBufferSource(); s.buffer = ab; s.connect(off.destination); s.start();
+  const x = (await off.startRendering()).getChannelData(0), n = Math.floor((x.length - 1024) / 320), out = new Float32Array(Math.max(0, n)).fill(NaN), dbs = new Float32Array(Math.max(0, n));
+  for (let k = 0; k < n; k++) { const r = VF.analyze(x.subarray(k * 320, k * 320 + 1024)); dbs[k] = r.db; if (r.f0 > 70 && r.f0 < 1100 && r.clarity > 0.75) out[k] = midiOf(r.f0); if (k % 400 === 0) { onProg && onProg(k / n); await new Promise(r => setTimeout(r, 0)); } }
+  const pk = Math.max(...dbs); for (let k = 0; k < n; k++) if (dbs[k] < pk - 35) out[k] = NaN;
+  for (let k = 1; k < n - 1; k++) if (!isNaN(out[k]) && isNaN(out[k - 1]) && isNaN(out[k + 1])) out[k] = NaN; // 혼자 튀는 점 지우기
+  return out;
+}
+const keyShift = () => +$('keySel').value;
+function refAt(t) { if (!guide) return NaN; const k = Math.round(t / HOP); return k >= 0 && k < guide.length ? guide[k] + keyShift() : NaN; }
+
+// ---------- 마이크 ----------
+let mic = null, myPts = [], myRec = null, floorDb = -60;
+async function ensureMic() {
+  const want = !$('phones').checked;
+  if (mic && mic.ec === want) return true;
+  if (mic) stopMic();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: want, noiseSuppression: false, autoGainControl: false } });
+    ctx(); if (actx.state === 'suspended') await actx.resume();
+    const s = actx.createMediaStreamSource(stream), proc = actx.createScriptProcessor(2048, 1, 1), mute = actx.createGain(); mute.gain.value = 0;
+    const st = new VF.Stream16k(actx.sampleRate); let last = 0;
+    proc.onaudioprocess = e => { st.push(e.inputBuffer.getChannelData(0)); const fr = VF.analyze(st.last(VF.N)); const n = st.total - last; last = st.total; if (myRec) myRec.chunks.push(st.last(Math.min(n, 16000))); onFrame(fr); };
+    s.connect(proc); proc.connect(mute); mute.connect(actx.destination); mic = { stream, s, proc, mute, ec: want }; return true;
+  } catch (_) { $('playMsg').innerHTML = `<span class="err">마이크를 쓸 수 없어요. ${location.protocol === 'file:' ? '사이트 주소로 열어 주세요.' : '주소창 자물쇠 아이콘에서 허용해 주세요.'}</span>`; return false; }
+}
+function stopMic() { if (!mic) return; mic.proc.onaudioprocess = null; try { mic.s.disconnect(); mic.proc.disconnect(); mic.mute.disconnect(); } catch (_) {} mic.stream.getTracks().forEach(t => t.stop()); mic = null; }
+$('phones').addEventListener('change', () => { if (mic) ensureMic(); });
+
+// ---------- 채점 ----------
+let SC = null; // 이번 판
+const tol = 50;
+function diffCents(my, ref) { let d = (my - ref) * 100; if ($('octFree').checked) { d = ((d % 1200) + 1200) % 1200; if (d > 600) d -= 1200; } return d; }
+function onFrame(fr) {
+  floorDb = Math.min(floorDb + 0.03, fr.db);
+  const voiced = fr.f0 > 70 && fr.db > floorDb + 12 && fr.clarity > 0.6;
+  if (drill) drillFrame(fr, voiced);
+  if (!isPlaying()) return;
+  const t = now() - (actx.outputLatency || 0) - (actx.baseLatency || 0) - 0.05; // 들린 뒤 따라 부르고, 마이크로 들어와 분석되기까지 걸린 시간
+  if (voiced) myPts.push({ t, m: midiOf(fr.f0) }); while (myPts.length && myPts[0].t < t - 12) myPts.shift();
+  const r = refAt(t);
+  if (SC && voiced && !isNaN(r)) {
+    const d = diffCents(midiOf(fr.f0), r), ok = Math.abs(d) <= tol, li = lineAt(t);
+    SC.n++; if (ok) SC.hit++; const L = SC.lines[li] = SC.lines[li] || { n: 0, hit: 0, sum: 0 }; L.n++; if (ok) L.hit++; L.sum += d;
+    $('centNow').textContent = `${d > 0 ? '+' : ''}${Math.round(d)}`; $('centNow').className = 'ym-num sm ' + (ok ? 'good' : Math.abs(d) < 100 ? 'warnc' : 'badc');
+  } else if (!voiced) $('centNow').textContent = '–';
+}
+function scoreView() {
+  if (!SC || !guide) { $('accNow').textContent = $('accAll').textContent = '–'; return; }
+  const li = lineAt(now()), L = SC.lines[li];
+  $('accNow').textContent = L && L.n > 10 ? Math.round(L.hit / L.n * 100) + '%' : '–';
+  $('accAll').textContent = SC.n > 20 ? Math.round(SC.hit / SC.n * 100) + '%' : '–';
+}
+function renderLineScores() {
+  if (!SC || !guide) { $('lineScores').innerHTML = ''; return; }
+  const rows = Object.entries(SC.lines).filter(([i, L]) => +i >= 0 && L.n > 15).map(([i, L]) => ({ i: +i, acc: L.hit / L.n, bias: L.sum / L.n })).sort((a, b) => a.acc - b.acc).slice(0, 6);
+  $('lineScores').innerHTML = rows.map(r => `<li><button type="button" data-line="${r.i}" title="이 줄로 가서 반복">${Math.round(r.acc * 100)}%</button> ${esc((LY[r.i] || {}).text || '')}<span class="cap" style="margin:0"> ${Math.abs(r.bias) > 15 ? (r.bias > 0 ? '· 대체로 높아요' : '· 대체로 낮아요') : ''}</span></li>`).join('');
+  if (rows.length) $('accNote').textContent = '정확도가 낮은 줄부터 보여 줘요. 누르면 그 줄로 가서 반복해요.';
+}
+$('lineScores').addEventListener('click', e => { const b = e.target.closest('[data-line]'); if (!b) return; const l = LY[+b.dataset.line]; if (l && l.t != null) { loop = +b.dataset.line; $('lineLoop').classList.add('on'); seekTo(Math.max(0, l.t - 0.5)); if (!isPlaying()) $('playBtn').click(); } });
+
+// ---------- 재생 시작·멈춤 ----------
+async function onStart() {
+  if (!(await ensureMic())) return;
+  $('playBtn').textContent = '❚❚ 멈춤'; $('tally').classList.add('on'); $('tally').textContent = 'ON AIR';
+  if (!SC) SC = { n: 0, hit: 0, lines: {} };
+  if ($('recOn').checked && !myRec) myRec = { chunks: [], t0: now(), lat: (actx.baseLatency || 0) + (actx.outputLatency || 0) };
+}
+function onStop(ended) {
+  $('playBtn').textContent = '▶ 재생'; $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY';
+  if (myRec) { const r = myRec; myRec = null; let n = 0; for (const c of r.chunks) n += c.length; if (n > 16000) { const x = new Float32Array(n); let o = 0; for (const c of r.chunks) { x.set(c, o); o += c.length; } MY = { x, t0: r.t0, lat: r.lat }; $('myPlay').disabled = false; $('mixPlay').disabled = $('mixSave').disabled = !track; $('myMsg').textContent = `${fmtT(r.t0)}부터 ${Math.round(n / 16000)}초 녹음했어요.${track ? '' : ' 유튜브로 틀 때는 반주와 섞어 듣기가 안 돼요.'}`; } }
+  renderLineScores();
+  if (ended && SC && SC.n > 40) $('accNote').textContent = `끝! 이번 판 음정 정확도 ${Math.round(SC.hit / SC.n * 100)}%. 아래 줄을 눌러 약한 곳만 다시 불러 보세요.`;
+}
+function markSeek() { if (myRec) { onStop(false); if (isPlaying()) onStart(); } }
+$('playBtn').addEventListener('click', async () => {
+  if (!song()) { $('topMsg').textContent = '먼저 노래를 만들어 주세요.'; return; }
+  ctx(); if (actx.state === 'suspended') await actx.resume();
+  if (isPlaying()) { pause(); if (track) onStop(false); return; }
+  if (!track && !useYt()) { $('playMsg').innerHTML = '<span class="err">틀 소리가 없어요. 「노래 설정」에서 음악 파일이나 유튜브 주소를 넣어 주세요.</span>'; return; }
+  if (useYt() && !ytReady) { $('playMsg').textContent = '영상을 불러오는 중이에요. 잠깐 뒤에 다시 눌러 주세요.'; return; }
+  if (!(await ensureMic())) return;
+  if (now() < 0.3) SC = { n: 0, hit: 0, lines: {} };
+  play(); if (track) onStart();
+});
+$('back5').addEventListener('click', () => seekTo(now() - 5));
+$('seek').addEventListener('input', () => seekTo(+$('seek').value / 100 * (dur() || 0)));
+let loop = -1;
+$('lineLoop').addEventListener('click', () => { if (loop >= 0) { loop = -1; $('lineLoop').classList.remove('on'); return; } const li = lineAt(now()); if (li < 0) { $('playMsg').textContent = '가사에 시간이 있어야 줄 반복이 돼요.'; return; } loop = li; $('lineLoop').classList.add('on'); });
+$('stampBtn').addEventListener('click', stamp);
+function stamp() {
+  const s = song(); if (!s || !LY.length) { $('playMsg').textContent = '「노래 설정」에서 가사를 먼저 넣어 주세요.'; return; }
+  let k = LY.findIndex((l, i) => l.t == null || (i > 0 && LY[i - 1].t != null && l.t <= LY[i - 1].t)); const t = Math.max(0, now() - 0.15);
+  const done = LY.filter(l => l.t != null && l.t < t).length; if (k < 0 || done > k) k = Math.min(LY.length - 1, done);
+  LY[k].t = t; for (let i = k + 1; i < LY.length; i++) if (LY[i].t != null && LY[i].t <= t) LY[i].t = null;
+  s.lyrics = lyToText(LY); saveSG(); $('playMsg').textContent = `${k + 1}번째 줄을 ${fmtT(t)}에 맞췄어요.${k + 1 < LY.length ? ' 다음 줄이 시작될 때 또 누르세요.' : ' 다 찍었어요!'}`;
+}
+document.addEventListener('keydown', e => { if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return; if (e.key === 'Enter') { e.preventDefault(); stamp(); } else if (e.code === 'Space') { e.preventDefault(); $('playBtn').click(); } });
+
+// ---------- 그리기 ----------
+const cv = $('pitchCv'), g = cv.getContext('2d');
+let range = [48, 72];
+function fitRange() {
+  let lo = 48, hi = 72;
+  if (guide) { const v = [...guide].filter(x => !isNaN(x)).sort((a, b) => a - b); if (v.length > 20) { lo = v[Math.floor(v.length * 0.02)] + keyShift() - 3; hi = v[Math.floor(v.length * 0.98)] + keyShift() + 3; } }
+  else { try { const R = JSON.parse(localStorage.getItem('moksori.range') || '{}').results || [], r = R[R.length - 1]; if (r && r.low && (r.fals || r.chest)) { lo = r.low; hi = Math.min(r.low + 30, r.fals || r.chest); } } catch (_) {} }
+  if (hi - lo < 14) { const c = (hi + lo) / 2; lo = c - 7; hi = c + 7; } range = [Math.floor(lo), Math.ceil(hi)];
+}
+function draw() {
+  const W = cv.clientWidth, H = cv.clientHeight, dpr = devicePixelRatio || 1; if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const t = now(), A = 4, B = 3, L = 44, x = s => L + (s - (t - A)) / (A + B) * (W - L - 6), y = m => H - 8 - (m - range[0]) / (range[1] - range[0]) * (H - 16);
+  g.font = '11px var(--font-mono, monospace)'; g.textBaseline = 'middle';
+  for (let m = Math.ceil(range[0]); m <= range[1]; m++) { const pc = ((m % 12) + 12) % 12, blk = [1, 3, 6, 8, 10].includes(pc); g.fillStyle = blk ? 'rgba(127,127,127,.07)' : 'transparent'; g.fillRect(L, y(m + 0.5), W - L, y(m - 0.5) - y(m + 0.5)); if (pc === 0 || pc === 4 || pc === 7) { g.fillStyle = css('--muted'); g.fillText(EN[pc] + (Math.floor(m / 12) - 1), 4, y(m)); g.strokeStyle = 'rgba(127,127,127,.25)'; g.beginPath(); g.moveTo(L, y(m)); g.lineTo(W, y(m)); g.stroke(); } }
+  if (guide) { g.strokeStyle = css('--ref'); g.lineWidth = 9; g.lineCap = 'round'; g.globalAlpha = 0.45; g.beginPath(); let on = false; for (let s = t - A; s <= t + B; s += HOP) { const r = refAt(s); if (isNaN(r)) { on = false; continue; } const X = x(s), Y = y(r); if (!on) { g.moveTo(X, Y); on = true; } else g.lineTo(X, Y); } g.stroke(); g.globalAlpha = 1; }
+  g.fillStyle = css('--imi'); for (const p of myPts) { if (p.t < t - A || p.t > t) continue; let m = p.m; if ($('octFree').checked && guide) { const r = refAt(p.t); if (!isNaN(r)) m = r + diffCents(p.m, r) / 100; } g.beginPath(); g.arc(x(p.t), y(m), 2.6, 0, 7); g.fill(); }
+  g.strokeStyle = css('--ink'); g.lineWidth = 1.5; g.beginPath(); g.moveTo(x(t), 4); g.lineTo(x(t), H - 4); g.stroke();
+  if (myPts.length && t - myPts[myPts.length - 1].t < 0.15) { const p = myPts[myPts.length - 1]; g.fillStyle = css('--ink'); g.fillText(nm(p.m), x(t) + 6, Math.max(10, Math.min(H - 10, y(p.m) - 12))); }
+}
+function tick() {
+  const t = now(), D = dur();
+  $('tNow').textContent = fmtT(t); $('tLen').textContent = fmtT(D); if (D && document.activeElement !== $('seek')) $('seek').value = t / D * 100;
+  const li = lineAt(t); $('lyPrev').textContent = li > 0 ? LY[li - 1].text : ''; $('lyNow').textContent = li >= 0 ? LY[li].text : (LY[0] ? (LY[0].t == null ? '가사 시간이 아직 없어요 · 노래를 틀고 줄이 시작될 때마다 Enter' : '♪') : (song() ? '가사 없음 · 「노래 설정」에서 넣을 수 있어요' : $('lyNow').textContent)); $('lyNext').textContent = LY[li + 1] ? LY[li + 1].text : '';
+  if (loop >= 0 && isPlaying()) { const a = LY[loop].t, b = (LY[loop + 1] && LY[loop + 1].t) || a + 8; if (a != null && (t > b + 0.3 || t < a - 1.5)) seekTo(Math.max(0, a - 0.5)); }
+  scoreView(); draw(); requestAnimationFrame(tick);
+}
+
+// ---------- 내 녹음 ----------
+let MY = null, myNode = null;
+$('sync').addEventListener('input', () => { $('syncTxt').textContent = `${$('sync').value} ms`; });
+function stopMine() { if (myNode) { try { myNode.forEach(n => n.stop()); } catch (_) {} myNode = null; } }
+$('myPlay').addEventListener('click', () => { stopMine(); if (!MY) return; const b = actx.createBuffer(1, MY.x.length, 16000); b.copyToChannel(MY.x, 0); const n = actx.createBufferSource(); n.buffer = b; n.connect(actx.destination); n.start(); myNode = [n]; });
+function mixPlan() { const lag = (MY.lat || 0) + (+$('sync').value) / 1000; return { voiceAt: Math.max(0, -lag), trackFrom: MY.t0 + Math.max(0, lag) }; }
+$('mixPlay').addEventListener('click', () => {
+  stopMine(); if (!MY || !track) return; if (isPlaying()) pause(); const p = mixPlan(), T = actx.currentTime + 0.05;
+  const a = actx.createBufferSource(); a.buffer = track; const ga = actx.createGain(); ga.gain.value = +$('vol').value * 0.8; a.connect(ga); ga.connect(actx.destination); a.start(T, p.trackFrom, MY.x.length / 16000 + 0.5);
+  const b = actx.createBuffer(1, MY.x.length, 16000); b.copyToChannel(MY.x, 0); const v = actx.createBufferSource(); v.buffer = b; v.connect(actx.destination); v.start(T + p.voiceAt); myNode = [a, v];
+});
+$('mixSave').addEventListener('click', async () => {
+  if (!MY || !track) return; const p = mixPlan(), len = MY.x.length / 16000 + 0.5, sr = 44100, off = new OfflineAudioContext(1, Math.ceil(len * sr), sr);
+  const a = off.createBufferSource(); a.buffer = track; const ga = off.createGain(); ga.gain.value = +$('vol').value * 0.8; a.connect(ga); ga.connect(off.destination); a.start(0, p.trackFrom, len);
+  const b = off.createBuffer(1, MY.x.length, 16000); b.copyToChannel(MY.x, 0); const v = off.createBufferSource(); v.buffer = b; v.connect(off.destination); v.start(p.voiceAt);
+  const x = (await off.startRendering()).getChannelData(0); let pk = 0; for (const s of x) pk = Math.max(pk, Math.abs(s)); const k = pk > 0.99 ? 0.99 / pk : 1;
+  const buf = new ArrayBuffer(44 + x.length * 2), dv = new DataView(buf), w = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + x.length * 2, true); w(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, x.length * 2, true);
+  for (let i = 0; i < x.length; i++) dv.setInt16(44 + i * 2, x[i] * k * 32767, true);
+  const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })); el.download = `${(song().title || '노래').replace(/[\\/:*?"<>|]/g, '')}-내노래.wav`; document.body.appendChild(el); el.click(); el.remove();
+});
+
+// ---------- 노래 고르기·설정 ----------
+async function loadSong() {
+  stopSrc(); playingT = false; offset = 0; track = null; guide = null; MY = null; SC = null; myPts = []; loop = -1; $('lineLoop').classList.remove('on');
+  $('myPlay').disabled = $('mixPlay').disabled = $('mixSave').disabled = true;
+  $('sgSel').innerHTML = SG.list.map(s => `<option value="${s.id}">${esc(s.title)}</option>`).join('') || '<option>노래 없음</option>';
+  const s = song(); if (!s) { LY = []; $('lyNow').textContent = '「+ 새 노래」로 노래를 만들어 주세요.'; $('ytBox').hidden = true; return; }
+  $('sgSel').value = s.id; LY = parseLy(s.lyrics); $('keySel').value = String(s.key || 0);
+  try { const f = await DB.get(s.id + ':track'); if (f) { $('playMsg').textContent = '음악을 불러오는 중…'; track = await decode(f.blob); $('playMsg').textContent = ''; } } catch (_) { $('playMsg').innerHTML = '<span class="err">저장된 음악 파일을 읽지 못했어요.</span>'; }
+  try { const c = await DB.get(s.id + ':guide'); if (c && c.contour) guide = c.contour; } catch (_) {}
+  $('ytBox').hidden = true; if (!track && s.yt) ytSetup(s.yt);
+  fitRange(); $('accNote').textContent = guide ? '정답 음정이 있을 때 ±50센트(반음의 절반) 안이면 맞은 걸로 쳐요.' : '정답 음정이 없어서 내 음정만 그려요. 「노래 설정」에서 가이드 파일을 넣으면 채점해요.'; $('lineScores').innerHTML = '';
+}
+$('sgSel').addEventListener('change', () => { SG.cur = $('sgSel').value; saveSG(); loadSong(); });
+$('keySel').innerHTML = Array.from({ length: 25 }, (_, i) => i - 12).map(k => `<option value="${k}">${k > 0 ? '+' + k : k}${k ? '반음' : ' (원래 키)'}</option>`).join('');
+$('keySel').value = '0';
+$('keySel').addEventListener('change', () => { const s = song(); if (s) { s.key = +$('keySel').value; saveSG(); } fitRange(); });
+let pend = {};
+function openEdit(isNew) { const s = isNew ? null : song(); pend = { isNew, track: null, guide: null, guideFromTrack: false };
+  $('editBox').hidden = false; $('edTitle').value = s ? s.title : ''; $('edYt').value = s && s.yt ? 'https://youtu.be/' + s.yt : ''; $('edLyrics').value = s ? s.lyrics || '' : ''; $('edDel').hidden = isNew;
+  $('edTrackTxt').textContent = s && track ? '저장된 파일 있음' : ''; $('edGuideTxt').textContent = s && guide ? '정답 음정 있음' : ''; $('edTitle').focus(); }
+$('sgNew').addEventListener('click', () => openEdit(true)); $('sgEditBtn').addEventListener('click', () => openEdit(!song()));
+$('edCancel').addEventListener('click', () => { $('editBox').hidden = true; });
+$('edTrack').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; pend.track = f; $('edTrackTxt').textContent = f.name; if (!$('edTitle').value) $('edTitle').value = f.name.replace(/\.[^.]+$/, '').slice(0, 40); });
+$('edGuide').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; pend.guide = f; pend.guideFromTrack = false; $('edGuideTxt').textContent = f.name; });
+$('edGuideSame').addEventListener('click', () => { if (!pend.track && !track) { $('edGuideTxt').textContent = '①번 파일을 먼저 올려 주세요.'; return; } pend.guideFromTrack = true; pend.guide = null; $('edGuideTxt').textContent = '①번 파일로 만들어요 (대략)'; });
+$('edSave').addEventListener('click', async () => {
+  const yt = ytId($('edYt').value); if ($('edYt').value.trim() && !yt) { $('edTrackTxt').innerHTML = '<span class="err">유튜브 주소를 알아보지 못했어요.</span>'; return; }
+  let s = pend.isNew ? null : song(); if (!s) { s = { id: uid(), title: '', lyrics: '', yt: '', key: 0 }; SG.list.push(s); }
+  s.title = $('edTitle').value.trim() || '제목 없는 노래'; s.yt = yt; s.lyrics = $('edLyrics').value; SG.cur = s.id; saveSG(); $('edSave').disabled = true;
+  try {
+    if (pend.track) await DB.put({ key: s.id + ':track', blob: pend.track, name: pend.track.name });
+    const gsrc = pend.guide || (pend.guideFromTrack ? (pend.track || (await DB.get(s.id + ':track') || {}).blob) : null);
+    if (gsrc) { $('edGuideTxt').textContent = '정답 음정 만드는 중… 0%'; const c = await contourOf(gsrc, p => { $('edGuideTxt').textContent = `정답 음정 만드는 중… ${Math.round(p * 100)}%`; }); const v = [...c].filter(x => !isNaN(x)).length; await DB.put({ key: s.id + ':guide', contour: c, from: pend.guide ? pend.guide.name : '①번 파일' }); $('edGuideTxt').textContent = v < 50 ? '목소리 음정을 거의 찾지 못했어요. 반주(MR)라면 가이드 파일을 따로 넣어 주세요.' : `완료 (${Math.round(v * HOP)}초 분량)`; }
+  } catch (_) { $('topMsg').innerHTML = '<span class="err">파일을 저장하지 못했어요.</span>'; }
+  $('edSave').disabled = false; $('editBox').hidden = true; await loadSong();
+});
+$('edDel').addEventListener('click', async e => { const b = e.currentTarget; if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더 누르면 지워져요'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '이 노래 삭제'; }, 3000); return; }
+  const s = song(); if (!s) return; try { await DB.del(s.id + ':track'); await DB.del(s.id + ':guide'); } catch (_) {} SG.list = SG.list.filter(x => x.id !== s.id); SG.cur = SG.list[0] && SG.list[0].id; saveSG(); $('editBox').hidden = true; loadSong(); });
+
+// ---------- 음 맞추기 ----------
+let drill = null;
+const drOpts = (sel, v) => { $(sel).innerHTML = Array.from({ length: 49 }, (_, i) => 36 + i).map(m => `<option value="${m}">${nm(m)}</option>`).join(''); $(sel).value = v; };
+(() => { let lo = 48, hi = 60; try { const R = JSON.parse(localStorage.getItem('moksori.range') || '{}').results || [], r = R[R.length - 1]; if (r && r.low && r.chest) { lo = Math.round(r.low) + 2; hi = Math.round(r.chest) - 1; } } catch (_) {} if (hi - lo < 5) hi = lo + 7; drOpts('drLo', lo); drOpts('drHi', hi); })();
+function beep(m, sec) { ctx(); const T = actx.currentTime + 0.03, o = actx.createOscillator(), o2 = actx.createOscillator(), gg = actx.createGain(), g2 = actx.createGain(); o.frequency.value = hzOf(m); o2.frequency.value = hzOf(m) * 2; g2.gain.value = 0.25; o2.connect(g2); g2.connect(gg); o.connect(gg); gg.connect(actx.destination); gg.gain.setValueAtTime(0, T); gg.gain.linearRampToValueAtTime(0.25, T + 0.04); gg.gain.setValueAtTime(0.25, T + sec - 0.1); gg.gain.linearRampToValueAtTime(0, T + sec); o.start(T); o2.start(T); o.stop(T + sec + 0.05); o2.stop(T + sec + 0.05); }
+function drillNext() {
+  const lo = +$('drLo').value, hi = Math.max(lo + 1, +$('drHi').value), m = lo + Math.floor(Math.random() * (hi - lo + 1));
+  drill.cur = { m, t0: performance.now() + 1300, hold: 0, errs: [] }; drill.phase = 'listen'; $('drTarget').textContent = nm(m); $('drMsg').textContent = `${drill.k + 1}번째 · 잘 들어요…`; beep(m, 1.0);
+  setTimeout(() => { if (drill && drill.cur && drill.cur.m === m) { drill.phase = 'sing'; drill.cur.t0 = performance.now(); $('drMsg').textContent = `${drill.k + 1}번째 · 지금 불러요!`; } }, 1150);
+}
+function drillFrame(fr, voiced) {
+  const c = drill.cur; if (!c || drill.phase !== 'sing') return;
+  const el = (performance.now() - c.t0) / 1000;
+  if (voiced) { const d = (midiOf(fr.f0) - c.m) * 100, T = +$('drTol').value; $('drNeedle').style.left = (50 + Math.max(-50, Math.min(50, d / 2))) + '%'; $('drNeedle').classList.toggle('ok', Math.abs(d) <= T); if (Math.abs(d) <= T) { c.hold += 2048 / actx.sampleRate; } c.errs.push(Math.abs(d)); }
+  $('drHold').textContent = `${c.hold.toFixed(1)}초`;
+  if (c.hold >= 1 || el > 5) {
+    const ok = c.hold >= 1, e = c.errs.length ? c.errs.sort((a, b) => a - b)[c.errs.length >> 1] : NaN; drill.res.push({ m: c.m, ok, e });
+    $('drReps').innerHTML = drill.res.map((r, i) => `<li class="${r.ok ? 'ok' : 'no'}">${i + 1}. ${esc(nm(r.m))} ${r.ok ? '성공' : '실패'}${Number.isFinite(r.e) ? ` · 어긋남 ${Math.round(r.e)}센트` : ''}</li>`).join('');
+    drill.cur = null; drill.k++;
+    if (drill.k >= 10) { const n = drill.res.filter(r => r.ok).length, es = drill.res.map(r => r.e).filter(Number.isFinite); $('drMsg').textContent = `끝! 10번 중 ${n}번 성공${es.length ? `, 평균 어긋남 ${Math.round(es.reduce((a, b) => a + b, 0) / es.length)}센트` : ''}. ${n >= 8 ? '기준을 한 단계 올려 보세요.' : n <= 3 ? '음역을 좁히거나 「쉬움」으로 해 보세요.' : ''}`; drill = null; $('drGo').textContent = '10번 도전'; return; }
+    setTimeout(() => { if (drill) drillNext(); }, 700);
+  }
+}
+$('drGo').addEventListener('click', async () => { if (drill) { drill = null; $('drGo').textContent = '10번 도전'; $('drMsg').textContent = '멈췄어요.'; return; } if (!(await ensureMic())) return; drill = { k: 0, res: [] }; $('drReps').innerHTML = ''; $('drGo').textContent = '■ 멈춤'; drillNext(); });
+
+loadSong(); requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

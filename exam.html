@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공채 시험 대비 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=202611222000">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>공채 시험 대비</h1>
+      <p class="sub">KBS · MBC · EBS · 투니버스 · 대원방송 성우 공채의 지난 1차 시험을 방송국·성별·기수로 골라 연습해요. 실전 모의 시험은 그 방송국의 녹음 규칙(이름 녹음, 번호 말하기, 파일 나누기, 파일 이름)대로 진행하고 파일까지 만들어 줘요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="panel ex-filter">
+    <div class="sc-tags" id="stTabs"></div>
+    <div class="sc-tags" id="gTabs"></div>
+    <button type="button" id="addOpen">+ 시험 직접 추가</button>
+  </section>
+
+  <section class="panel" id="stInfo"></section>
+
+  <section class="panel ex-add" id="addBox" hidden>
+    <div class="chart-head"><h2>시험 직접 추가</h2><button type="button" id="addClose">닫기</button></div>
+    <p class="cap" style="margin-top:0">목록에 없는 시험(새 공고, 지난 기수)을 넣어요. 이 기기에만 저장되고, 「사이트용 코드 복사」로 모두가 보게 할 수도 있어요.</p>
+    <div class="sc-sub">
+      <label class="ym-field">방송국 <select id="adSt"></select></label>
+      <label class="ym-field">기수 <input type="number" id="adGen" min="1" max="99" value="1" class="ex-num"></label>
+      <label class="ym-field">연도 <input type="number" id="adYear" min="1990" max="2100" class="ex-num"></label>
+      <label class="ym-field">성별 <select id="adG"><option value="m">남자</option><option value="f">여자</option></select></label>
+      <label class="ym-field">문항 수 <input type="number" id="adN" min="1" max="15" value="5" class="ex-num"></label>
+      <input type="text" id="adLink" placeholder="원문 주소 (선택)" class="ex-link-in" aria-label="원문 주소">
+      <button type="button" class="primary-sm" id="adGo">추가</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>지난 시험</h2><span class="cap" style="margin:0" id="exCount"></span></div>
+    <div class="ex-list" id="exList"></div>
+  </section>
+
+  <section class="panel ex-detail" id="exBox" hidden>
+    <div class="chart-head"><h2 id="exTitle"></h2>
+      <div class="sup-ctl"><a class="btnlike" id="exLink" target="_blank" rel="noopener">원문 대본 보기 ↗</a><button type="button" id="exCode" hidden>사이트용 코드 복사</button><button type="button" class="del" id="exDel" hidden>이 시험 삭제</button></div>
+    </div>
+    <p class="cap" id="exNote" style="margin-top:0"></p>
+    <ol class="ex-items" id="exItems"></ol>
+    <div class="sc-sub">
+      <button type="button" id="itAdd">+ 문항 추가</button>
+      <button type="button" id="toScript">대본 연습으로 보내기</button>
+      <button type="button" class="primary-sm" id="mockGo">▶ 실전 모의 시험</button>
+      <span class="cap" id="exMsg" style="margin:0"></span>
+    </div>
+  </section>
+
+  <section class="panel ex-mock" id="mockBox" hidden>
+    <div class="chart-head"><h2 id="mkTitle">실전 모의 시험</h2><button type="button" id="mkQuit">그만두기</button></div>
+    <div id="mkSetup">
+      <p class="cap" style="margin-top:0">실제 시험처럼 처음부터 끝까지 이어서 녹음해요. 조용한 곳에서, 이어폰 없이 마이크와 입 거리를 한 뼘쯤 두세요.</p>
+      <div class="sc-sub">
+        <input type="text" id="mkName" maxlength="10" placeholder="내 이름" aria-label="내 이름">
+        <input type="text" id="mkNo" maxlength="12" placeholder="수험번호 (EBS)" aria-label="수험번호" hidden>
+        <label class="tog"><input type="checkbox" id="mkRetry" checked> 다시 녹음 허용 (끄면 진짜 시험처럼 한 번씩만)</label>
+        <button type="button" class="primary-sm" id="mkStart">시작</button>
+      </div>
+      <ul class="ex-rules" id="mkRules"></ul>
+    </div>
+    <div id="mkRun" hidden>
+      <div class="ex-steps" id="mkSteps"></div>
+      <div class="ex-stage">
+        <div class="ex-say" id="mkSay"></div>
+        <div class="ex-dir" id="mkDir"></div>
+        <div class="ex-text" id="mkText"></div>
+      </div>
+      <div class="sc-ctl">
+        <button type="button" id="mkPrev">◀ 이전</button>
+        <button type="button" class="primary-sm sc-rec" id="mkRec">● 녹음</button>
+        <button type="button" id="mkPlay" disabled>▶ 들어 보기</button>
+        <button type="button" id="mkNext">다음 ▶</button>
+      </div>
+      <div class="lvl wide"><i id="mkLvl" style="width:0%"></i></div>
+      <div class="ex-check" id="mkCheck"></div>
+    </div>
+    <div id="mkDone" hidden>
+      <div class="histwrap"><table class="hist"><thead><tr><th>순서</th><th>문항</th><th>길이</th><th>가장 큰 소리</th><th>잡음</th><th>평균 높이</th><th>점검</th><th></th></tr></thead><tbody id="mkSum"></tbody></table></div>
+      <div class="sc-sub">
+        <label class="ym-field">파일 <select id="mkFmt"><option value="wav">WAV</option><option value="mp3">MP3</option></select></label>
+        <button type="button" class="primary-sm" id="mkSave">제출용 파일 만들기</button>
+        <button type="button" id="mkAgain">다시 보기</button>
+        <span class="cap" id="mkSaveMsg" style="margin:0"></span>
+      </div>
+      <p class="cap">파일 규격(나누기, 이름, 형식)은 그 방송국 공고에 맞춰 만들어요. 실제로 낼 때는 그해 공고를 꼭 다시 확인하세요. 규칙이 바뀌는 경우가 있어요.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="pastBox" hidden>
+    <div class="chart-head"><h2>지난 모의 시험</h2><span class="cap" style="margin:0" id="pastCount"></span></div>
+    <div class="sv-list" id="pastList"></div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-bottom:12px">공채 준비 요령</h2>
+    <div class="tips">
+      <div><b>문항 지시를 먼저 읽기</b>괄호 안 나이·성격·상황이 채점 기준이에요. 대사보다 지시를 먼저 보고 "누가, 누구에게, 무엇을 원하며" 말하는지 정한 뒤 녹음하세요.</div>
+      <div><b>문항끼리 확 다르게</b>심사위원은 한 파일에서 연령·성격 폭을 봐요. 「다시 보기」 표의 평균 높이가 문항마다 비슷하면 전환이 약하게 들릴 수 있어요.</div>
+      <div><b>소리 상태 점검</b>찢어짐(소리가 너무 큼)이나 큰 잡음은 연기와 상관없이 감점 요인이에요. 모의 시험이 문항마다 바로 알려 줘요.</div>
+      <div><b>목 아끼기</b>소리 지르는 문항은 진짜로 크게 지르기보다 호흡과 긴장으로 표현해요. 같은 문항을 연달아 열 번 넘게 지르지 마세요.</div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/voicefeat.js?v=202611222000"></script>
+<script src="assets/exams.js?v=202611222000"></script>
+<script src="assets/lame.min.js?v=202611222000"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const med = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const ST = window.STATIONS, GN = { m: '남자', f: '여자' };
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') || d; } catch (_) { return d; } };
+const keep = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+let CUSTOM = load('moksori.exam.custom', []), DATA = load('moksori.exam.data', {}), UI = load('moksori.exam.ui', { st: '', g: '' });
+const allExams = () => [...window.EXAMS, ...CUSTOM.map(c => ({ ...c, custom: true }))];
+const examOf = id => allExams().find(e => e.id === id);
+const exName = e => `${ST[e.station].name} ${e.gen}기 · ${GN[e.gender]}`;
+// 문항 = 사이트 기본값 + 내가 고친 것 + 붙여 넣은 대본
+function itemsOf(e) {
+  const d = DATA[e.id] || {}, base = e.items || [], n = Math.max(base.length, (d.items || []).length);
+  const out = []; for (let i = 0; i < n; i++) { const b = base[i] || {}, u = (d.items || [])[i] || {}; if (u.gone) continue; out.push({ i, type: u.type != null ? u.type : b.type || '', dir: u.dir != null ? u.dir : b.dir || '', file: b.file || '', intro: !!b.intro, text: u.text || '' }); }
+  return out;
+}
+function setItem(e, i, patch) { const d = DATA[e.id] = DATA[e.id] || {}; d.items = d.items || []; d.items[i] = Object.assign({}, d.items[i] || {}, patch); keep('moksori.exam.data', DATA); }
+
+// ---------- 고르기 ----------
+function renderTabs() {
+  const sts = ['', ...Object.keys(ST)];
+  $('stTabs').innerHTML = sts.map(k => `<button type="button" class="sc-tag${UI.st === k ? ' on' : ''}" data-st="${k}">${k ? ST[k].name : '모든 방송국'}</button>`).join('');
+  $('gTabs').innerHTML = [['', '남녀 모두'], ['m', '남자'], ['f', '여자']].map(([k, t]) => `<button type="button" class="sc-tag${UI.g === k ? ' on' : ''}" data-g="${k}">${t}</button>`).join('');
+}
+$('stTabs').addEventListener('click', e => { const b = e.target.closest('[data-st]'); if (b) { UI.st = b.dataset.st; keep('moksori.exam.ui', UI); renderAll(); } });
+$('gTabs').addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (b) { UI.g = b.dataset.g; keep('moksori.exam.ui', UI); renderAll(); } });
+function renderInfo() {
+  const s = ST[UI.st]; $('stInfo').hidden = !s; if (!s) return;
+  $('stInfo').innerHTML = `<div class="chart-head"><h2>${esc(s.full)}</h2>${s.apply ? `<a class="btnlike" href="${esc(s.apply)}" target="_blank" rel="noopener">지원 사이트 ↗</a>` : ''}</div>
+    <div class="ex-info"><div><div class="ym-lab">시험 순서</div><ol>${s.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol></div>
+    ${s.rules.length ? `<div><div class="ym-lab">1차 녹음 규칙·특징</div><ul>${s.rules.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}</div>
+    <p class="ex-tip">${esc(s.tip)}</p>`;
+}
+function renderList() {
+  const list = allExams().filter(e => (!UI.st || e.station === UI.st) && (!UI.g || e.gender === UI.g))
+    .sort((a, b) => (b.year || 0) - (a.year || 0) || a.station.localeCompare(b.station) || (b.gen - a.gen) || a.gender.localeCompare(b.gender));
+  $('exCount').textContent = `${list.length}개`;
+  $('exList').innerHTML = list.map(e => {
+    const it = itemsOf(e), filled = it.filter(x => x.text.trim()).length;
+    return `<button type="button" class="ex-card${cur && cur.id === e.id ? ' on' : ''}" data-ex="${esc(e.id)}"><span class="ex-st">${esc(ST[e.station].name)}</span><b>${e.gen}기 · ${GN[e.gender]}</b><span class="cap" style="margin:0">${e.year || ''}${e.year ? ' · ' : ''}${it.length ? it.length + '문항' : '문항 정보 없음'}${e.partial ? ' (일부)' : ''}${e.custom ? ' · 내가 추가' : ''}</span><span class="ex-fill"><i style="width:${it.length ? filled / it.length * 100 : 0}%"></i></span><span class="cap" style="margin:0">대본 ${filled}/${it.length} 넣음</span></button>`;
+  }).join('') || '<p class="cap">조건에 맞는 시험이 없어요. 「시험 직접 추가」로 넣어 보세요.</p>';
+}
+$('exList').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; openExam(b.dataset.ex); $('exBox').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+function renderAll() { renderTabs(); renderInfo(); renderList(); }
+
+// ---------- 시험 하나 ----------
+let cur = null;
+function openExam(id) {
+  cur = examOf(id); if (!cur) return; $('exBox').hidden = false; $('mockBox').hidden = true;
+  $('exTitle').textContent = `${ST[cur.station].full} ${cur.gen}기 1차 · ${GN[cur.gender]}${cur.year ? ` (${cur.year})` : ''}`;
+  $('exLink').hidden = !cur.link; if (cur.link) { $('exLink').href = cur.link; $('exLink').textContent = `원문 대본 보기 · ${cur.linkName || '링크'} ↗`; }
+  $('exCode').hidden = $('exDel').hidden = !cur.custom;
+  $('exNote').textContent = (cur.partial ? '문항 일부만 정리돼 있어요. 원문을 보고 비어 있는 문항을 채우거나 「+ 문항 추가」로 넣어 주세요. ' : '') + '원문 대본을 열어 문항마다 대사를 붙여 넣으면 이 기기에 저장돼요.';
+  renderItems(); renderList(); $('exMsg').textContent = '';
+}
+function renderItems() {
+  const it = itemsOf(cur);
+  $('exItems').innerHTML = it.map((x, k) => `<li class="ex-it" data-i="${x.i}">
+    <div class="ex-it-h"><span class="ex-no">${k + 1}</span><input type="text" class="ex-type" value="${esc(x.type)}" placeholder="나이·종류 (예: 10대 소년)" aria-label="문항 종류"><input type="text" class="ex-dirin" value="${esc(x.dir)}" placeholder="지시 (성격·상황)" aria-label="문항 지시"><button type="button" class="ex-x" title="문항 빼기">×</button></div>
+    <textarea class="ex-tx" rows="${x.text ? Math.min(8, Math.max(3, x.text.split('\n').length + 1)) : 2}" placeholder="${x.intro ? '예: 투니버스 10기 성우 모집 남자 1차 실기시험에 응시하는 (내 이름)입니다.' : '원문에서 이 문항의 대사를 복사해 붙여 넣으세요. / 는 숨 쉬는 자리예요.'}" aria-label="${k + 1}번 대사">${esc(x.text)}</textarea></li>`).join('') || '<li class="cap">문항이 없어요. 원문을 보고 「+ 문항 추가」로 넣어 주세요.</li>';
+}
+$('exItems').addEventListener('change', e => {
+  const li = e.target.closest('[data-i]'); if (!li) return; const i = +li.dataset.i;
+  if (e.target.classList.contains('ex-type')) setItem(cur, i, { type: e.target.value.trim() });
+  else if (e.target.classList.contains('ex-dirin')) setItem(cur, i, { dir: e.target.value.trim() });
+  else if (e.target.classList.contains('ex-tx')) { setItem(cur, i, { text: e.target.value }); renderList(); }
+});
+$('exItems').addEventListener('click', e => {
+  const b = e.target.closest('.ex-x'); if (!b) return; const i = +b.closest('[data-i]').dataset.i;
+  if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '빼기?'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '×'; }, 2500); return; }
+  setItem(cur, i, { gone: true }); renderItems(); renderList();
+});
+$('itAdd').addEventListener('click', () => { const n = Math.max((cur.items || []).length, ((DATA[cur.id] || {}).items || []).length); setItem(cur, n, { type: '', dir: '', text: '' }); renderItems(); renderList(); const t = $('exItems').querySelectorAll('.ex-type'); if (t.length) t[t.length - 1].focus(); });
+$('toScript').addEventListener('click', () => {
+  const it = itemsOf(cur), filled = it.filter(x => x.text.trim());
+  if (!filled.length) { $('exMsg').innerHTML = '<span class="err">먼저 문항에 대사를 붙여 넣어 주세요.</span>'; return; }
+  const s = ST[cur.station], lines = [`# ${s.name} ${cur.gen}기 1차 (${GN[cur.gender]})`];
+  it.forEach((x, k) => { if (!x.text.trim()) return; lines.push(`(${k + 1}번 · ${x.type || '문항'}${x.dir ? ' — ' + x.dir : ''})`); for (const r of x.text.split(/\n+/).map(r => r.trim()).filter(Boolean)) lines.push(`${k + 1}번: ${r.replace(/^[^:：]{1,15}[:：]\s*/, '')}`); });
+  let SS = load('moksori.scripts', { list: [], cur: null }); SS.list = SS.list || [];
+  const bank = 'exam:' + cur.id, title = `${s.name} ${cur.gen}기 1차 (${GN[cur.gender]})`; let sc = SS.list.find(x => x.bank === bank);
+  if (sc) { sc.text = lines.join('\n'); sc.title = title; } else { sc = { id: uid(), bank, title, text: lines.join('\n'), role: '*' }; SS.list.push(sc); }
+  sc.role = '*'; SS.cur = sc.id; keep('moksori.scripts', SS); location.href = 'script.html';
+});
+$('exCode').addEventListener('click', async () => {
+  const it = itemsOf(cur).map(x => ({ type: x.type, ...(x.dir ? { dir: x.dir } : {}) }));
+  const code = `  { id: ${JSON.stringify(cur.station + '-' + cur.gen + '-' + cur.gender)}, station: ${JSON.stringify(cur.station)}, gen: ${cur.gen}, year: ${cur.year || 'null'}, gender: ${JSON.stringify(cur.gender)},\n    items: ${JSON.stringify(it).replace(/"(\w+)":/g, '$1: ')},\n    link: ${JSON.stringify(cur.link || '')}, linkName: ${JSON.stringify(cur.linkName || '')} },\n`;
+  try { await navigator.clipboard.writeText(code); $('exMsg').textContent = '복사했어요. assets/exams.js의 EXAMS 목록 끝에 붙여 넣으세요 (대사 글은 빠져 있어요).'; } catch (_) { $('exMsg').textContent = code; }
+});
+$('exDel').addEventListener('click', e => {
+  const b = e.currentTarget; if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더 누르면 지워져요'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '이 시험 삭제'; }, 3000); return; }
+  CUSTOM = CUSTOM.filter(c => c.id !== cur.id); keep('moksori.exam.custom', CUSTOM); delete DATA[cur.id]; keep('moksori.exam.data', DATA); cur = null; $('exBox').hidden = true; renderAll();
+});
+
+// 직접 추가
+$('adSt').innerHTML = Object.keys(ST).map(k => `<option value="${k}">${ST[k].name}</option>`).join('');
+$('adYear').value = new Date().getFullYear();
+$('addOpen').addEventListener('click', () => { $('addBox').hidden = !$('addBox').hidden; if (UI.st) $('adSt').value = UI.st; });
+$('addClose').addEventListener('click', () => { $('addBox').hidden = true; });
+$('adGo').addEventListener('click', () => {
+  const gen = Math.max(1, Math.min(99, parseInt($('adGen').value) || 1)), n = Math.max(1, Math.min(15, parseInt($('adN').value) || 5));
+  const e = { id: 'my-' + uid(), station: $('adSt').value, gen, year: parseInt($('adYear').value) || null, gender: $('adG').value, items: Array.from({ length: n }, () => ({ type: '', dir: '' })), link: $('adLink').value.trim(), linkName: '원문' };
+  CUSTOM.push(e); keep('moksori.exam.custom', CUSTOM); $('addBox').hidden = true; UI.st = e.station; keep('moksori.exam.ui', UI); renderAll(); openExam(e.id);
+});
+
+// ---------- 마이크 (제출용이라 원래 품질 그대로) ----------
+let actx = null, mic = null, rec = null;
+async function ensureMic() {
+  if (mic) return true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') await actx.resume();
+    const src = actx.createMediaStreamSource(stream), proc = actx.createScriptProcessor(4096, 1, 1), mute = actx.createGain(); mute.gain.value = 0;
+    proc.onaudioprocess = ev => { const x = ev.inputBuffer.getChannelData(0); let pk = 0; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i])); $('mkLvl').style.width = Math.min(100, Math.max(0, (20 * Math.log10(pk + 1e-9) + 60) / 60 * 100)) + '%'; $('mkLvl').classList.toggle('hot', pk > 0.97); if (rec) rec.chunks.push(new Float32Array(x)); };
+    src.connect(proc); proc.connect(mute); mute.connect(actx.destination); mic = { stream, src, proc, mute }; return true;
+  } catch (_) { $('mkCheck').innerHTML = `<span class="err">마이크를 쓸 수 없어요. ${location.protocol === 'file:' ? '사이트 주소로 열어 주세요.' : '주소창 자물쇠 아이콘에서 허용해 주세요.'}</span>`; return false; }
+}
+function stopMic() { if (!mic) return; mic.proc.onaudioprocess = null; try { mic.src.disconnect(); mic.proc.disconnect(); mic.mute.disconnect(); } catch (_) {} mic.stream.getTracks().forEach(t => t.stop()); mic = null; }
+
+// ---------- 실전 모의 시험 ----------
+let MK = null, playing = null;
+const fill = (t, v) => String(t || '').replace(/\{(\w+|[가-힣]+)\}/g, (_, k) => v[k] != null ? v[k] : `{${k}}`);
+const today = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; };
+function mockSteps(e, name) {
+  const s = ST[e.station], it = itemsOf(e), steps = [], v = { 기: e.gen, 이름: name || '○○○', 성별: GN[e.gender] };
+  if (s.intro && !it.some(x => x.intro)) steps.push({ key: 'intro', label: '이름', say: fill(s.intro, v), dir: '가장 자연스러운 내 목소리로', text: '' });
+  it.forEach((x, k) => steps.push({ key: 'q' + x.i, no: k + 1, label: `${k + 1}번`, type: x.type, file: x.file || x.type || `문항${k + 1}`,
+    say: x.intro ? '' : s.announce ? fill(s.announce, { 번호: k + 1, 종류: x.type || '캐릭터' }) : '', dir: [x.type, x.dir].filter(Boolean).join(' — '),
+    text: x.intro && !x.text ? fill(s.intro || '{이름}입니다.', v) : x.text.replace(/\(\s*\)/, `(${name || '내 이름'})`) }));
+  return steps;
+}
+$('mockGo').addEventListener('click', () => {
+  const s = ST[cur.station]; if (!itemsOf(cur).length) { $('exMsg').innerHTML = '<span class="err">문항이 없어요.</span>'; return; }
+  $('mockBox').hidden = false; $('mkSetup').hidden = false; $('mkRun').hidden = true; $('mkDone').hidden = true;
+  $('mkTitle').textContent = `실전 모의 시험 · ${exName(cur)}`; $('mkNo').hidden = s.file !== 'split';
+  try { $('mkName').value = localStorage.getItem('moksori.nick') || ''; } catch (_) {}
+  $('mkRules').innerHTML = s.rules.map(r => `<li>${esc(r)}</li>`).join('');
+  if (itemsOf(cur).some(x => !x.text.trim() && !x.intro)) $('mkRules').innerHTML = '<li class="err">대사를 안 넣은 문항이 있어요. 원문을 보면서 읽어도 되지만, 미리 붙여 넣으면 화면에 크게 보여 줘요.</li>' + $('mkRules').innerHTML;
+  $('mockBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$('mkStart').addEventListener('click', async () => {
+  const name = $('mkName').value.trim(); if (!name) { $('mkName').focus(); $('mkName').placeholder = '이름을 먼저 적어 주세요'; return; }
+  try { localStorage.setItem('moksori.nick', name); } catch (_) {}
+  if (!(await ensureMic())) return;
+  MK = { exam: cur, name, no: $('mkNo').value.trim(), steps: mockSteps(cur, name), k: 0, takes: {}, retry: $('mkRetry').checked, at: Date.now(), rate: actx.sampleRate };
+  $('mkSetup').hidden = true; $('mkRun').hidden = false; mkRender();
+});
+function mkRender() {
+  const st = MK.steps[MK.k], t = MK.takes[st.key];
+  $('mkSteps').innerHTML = MK.steps.map((x, i) => `<span class="${i === MK.k ? 'on' : MK.takes[x.key] ? 'done' : ''}">${esc(x.label)}</span>`).join('');
+  $('mkSay').innerHTML = st.say ? `먼저 말하기: <b>${esc(st.say)}</b>` : '';
+  $('mkDir').textContent = st.dir ? `(${st.dir})` : '';
+  $('mkText').innerHTML = st.text ? esc(st.text).replace(/\s*(\/\/|\/)\s*/g, (_, m) => m === '//' ? ' <i class="ex-br">//</i><br>' : ' <i class="ex-br">/</i> ').replace(/\n/g, '<br>') : '<span class="cap">이 문항은 대사를 안 넣었어요. 원문을 보면서 읽어 주세요.</span>';
+  $('mkPrev').disabled = MK.k === 0 || rec; $('mkNext').textContent = MK.k === MK.steps.length - 1 ? '끝내기 ▶' : '다음 ▶';
+  $('mkPlay').disabled = !t || !!rec; $('mkRec').disabled = !!t && !MK.retry && !rec;
+  $('mkRec').textContent = rec ? '■ 녹음 끝' : t ? (MK.retry ? '● 다시 녹음' : '녹음 완료') : '● 녹음';
+  $('mkCheck').innerHTML = t ? checkHtml(t.chk) : '';
+}
+$('mkRec').addEventListener('click', async () => {
+  if (rec) { const r = rec; rec = null; $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; finishTake(r); return; }
+  if (!(await ensureMic())) return; stopPlay();
+  rec = { key: MK.steps[MK.k].key, chunks: [], t0: Date.now() }; $('tally').classList.add('on'); $('tally').textContent = 'REC'; mkRender();
+  rec.timer = setInterval(() => { if (!rec) return; const s = (Date.now() - rec.t0) / 1000; $('mkCheck').textContent = `녹음 중… ${s.toFixed(0)}초`; if (s > 300) $('mkRec').click(); }, 250);
+});
+async function finishTake(r) {
+  clearInterval(r.timer); let n = 0; for (const c of r.chunks) n += c.length;
+  const x = new Float32Array(n); let o = 0; for (const c of r.chunks) { x.set(c, o); o += c.length; }
+  const y = trim(x, MK.rate);
+  if (y.length < MK.rate * 0.4) { $('mkCheck').innerHTML = '<span class="err">소리가 거의 녹음되지 않았어요. 다시 해 주세요.</span>'; mkRender(); $('mkCheck').innerHTML = '<span class="err">소리가 거의 녹음되지 않았어요. 다시 해 주세요.</span>'; return; }
+  MK.takes[r.key] = { pcm: y, chk: await check(y, MK.rate) }; mkRender();
+}
+function trim(x, sr) { const w = Math.round(sr * 0.02), e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); } if (!e.length) return x; const pk = Math.max(...e), th = Math.max(pk - 40, -75); let a = 0, b = e.length - 1; while (a < e.length && e[a] < th) a++; while (b > a && e[b] < th) b--; return x.slice(Math.max(0, (a - 10) * w), Math.min(x.length, (b + 15) * w)); }
+async function check(x, sr) {
+  let pk = 0, clip = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > pk) pk = a; if (a > 0.985) clip++; }
+  const w = Math.round(sr * 0.05), fr = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; fr.push(10 * Math.log10(s / w + 1e-12)); }
+  const sorted = [...fr].sort((a, b) => a - b), floor = sorted[Math.floor(sorted.length * 0.08)] || -90, loud = sorted[Math.floor(sorted.length * 0.9)] || -90;
+  // 높이: 16 kHz로 줄여서 분석
+  let f0 = NaN; try { const off = new OfflineAudioContext(1, Math.ceil(x.length / sr * 16000), 16000), b = off.createBuffer(1, x.length, sr); b.copyToChannel(x, 0); const s = off.createBufferSource(); s.buffer = b; s.connect(off.destination); s.start(); const y = (await off.startRendering()).getChannelData(0), fs = []; for (let i = 0; i + 1024 <= y.length; i += 512) { const r = VF.analyze(y.subarray(i, i + 1024)); if (r.f0 > 60 && r.clarity > 0.6) fs.push(r.f0); } f0 = med(fs); } catch (_) {}
+  const flags = []; if (clip > sr * 0.002) flags.push(['bad', '소리가 찢어졌어요 (너무 커요)']); else if (pk > 0.95) flags.push(['warn', '가장 큰 소리가 거의 끝까지 닿았어요']);
+  if (20 * Math.log10(pk + 1e-9) < -18) flags.push(['warn', '전체적으로 작아요. 마이크를 조금 가까이']);
+  if (floor > -50) flags.push(['bad', '배경 잡음이 커요']); else if (floor > -60) flags.push(['warn', '배경 잡음이 조금 있어요']);
+  if (loud - floor < 25) flags.push(['warn', '목소리와 잡음 차이가 작아요']);
+  return { dur: x.length / sr, pkDb: 20 * Math.log10(pk + 1e-9), floor, f0, flags };
+}
+const checkHtml = c => `<span>길이 ${c.dur.toFixed(1)}초 · 가장 큰 소리 ${c.pkDb.toFixed(1)} dB · 잡음 ${c.floor.toFixed(0)} dB${Number.isFinite(c.f0) ? ` · 평균 높이 ${Math.round(c.f0)} Hz (${VF.note(c.f0)})` : ''}</span>` + (c.flags.length ? c.flags.map(([k, t]) => `<span class="ex-flag ${k}">${esc(t)}</span>`).join('') : '<span class="ex-flag ok">소리 상태 좋아요</span>');
+function stopPlay() { if (playing) { try { playing.stop(); } catch (_) {} playing = null; } }
+function playF32(x, sr) { stopPlay(); actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const b = actx.createBuffer(1, x.length, sr); b.copyToChannel(x, 0); const n = actx.createBufferSource(); n.buffer = b; n.connect(actx.destination); n.onended = () => { if (playing === n) playing = null; }; n.start(); playing = n; }
+$('mkPlay').addEventListener('click', () => { const t = MK.takes[MK.steps[MK.k].key]; if (t) playF32(t.pcm, MK.rate); });
+$('mkPrev').addEventListener('click', () => { if (rec || MK.k === 0) return; MK.k--; mkRender(); });
+$('mkNext').addEventListener('click', () => {
+  if (rec) return; const st = MK.steps[MK.k];
+  if (!MK.takes[st.key] && !MK.skipWarn) { MK.skipWarn = true; $('mkCheck').innerHTML = '<span class="err">이 문항을 아직 녹음하지 않았어요. 그래도 넘어가려면 한 번 더 누르세요.</span>'; return; }
+  MK.skipWarn = false; if (MK.k < MK.steps.length - 1) { MK.k++; mkRender(); } else mkFinish();
+});
+document.addEventListener('keydown', e => { if ($('mkRun').hidden || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return; if (e.code === 'Space') { e.preventDefault(); if (!$('mkRec').disabled) $('mkRec').click(); } else if (e.key === 'ArrowRight') $('mkNext').click(); else if (e.key === 'ArrowLeft') $('mkPrev').click(); });
+function mkFinish() {
+  $('mkRun').hidden = true; $('mkDone').hidden = false; const s = ST[MK.exam.station];
+  $('mkFmt').value = s.mp3 ? 'mp3' : 'wav';
+  const f0s = MK.steps.map(x => MK.takes[x.key] && MK.takes[x.key].chk.f0).filter(Number.isFinite), span = f0s.length > 1 ? 12 * Math.log2(Math.max(...f0s) / Math.min(...f0s)) : NaN;
+  $('mkSum').innerHTML = MK.steps.map((x, i) => { const t = MK.takes[x.key]; if (!t) return `<tr><td>${esc(x.label)}</td><td>${esc(x.type || '')}</td><td colspan="5" class="err">녹음 안 함</td><td></td></tr>`; const c = t.chk;
+    return `<tr><td>${esc(x.label)}</td><td>${esc(x.type || '이름')}</td><td>${c.dur.toFixed(1)}초</td><td>${c.pkDb.toFixed(1)} dB</td><td>${c.floor.toFixed(0)} dB</td><td>${Number.isFinite(c.f0) ? Math.round(c.f0) + ' Hz' : '–'}</td><td>${c.flags.length ? c.flags.map(([k, tt]) => `<span class="ex-flag ${k}">${esc(tt)}</span>`).join('') : '<span class="ex-flag ok">좋음</span>'}</td><td><button type="button" data-play="${i}">▶</button></td></tr>`; }).join('');
+  $('mkSaveMsg').textContent = Number.isFinite(span) ? `문항끼리 평균 높이 차이: 가장 높은 문항과 가장 낮은 문항이 ${span.toFixed(1)}반음 차이예요.${span < 4 ? ' 캐릭터마다 높이 차이가 작아서 비슷하게 들릴 수 있어요.' : ''}` : '';
+  savePast();
+}
+$('mkSum').addEventListener('click', e => { const b = e.target.closest('[data-play]'); if (b) { const t = MK.takes[MK.steps[+b.dataset.play].key]; if (t) playF32(t.pcm, MK.rate); } });
+$('mkAgain').addEventListener('click', () => { $('mkDone').hidden = true; $('mkRun').hidden = false; MK.k = 0; mkRender(); });
+$('mkQuit').addEventListener('click', () => { if (rec) { clearInterval(rec.timer); rec = null; } stopPlay(); $('mockBox').hidden = true; $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; });
+
+// 파일 만들기
+function wavBlob(x, sr) { const len = x.length, buf = new ArrayBuffer(44 + len * 2), v = new DataView(buf), w = (p, s) => { for (let i = 0; i < s.length; i++) v.setUint8(p + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + len * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, len * 2, true);
+  for (let i = 0; i < len; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, x[i])) * 32767, true); return new Blob([buf], { type: 'audio/wav' }); }
+function mp3Blob(x, sr, kbps) { const ok = [32000, 44100, 48000, 16000, 22050, 24000]; if (!ok.includes(sr)) throw new Error('rate'); const enc = new lamejs.Mp3Encoder(1, sr, kbps), out = [], s = new Int16Array(x.length); for (let i = 0; i < x.length; i++) s[i] = Math.max(-1, Math.min(1, x[i])) * 32767; for (let i = 0; i < s.length; i += 1152) { const b = enc.encodeBuffer(s.subarray(i, i + 1152)); if (b.length) out.push(b); } const f = enc.flush(); if (f.length) out.push(f); return new Blob(out, { type: 'audio/mpeg' }); }
+function join(parts, sr, gap) { const g = Math.round(sr * gap), len = parts.reduce((a, p) => a + p.length + g, 0), all = new Float32Array(len); let o = 0; for (const p of parts) { all.set(p, o); o += p.length + g; } return all; }
+const safe = s => String(s).replace(/[\\/:*?"<>|]/g, '').trim();
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+$('mkSave').addEventListener('click', async () => {
+  const s = ST[MK.exam.station], fmt = $('mkFmt').value, kb = s.mp3 || 192, sr = MK.rate, made = [];
+  const enc = x => fmt === 'mp3' ? mp3Blob(x, sr, kb) : wavBlob(x, sr);
+  try {
+    if (s.file === 'split') {
+      for (const st of MK.steps) { const t = MK.takes[st.key]; if (!t) continue; const nm = fill(s.fileName, { 수험번호: MK.no || '수험번호', 번호: st.no || 0, 종류: st.file.replace(/\s+/g, '_') }); const b = enc(t.pcm); download(b, safe(nm) + '.' + fmt); made.push([nm, b.size]); await new Promise(r => setTimeout(r, 400)); }
+    } else {
+      const parts = MK.steps.map(x => MK.takes[x.key]).filter(Boolean).map(t => t.pcm), all = join(parts, sr, 1.0), nm = s.fileName ? fill(s.fileName, { 응시일: today(), 이름: MK.name }) : `${s.name}_${MK.exam.gen}기_${MK.name}`, b = enc(all);
+      download(b, safe(nm) + '.' + fmt); made.push([nm, b.size]);
+    }
+  } catch (e) { $('mkSaveMsg').innerHTML = `<span class="err">파일을 만들지 못했어요${e.message === 'rate' ? ' (이 기기의 녹음 방식은 MP3로 못 바꿔요. WAV로 저장해 주세요)' : ''}.</span>`; return; }
+  const big = made.find(([, z]) => z > 20 * 1048576);
+  $('mkSaveMsg').innerHTML = `${made.length}개 파일을 만들었어요: ${made.map(([n, z]) => `${esc(n)} (${(z / 1048576).toFixed(1)} MB)`).join(', ')}` + (big ? ' <span class="err">20MB를 넘었어요. MP3로 바꿔 보세요.</span>' : '');
+});
+
+// 지난 모의 시험 (이 기기에 저장)
+const DB = (() => { let p = null; const open = () => p || (p = new Promise((res, rej) => { const r = indexedDB.open('moksori-exam', 1); r.onupgradeneeded = () => r.result.createObjectStore('mocks', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => { p = null; rej(r.error); }; }));
+  const tx = async (mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction('mocks', mode), q = fn(t.objectStore('mocks')); let out; if (q) q.onsuccess = () => { out = q.result; }; t.oncomplete = () => res(out); t.onerror = () => rej(t.error); }); };
+  return { all: () => tx('readonly', s => s.getAll()).then(a => a || []), put: v => tx('readwrite', s => s.put(v)), del: id => tx('readwrite', s => s.delete(id)) }; })();
+async function savePast() {
+  const parts = MK.steps.map(x => MK.takes[x.key]).filter(Boolean); if (!parts.length) return;
+  MK.id = MK.id || uid(); const all = join(parts.map(t => t.pcm), MK.rate, 1.0), i16 = new Int16Array(all.length); for (let i = 0; i < all.length; i++) i16[i] = Math.max(-1, Math.min(1, all[i])) * 32767;
+  try { await DB.put({ id: MK.id, at: MK.at, exam: MK.exam.id, title: exName(MK.exam), rate: MK.rate, pcm: i16, n: parts.length, flags: parts.reduce((a, t) => a + t.chk.flags.filter(f => f[0] === 'bad').length, 0) }); } catch (_) {}
+  renderPast();
+}
+let pastPlaying = null;
+async function renderPast() {
+  let a = []; try { a = await DB.all(); } catch (_) {}
+  a.sort((x, y) => y.at - x.at); $('pastBox').hidden = !a.length; $('pastCount').textContent = a.length ? `${a.length}개` : '';
+  const d = t => { const x = new Date(t); return `${x.getMonth() + 1}/${x.getDate()} ${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
+  $('pastList').innerHTML = a.map(v => `<div class="sv-row" data-pid="${v.id}"><div class="sv-main"><b>${esc(v.title)}</b><span class="cap" style="margin:0">${d(v.at)} · ${v.n}개 녹음 · ${Math.round(v.pcm.length / v.rate)}초${v.flags ? ` · 소리 문제 ${v.flags}곳` : ''}</span></div><div class="sv-btns"><button type="button" class="primary-sm" data-act="play">${pastPlaying === v.id ? '■ 멈춤' : '▶ 듣기'}</button><button type="button" data-act="wav">WAV</button><button type="button" class="del" data-act="del">삭제</button></div></div>`).join('');
+}
+$('pastList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'), row = e.target.closest('[data-pid]'); if (!b || !row) return;
+  const v = (await DB.all()).find(x => x.id === row.dataset.pid); if (!v) return; const f = () => { const o = new Float32Array(v.pcm.length); for (let i = 0; i < o.length; i++) o[i] = v.pcm[i] / 32767; return o; };
+  if (b.dataset.act === 'play') { if (pastPlaying === v.id) { stopPlay(); pastPlaying = null; } else { playF32(f(), v.rate); pastPlaying = v.id; const n = playing; n.onended = () => { if (pastPlaying === v.id) { pastPlaying = null; renderPast(); } }; } renderPast(); }
+  else if (b.dataset.act === 'wav') download(wavBlob(f(), v.rate), safe(v.title) + '-모의시험.wav');
+  else if (b.dataset.act === 'del') { if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '삭제'; }, 3000); return; } await DB.del(v.id); renderPast(); }
+});
+
+window.addEventListener('beforeunload', e => { if (MK && !$('mkRun').hidden && Object.keys(MK.takes).length) { e.preventDefault(); e.returnValue = ''; } });
+renderAll(); renderPast();
+const q = new URLSearchParams(location.search).get('exam'); if (q && examOf(q)) openExam(q);
+})();
+</script>
+</body>
+</html>
