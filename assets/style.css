@@ -638,3 +638,22 @@ button.linkish { border: 0; background: none; padding: 0; font: inherit; color: 
 #coldBox[hidden], #ivBox[hidden], #cdStage[hidden], #cdCtl[hidden], #ivStage[hidden], #ivCtl[hidden] { display: none; }
 #r2Box .ex-stage { margin: 12px 0; }
 .ex-count { font-family: var(--font-mono, monospace); font-size: 13px; color: var(--muted); }
+
+/* 발음 연습 */
+.pr-in { width: 100%; font: inherit; font-size: 15px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; resize: vertical; margin-bottom: 10px; }
+.pr-big { font-size: 24px; line-height: 1.7; margin: 12px 0; font-weight: 500; word-break: keep-all; }
+.pr-words { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.pr-w { display: grid; gap: 2px; text-align: left; padding: 10px 12px; font-weight: 400; }
+.pr-w b { font-size: 17px; } .pr-w span { color: var(--imi); font-family: var(--font-mono, monospace); font-size: 14px; }
+.pr-quiz[hidden] { display: none; }
+.pr-quiz { border-top: 3px solid var(--imi); padding-top: 6px; margin-top: 10px; }
+.pr-quiz button { font-size: 18px; padding: 8px 18px; font-family: var(--font-mono, monospace); }
+.pr-quiz button.pr-ok { background: var(--good); color: #fff; border-color: var(--good); }
+.pr-quiz button.pr-no { background: var(--bad); color: #fff; border-color: var(--bad); }
+.pr-para { font-size: 18px; line-height: 1.9; margin: 4px 0 12px; word-break: keep-all; }
+.pr-chart { width: 100%; height: 150px; margin-top: 12px; }
+.pr-board { display: grid; gap: 4px; }
+.pr-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; cursor: pointer; }
+.pr-row span { text-align: center; padding: 6px 0; border-radius: 6px; font-size: 18px; background: color-mix(in srgb, var(--ink) 4%, transparent); transition: background .1s; }
+.pr-row span.on { background: var(--imi); color: #fff; transform: scale(1.08); }
+@media (max-width: 600px) { .pr-row span { font-size: 15px; padding: 4px 0; } .pr-big { font-size: 20px; } }
