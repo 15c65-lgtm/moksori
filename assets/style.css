@@ -657,3 +657,31 @@ button.linkish { border: 0; background: none; padding: 0; font: inherit; color: 
 .pr-row span { text-align: center; padding: 6px 0; border-radius: 6px; font-size: 18px; background: color-mix(in srgb, var(--ink) 4%, transparent); transition: background .1s; }
 .pr-row span.on { background: var(--imi); color: #fff; transform: scale(1.08); }
 @media (max-width: 600px) { .pr-row span { font-size: 15px; padding: 4px 0; } .pr-big { font-size: 20px; } }
+
+/* 오늘의 루틴 */
+.rt-ck { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.rt-ck .sc-tags { margin-top: 6px; }
+.rt-advice { margin: 12px 0 0; padding: 8px 12px; border-radius: 8px; font-size: 14px; min-height: 1em; }
+.rt-advice:empty { display: none; }
+.rt-advice.ok { background: color-mix(in srgb, var(--good) 14%, transparent); }
+.rt-advice.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+.rt-advice.bad { background: color-mix(in srgb, var(--bad) 16%, transparent); }
+.rt-plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.rt-plan { display: grid; gap: 4px; text-align: left; padding: 12px; font-weight: 400; }
+.rt-plan b { font-size: 16px; } .rt-plan.rt-dim { opacity: .45; } .rt-plan.arm { outline: 2px solid var(--bad); }
+.rt-tags { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.rt-run[hidden] { display: none; }
+.rt-run { border-top: 4px solid var(--good); display: grid; gap: 10px; }
+.rt-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.rt-step { font-size: 24px; font-weight: 700; }
+.rt-clock { font-family: var(--font-mono, monospace); font-size: 40px; font-weight: 600; }
+.rt-how { font-size: 16px; line-height: 1.7; margin: 0; }
+.rt-run .btnlike { justify-self: start; text-decoration: none; }
+.rt-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--muted); display: grid; gap: 2px; }
+.rt-list li.done { text-decoration: line-through; } .rt-list li.on { color: var(--ink); font-weight: 700; }
+.rt-today { display: grid; grid-template-columns: repeat(3, auto) 1fr; gap: 18px; align-items: center; }
+.rt-msg { font-size: 14px; }
+.rt-bars { max-width: none; height: 110px; }
+@media (max-width: 600px) { .rt-today { grid-template-columns: repeat(3, 1fr); } .rt-msg { grid-column: 1 / -1; } .rt-step { font-size: 20px; } .rt-clock { font-size: 30px; } }
+.home-today { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; text-decoration: none; color: inherit; }
+.home-today .go { margin-left: auto; }

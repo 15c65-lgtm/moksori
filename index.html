@@ -18,6 +18,13 @@
     <p class="sub">성우 연기, 성대모사, 여목을 연습할 때 귀로만 판단하기 어려운 부분을 숫자와 그래프로 보여 주는 도구 모음이에요. 녹음은 브라우저 안에서만 분석되고 어디에도 올라가지 않아요.</p>
   </header>
 
+  <a class="panel home-today" href="routine.html" id="todayBox">
+    <div><div class="ym-lab">오늘 연습</div><div class="ym-num sm" id="tdMin">0분</div></div>
+    <div><div class="ym-lab">연속</div><div class="ym-num sm" id="tdStreak">–</div></div>
+    <div class="cap" style="margin:0" id="tdMsg">목 상태를 확인하고 10분 루틴으로 시작해요.</div>
+    <span class="primary-sm go">오늘의 루틴 →</span>
+  </a>
+
   <section class="panel" id="recentBox" hidden>
     <h2 style="margin-bottom:10px">최근 성대모사 연습</h2>
     <div class="recent" id="recent"></div>
@@ -49,6 +56,16 @@
       <h2>대본 연습</h2>
       <p>대본을 붙여 넣고 내 역할을 고르면 상대역은 기계 음성이 읽어 주고, 내 대사는 줄마다 테이크로 쌓여요. 말 빠르기·억양 폭·쉼을 비교하고, 같은 대사를 감정만 바꿔 비교하고, 원본 대사와 싱크로율을 재고, 베스트 테이크로 장면을 들어 봐요. 유튜브 원본을 띄워 줄마다 반복해 듣고, 친구와 각자 폰으로 같이 읽을 수도 있어요.</p>
     </a>
+    <a class="panel tool" href="routine.html" style="--c: var(--good)">
+      <span class="pill live">새로 생김</span>
+      <h2>오늘의 루틴</h2>
+      <p>목 상태를 먼저 확인하고, 여목·성우·노래·성대모사·가볍게 중 하나를 골라 워밍업부터 마무리까지 타이머로 따라가요. 날마다 연습 시간과 연속 기록이 남아요.</p>
+    </a>
+    <a class="panel tool" href="pronounce.html" style="--c: var(--ref)">
+      <span class="pill live">새로 생김</span>
+      <h2>발음 연습</h2>
+      <p>모음만 읽기 변환, 표준 발음 규칙 10가지와 퀴즈, 잰말놀이 시간 재기, 매일 같은 문단으로 빠르기 기록, 발음판 따라 읽기.</p>
+    </a>
     <a class="panel tool" href="exam.html" style="--c: var(--imi)">
       <span class="pill live">새로 생김</span>
       <h2>공채 시험 대비</h2>
@@ -72,6 +89,17 @@
 <script>
 (() => {
   try { const { ch } = Week.current(); if (ch) { document.getElementById('chHomeWho').textContent = `이번 주 대사 챌린지 · ${ch.character}`; document.getElementById('chHomeLine').textContent = `“${ch.line}”`; } } catch (_) {}
+})();
+(() => {
+  const dk = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  let R = {}, V = {}; try { R = JSON.parse(localStorage.getItem('moksori.routine') || '{}'); V = JSON.parse(localStorage.getItem('moksori.voiceLoad') || '{}'); } catch (_) {}
+  const sec = k => ((R[k] && R[k].sec) || 0) + ((V[k] && V[k].t) || 0), t = sec(dk(new Date()));
+  let st = 0; for (let i = 0; i < 365; i++) { const s = sec(dk(new Date(Date.now() - i * 864e5))); if (s > 0) st++; else if (i === 0) continue; else break; }
+  document.getElementById('tdMin').textContent = `${Math.round(t / 60)}분`; document.getElementById('tdStreak').textContent = st ? `${st}일` : '–';
+  const ck = R[dk(new Date())] && R[dk(new Date())].ck;
+  if (t > 1800) document.getElementById('tdMsg').textContent = '오늘은 30분이 넘었어요. 목을 쉬어 주세요.';
+  else if (ck && ck.feel === '아픔') document.getElementById('tdMsg').textContent = '오늘은 목이 아프다고 했어요. 쉬는 날이에요.';
+  else if (t > 0) document.getElementById('tdMsg').textContent = '오늘도 연습했어요. 짧게 한 번 더 해도 좋아요.';
 })();
 (() => {
   let h = []; try { h = JSON.parse(localStorage.getItem('moksori.mimic.history') || '[]'); } catch (_) {}

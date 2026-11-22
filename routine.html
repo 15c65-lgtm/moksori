@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 루틴 · 목소리 연습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=202611222300">
+</head>
+<body>
+<div class="wrap">
+  <nav class="crumb"><a href="./">← 목소리 연습실</a></nav>
+  <header>
+    <div>
+      <h1>오늘의 루틴</h1>
+      <p class="sub">목 상태를 먼저 확인하고, 워밍업부터 마무리까지 10~15분 루틴을 타이머로 따라가요. 짧게 자주 하는 연습이 길게 가끔 하는 연습보다 잘 늘어요. 하루 합계 20~30분이면 충분해요.</p>
+    </div>
+    <div class="tally" id="tally">STANDBY</div>
+  </header>
+
+  <section class="panel" id="ckBox">
+    <div class="chart-head"><h2>목 상태 확인</h2><span class="cap" style="margin:0" id="ckWhen"></span></div>
+    <div class="rt-ck">
+      <div><div class="ym-lab">목 느낌</div><div class="sc-tags" data-ck="feel"><button type="button" class="sc-tag" data-v="좋음">편해요</button><button type="button" class="sc-tag" data-v="피곤">조금 피곤해요</button><button type="button" class="sc-tag" data-v="아픔">아프거나 따가워요</button></div></div>
+      <div><div class="ym-lab">쉰 소리</div><div class="sc-tags" data-ck="hoarse"><button type="button" class="sc-tag" data-v="없음">없어요</button><button type="button" class="sc-tag" data-v="조금">조금 있어요</button><button type="button" class="sc-tag" data-v="오래">2주 넘게 계속돼요</button></div></div>
+      <div><div class="ym-lab">어젯밤 잠</div><div class="sc-tags" data-ck="sleep"><button type="button" class="sc-tag" data-v="충분">충분히 잤어요</button><button type="button" class="sc-tag" data-v="부족">부족해요</button></div></div>
+    </div>
+    <p class="rt-advice" id="ckAdvice"></p>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>루틴 고르기</h2></div>
+    <div class="rt-plans" id="plans"></div>
+  </section>
+
+  <section class="panel rt-run" id="runBox" hidden>
+    <div class="rt-top"><div><div class="ym-lab" id="rnPlan"></div><div class="rt-step" id="rnStep"></div></div><div class="rt-clock" id="rnClock">0:00</div></div>
+    <div class="lvl wide"><i id="rnBar" style="width:0%"></i></div>
+    <p class="rt-how" id="rnHow"></p>
+    <a class="btnlike" id="rnLink" hidden target="_blank" rel="noopener"></a>
+    <div class="sc-ctl"><button type="button" id="rnPrev">◀ 이전</button><button type="button" class="primary-sm" id="rnPause">❚❚ 잠깐 멈춤</button><button type="button" id="rnNext">다음 ▶</button><button type="button" id="rnStop">그만하기</button></div>
+    <ol class="rt-list" id="rnList"></ol>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>연습 기록</h2><span class="cap" style="margin:0" id="lgStreak"></span></div>
+    <div class="rt-today" id="lgToday"></div>
+    <div class="ld-bars rt-bars" id="lgBars"></div>
+    <p class="cap" style="margin-bottom:0">루틴 시간과, 여목 연습에서 실제로 소리 낸 시간을 합쳐 보여 줘요. 아프거나 쉰 소리가 나면 그날은 쉬는 게 연습이에요.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') || d; } catch (_) { return d; } };
+const keep = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+let LOG = load('moksori.routine', {});
+const today = () => LOG[dayKey()] || (LOG[dayKey()] = { sec: 0, runs: [], ck: {} });
+const saveLog = () => { const ks = Object.keys(LOG).sort(); while (ks.length > 90) delete LOG[ks.shift()]; keep('moksori.routine', LOG); };
+
+// ---------- 목 상태 ----------
+function renderCk() {
+  const ck = today().ck;
+  document.querySelectorAll('[data-ck]').forEach(g => g.querySelectorAll('button').forEach(b => b.classList.toggle('on', ck[g.dataset.ck] === b.dataset.v)));
+  $('ckWhen').textContent = ck.at ? `오늘 ${new Date(ck.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}에 확인` : '시작 전에 눌러 주세요';
+  let a = '', cls = '';
+  if (ck.hoarse === '오래') { a = '쉰 소리가 2주 넘게 계속되면 연습보다 이비인후과 진료가 먼저예요. 오늘은 쉬어요.'; cls = 'bad'; }
+  else if (ck.feel === '아픔') { a = '아프거나 따가운 날은 쉬는 날이에요. 물을 조금씩 자주 마시고, 속삭이기도 피하세요(속삭임도 목에 부담이에요).'; cls = 'bad'; }
+  else if (ck.feel === '피곤' || ck.hoarse === '조금' || ck.sleep === '부족') { a = '오늘은 「가볍게 5분」만 하고, 높은 소리·큰 소리 연습은 빼요. 하다가 불편하면 바로 멈춰요.'; cls = 'warn'; }
+  else if (ck.feel) { a = '좋아요. 워밍업부터 차근차근 시작해요.'; cls = 'ok'; }
+  $('ckAdvice').textContent = a; $('ckAdvice').className = 'rt-advice ' + cls;
+  document.querySelectorAll('[data-plan]').forEach(b => { const hard = b.dataset.plan !== 'light'; b.classList.toggle('rt-dim', (cls === 'bad') || (cls === 'warn' && hard)); });
+}
+document.querySelectorAll('[data-ck]').forEach(g => g.addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (!b) return; const ck = today().ck; ck[g.dataset.ck] = b.dataset.v; ck.at = Date.now(); saveLog(); renderCk(); }));
+
+// ---------- 루틴 ----------
+const W = {
+  breath: { t: '숨 고르기', s: 60, h: '어깨 힘을 빼고 4초 동안 코로 들이쉬고, 8초 동안 "스~" 하며 일정하게 내쉬어요. 갈비뼈가 옆으로 벌어지는 느낌을 유지해요.' },
+  straw: { t: '빨대 불기 · 입술 떨기', s: 90, h: '빨대를 물고(없으면 입술을 "부르르" 떨며) 편한 음에서 높은 음으로 올라갔다가 내려와요. 목에 힘이 하나도 안 들어가야 해요. 가장 쉬운 워밍업이에요.' },
+  hum: { t: '허밍', s: 60, h: '입을 다물고 "음~"으로 편한 높이에서 위아래로 천천히 미끄러져요. 입술과 코 주변이 간질간질 울리면 잘하고 있는 거예요.' },
+  dog: { t: '큰 개 → 작은 개', s: 60, h: '목소리 없이 숨으로 "허, 허"(큰 개) ↔ "헤, 헤"(작은 개)를 다섯 번씩. 작은 개에서 3초 멈춰요. 숨이 막히면 너무 간 거예요.' },
+  aa: { t: '「아~」 울림 맞추기', s: 120, h: '편한 높이에서 「아~」를 내며 울림 막대를 여자 칸으로 옮겨요. 높이는 올리지 않아요.', link: ['yeomok.html#rmSec', '여목 연습 · 울림 재기 열기'] },
+  ii: { t: '「이」 입 모양으로 말하기', s: 90, h: '살짝 웃는 「이~」 입 모양을 유지한 채로 "안녕하세요, 반갑습니다"를 다섯 번. 말끝을 길고 부드럽게.' },
+  rec: { t: '녹음해서 듣기', s: 60, h: '같은 문장을 녹음해서 들어요. 내 귀로 들리는 소리와 녹음은 달라요. 어제 녹음과 비교하면 더 좋아요.' },
+  board: { t: '발음판', s: 90, h: '가갸거겨… 입을 과장되게 움직이며 한 줄씩. 빠르게보다 정확하게.', link: ['pronounce.html', '발음 연습 열기'] },
+  vowel: { t: '모음만 읽기', s: 60, h: '오늘 읽을 문장을 모음만 남겨 읽고, 받침을 얹고, 원래 문장으로 읽어요.', link: ['pronounce.html', '발음 연습 열기'] },
+  scene: { t: '대본 한 장면', s: 240, h: '대본 하나를 골라 상황·상대·원하는 것을 정하고 녹음해요. 같은 줄을 감정만 바꿔 두 번.', link: ['script.html', '대본 연습 열기'] },
+  cold: { t: '즉석 대본 하나', s: 120, h: '처음 보는 대본을 40초만 보고 바로 녹음해요. 공채 2차 대비예요.', link: ['exam.html#r2Box', '공채 대비 · 즉석 대본 열기'] },
+  siren: { t: '사이렌', s: 60, h: '입술 떨기나 「우~」로 가장 낮은 음에서 높은 음까지 사이렌처럼 오르내려요. 바뀌는 구간에서 힘을 더 주지 말고 오히려 빼요.' },
+  pitch: { t: '음 맞추기', s: 120, h: '들려 주는 음을 따라 불러 1초 버티기. 10번 중 몇 번 성공하는지 세요.', link: ['sing.html', '노래 연습 열기'] },
+  song: { t: '한 곡 부르기', s: 240, h: '노래 하나를 정답 음정과 비교하며 불러요. 정확도가 낮은 줄만 다시.', link: ['sing.html', '노래 연습 열기'] },
+  mimic: { t: '성대모사 한 줄', s: 150, h: '오늘의 캐릭터 대사 한 줄을 원본과 번갈아 듣고 따라 해요. 한 번에 한 가지만 고쳐요.', link: ['mimic.html', '성대모사 열기'] },
+  cool: { t: '마무리', s: 45, h: '허밍으로 높은 음에서 낮은 음으로 천천히 내려와요. 물 한 모금 마시고 끝.' },
+};
+const PLANS = [
+  { id: 'light', name: '가볍게 5분', sub: '목이 피곤한 날, 바쁜 날', steps: ['breath', 'straw', 'hum', 'cool'] },
+  { id: 'yeomok', name: '여목 12분', sub: '울림을 바꾸는 연습', steps: ['breath', 'straw', 'hum', 'dog', 'aa', 'ii', 'rec', 'cool'] },
+  { id: 'va', name: '성우 15분', sub: '발음 → 대본 → 즉석 대본', steps: ['breath', 'straw', 'board', 'vowel', 'scene', 'cold', 'cool'] },
+  { id: 'sing', name: '노래 12분', sub: '사이렌 → 음정 → 한 곡', steps: ['breath', 'straw', 'siren', 'pitch', 'song', 'cool'] },
+  { id: 'imp', name: '성대모사 10분', sub: '워밍업 → 한 캐릭터', steps: ['breath', 'straw', 'hum', 'mimic', 'rec', 'cool'] },
+];
+const total = p => p.steps.reduce((a, k) => a + W[k].s, 0);
+$('plans').innerHTML = PLANS.map(p => `<button type="button" class="rt-plan" data-plan="${p.id}"><b>${p.name}</b><span class="cap" style="margin:0">${p.sub}</span><span class="rt-tags">${p.steps.map(k => W[k].t).join(' · ')}</span><span class="cap" style="margin:0">실제 ${Math.round(total(p) / 60)}분</span></button>`).join('');
+let RN = null, actx = null;
+function beep(f) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(), T = actx.currentTime; o.frequency.value = f || 880; g.gain.setValueAtTime(0.15, T); g.gain.exponentialRampToValueAtTime(0.001, T + 0.35); o.connect(g); g.connect(actx.destination); o.start(T); o.stop(T + 0.4); } catch (_) {} }
+$('plans').addEventListener('click', e => {
+  const b = e.target.closest('[data-plan]'); if (!b) return; const p = PLANS.find(x => x.id === b.dataset.plan), ck = today().ck;
+  if (ck.feel === '아픔' || ck.hoarse === '오래') { if (!b.classList.contains('arm')) { b.classList.add('arm'); $('ckAdvice').textContent = '오늘은 쉬는 걸 권해요. 그래도 하려면 한 번 더 누르세요.'; setTimeout(() => b.classList.remove('arm'), 3000); return; } }
+  if (!ck.feel) $('ckAdvice').textContent = '목 상태 확인도 눌러 두면 기록에 남아요.';
+  RN = { p, k: 0, left: W[p.steps[0]].s, paused: false, used: 0, t0: Date.now() }; $('runBox').hidden = false; rnRender(); beep(660); $('runBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  clearInterval(RN.iv); RN.iv = setInterval(rnTick, 1000);
+});
+function rnRender() {
+  const k = RN.p.steps[RN.k], w = W[k];
+  $('rnPlan').textContent = `${RN.p.name} · ${RN.k + 1}/${RN.p.steps.length}`; $('rnStep').textContent = w.t; $('rnHow').textContent = w.h; $('rnClock').textContent = mmss(RN.left);
+  $('rnBar').style.width = (1 - RN.left / w.s) * 100 + '%'; $('rnPause').textContent = RN.paused ? '▶ 계속' : '❚❚ 잠깐 멈춤';
+  $('rnLink').hidden = !w.link; if (w.link) { $('rnLink').href = w.link[0]; $('rnLink').textContent = w.link[1] + ' ↗'; }
+  $('rnList').innerHTML = RN.p.steps.map((s, i) => `<li class="${i < RN.k ? 'done' : i === RN.k ? 'on' : ''}">${W[s].t} <span class="cap" style="margin:0">${mmss(W[s].s)}</span></li>`).join('');
+  $('tally').classList.toggle('on', !RN.paused); $('tally').textContent = RN.paused ? 'PAUSE' : 'ROUTINE';
+}
+function rnTick() { if (!RN || RN.paused) return; RN.left--; RN.used++; if (RN.left === 3) beep(520); if (RN.left <= 0) { beep(880); if (RN.k >= RN.p.steps.length - 1) return rnFinish(true); RN.k++; RN.left = W[RN.p.steps[RN.k]].s; } rnRender(); }
+function rnFinish(done) {
+  clearInterval(RN.iv); const d = today(); d.sec += RN.used; d.runs.push({ plan: RN.p.id, sec: RN.used, done, at: Date.now() }); saveLog();
+  $('rnStep').textContent = done ? '끝! 수고했어요' : '여기까지 기록했어요'; $('rnHow').textContent = `${mmss(RN.used)} 연습했어요.${d.sec + voiced(dayKey()) > 1800 ? ' 오늘은 30분이 넘었어요. 목을 쉬어 주세요.' : ''}`; $('rnClock').textContent = '✓'; $('rnBar').style.width = '100%'; $('rnLink').hidden = true; $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; RN = null; renderLog();
+}
+$('rnPause').addEventListener('click', () => { if (!RN) return; RN.paused = !RN.paused; rnRender(); });
+$('rnNext').addEventListener('click', () => { if (!RN) return; if (RN.k >= RN.p.steps.length - 1) return rnFinish(true); RN.k++; RN.left = W[RN.p.steps[RN.k]].s; rnRender(); });
+$('rnPrev').addEventListener('click', () => { if (!RN || RN.k === 0) return; RN.k--; RN.left = W[RN.p.steps[RN.k]].s; rnRender(); });
+$('rnStop').addEventListener('click', () => { if (RN) rnFinish(false); $('runBox').hidden = true; });
+document.addEventListener('visibilitychange', () => { if (RN && document.hidden) RN.hiddenAt = Date.now(); else if (RN && RN.hiddenAt && !RN.paused) { const gone = Math.floor((Date.now() - RN.hiddenAt) / 1000); for (let i = 0; i < gone && RN; i++) rnTick(); } });
+
+// ---------- 기록 ----------
+const VL = load('moksori.voiceLoad', {});
+const voiced = k => (VL[k] && VL[k].t) || 0;
+function renderLog() {
+  const days = []; for (let i = 13; i >= 0; i--) { const d = new Date(Date.now() - i * 864e5), k = dayKey(d); days.push({ k, lab: `${d.getMonth() + 1}/${d.getDate()}`, r: (LOG[k] && LOG[k].sec) || 0, v: voiced(k), ck: LOG[k] && LOG[k].ck }); }
+  const max = Math.max(600, ...days.map(d => d.r + d.v));
+  $('lgBars').innerHTML = days.map(d => `<div class="ld-b" title="${d.lab} 루틴 ${mmss(d.r)} · 여목 소리 ${mmss(d.v)}"><i style="height:${(d.r + d.v) / max * 100}%"><i style="height:${(d.r + d.v) ? d.r / (d.r + d.v) * 100 : 0}%"></i></i><span>${d.lab.split('/')[1]}</span></div>`).join('');
+  let streak = 0; for (let i = days.length - 1; i >= 0; i--) { if (days[i].r + days[i].v > 0) streak++; else if (i === days.length - 1) continue; else break; }
+  $('lgStreak').textContent = streak ? `${streak}일 연속` : '';
+  const t = days[days.length - 1], sum = t.r + t.v, runs = (LOG[t.k] && LOG[t.k].runs) || [];
+  $('lgToday').innerHTML = `<div><div class="ym-num">${Math.round(sum / 60)}분</div><div class="ym-lab">오늘 합계</div></div><div><div class="ym-num sm">${runs.length}번</div><div class="ym-lab">루틴</div></div><div><div class="ym-num sm">${Math.round(t.v / 60)}분</div><div class="ym-lab">여목 연습 소리</div></div><div class="rt-msg">${sum > 1800 ? '오늘은 30분이 넘었어요. 내일을 위해 목을 쉬어 주세요.' : sum > 600 ? '좋아요. 오늘 몫은 충분히 했어요.' : sum ? '짧게라도 했어요. 내일도 이어 가요.' : '아직 오늘 연습 기록이 없어요.'}</div>`;
+}
+renderCk(); renderLog();
+})();
+</script>
+</body>
+</html>
