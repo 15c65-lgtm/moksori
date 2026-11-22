@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611222300">
+<link rel="stylesheet" href="assets/style.css?v=202611230100">
 </head>
 <body>
 <div class="wrap">
@@ -38,7 +38,7 @@
     <textarea id="edText" rows="12" spellcheck="false" aria-label="대본 내용"></textarea>
     <div class="sc-sub"><button type="button" id="edConv">붙여 넣은 자막을 대본으로 바꾸기</button><button type="button" id="edExport">사이트 대본용 코드 복사</button><label class="btnlike">자막 파일 열기 (.srt .vtt)<input type="file" id="edSubFile" accept=".srt,.vtt,.txt,text/plain"></label><span class="cap" id="edConvMsg" style="margin:0"></span></div>
     <details class="sc-how"><summary>유튜브 자막 가져오는 법</summary><ol><li>유튜브 영상 아래 설명란에서 <b>더보기</b>를 누르고 맨 아래 <b>스크립트 표시</b>를 눌러요.</li><li>오른쪽에 뜬 자막을 마우스로 처음부터 끝까지 끌어서 복사해요.</li><li>여기 큰 칸에 붙여 넣고 <b>붙여 넣은 자막을 대본으로 바꾸기</b>를 눌러요. 시간이 <b>[0:12]</b>처럼 줄 앞에 붙어요.</li><li>위 칸에 그 영상 주소를 넣고 저장하면, 줄을 고를 때마다 그 부분만 반복해서 들을 수 있어요.</li></ol><p class="cap">사이트가 자막이나 소리를 자동으로 받아올 수는 없어요(유튜브가 막아 놨어요). 역할 이름은 자막에 없으니 필요하면 줄 앞에 <b>이름:</b>을 직접 붙여 주세요.</p></details>
-    <p class="cap">한 줄에 대사 하나. <b>역할: 대사</b> 형식이면 역할을 알아봐요. 줄 맨 앞 <b>[0:12]</b>나 <b>[0:12-0:15]</b>는 영상에서 그 대사가 나오는 시간이에요. 괄호만 있는 줄은 지문, 대사 앞 <b>(웃으며)</b> 같은 괄호는 연기 지시로 보여 줘요. 맨 윗줄 <b># 제목</b>은 장면 제목이에요.</p>
+    <p class="cap">한 줄에 대사 하나. <b>역할: 대사</b> 형식이면 역할을 알아봐요. 줄 맨 앞 <b>[0:12]</b>나 <b>[0:12-0:15]</b>는 영상에서 그 대사가 나오는 시간이에요. 대사 안의 <b>*단어*</b>는 강조, <b>/</b>는 숨 쉬는 자리, <b>//</b>는 긴 숨이에요. 녹음하면 표시한 숨 자리에서 실제로 쉬었는지 알려 줘요. 괄호만 있는 줄은 지문, 대사 앞 <b>(웃으며)</b> 같은 괄호는 연기 지시로 보여 줘요. 맨 윗줄 <b># 제목</b>은 장면 제목이에요.</p>
   </section>
 
   <section class="panel sc-room" id="roomBox" hidden>
@@ -163,9 +163,9 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611222300"></script>
-<script src="assets/voicefeat.js?v=202611222300"></script>
-<script src="assets/scripts.js?v=202611222300"></script>
+<script src="assets/core.js?v=202611230100"></script>
+<script src="assets/voicefeat.js?v=202611230100"></script>
+<script src="assets/scripts.js?v=202611230100"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -219,6 +219,11 @@ const DB = (() => {
     delRef: key => tx('refs', 'readwrite', s => s.delete(key)),
   };
 })();
+
+// ---------- 대본 표시: *강조*, / 숨, // 긴 숨 ----------
+const plainText = t => String(t).replace(/\*([^*]+)\*/g, '$1').replace(/\s*\/+\s*/g, ' ').replace(/\s+/g, ' ').trim();
+const markup = t => esc(t).replace(/\s*(\/\/|\/)\s*/g, (_, m) => ` <i class="sc-br">${m === '//' ? '∥' : '∣'}</i> `).replace(/\*([^*]+)\*/g, '<b class="sc-emph">$1</b>');
+const marks = t => ({ emph: (String(t).match(/\*[^*]+\*/g) || []).length, breath: (String(t).match(/\/+/g) || []).length });
 
 // ---------- 대본 해석 ----------
 const TIME_RE = /^\[\s*((?:\d+:)?\d+:\d+(?:\.\d+)?)(?:\s*[-~]\s*((?:\d+:)?\d+:\d+(?:\.\d+)?))?\s*\]\s*/;
@@ -294,7 +299,7 @@ function renderList() {
   $('lineList').innerHTML = P.items.map((it, k) => {
     if (it.type === 'dir') return `<li class="sc-li dir">(${esc(it.text)})</li>`;
     const li = lines.findIndex(l => l.i === k), l = lines[li], n = lineTakes(k).length, star = lineTakes(k).some(t => t.star);
-    return `<li class="sc-li${isMine(l) ? ' mine' : ''}${li === idx ? ' on' : ''}" data-li="${li}"><span class="sc-role">${esc(l.role || '나')}</span><span class="sc-txt">${l.note ? `<em>(${esc(l.note)})</em> ` : ''}${esc(l.text)}</span><span class="sc-t">${l.t0 != null ? fmtT(l.t0) : ''}</span><span class="sc-n">${isMine(l) ? (n ? `${star ? '★' : ''}${n}` : '–') : ''}</span></li>`;
+    return `<li class="sc-li${isMine(l) ? ' mine' : ''}${li === idx ? ' on' : ''}" data-li="${li}"><span class="sc-role">${esc(l.role || '나')}</span><span class="sc-txt">${l.note ? `<em>(${esc(l.note)})</em> ` : ''}${markup(l.text)}</span><span class="sc-t">${l.t0 != null ? fmtT(l.t0) : ''}</span><span class="sc-n">${isMine(l) ? (n ? `${star ? '★' : ''}${n}` : '–') : ''}</span></li>`;
   }).join('');
   const on = $('lineList').querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest' });
 }
@@ -308,7 +313,7 @@ function renderPrompt() {
   $('pIdx').textContent = `${idx + 1} / ${lines.length}`;
   $('pPrev').textContent = prevItem ? `${prevItem.role ? prevItem.role + ': ' : ''}${prevItem.text}` : '';
   $('pDir').textContent = [dirBefore && `(${dirBefore})`, l.note && `연기: ${l.note}`].filter(Boolean).join('  ');
-  $('pLine').textContent = l.text; $('pLine').classList.toggle('partner', !isMine(l));
+  $('pLine').innerHTML = markup(l.text); $('pLine').classList.toggle('partner', !isMine(l));
   $('pNext').textContent = nextItem ? `다음 · ${nextItem.role ? nextItem.role + ': ' : ''}${nextItem.text}` : '마지막 줄이에요';
   $('recBtn').disabled = !isMine(l) && !scene;
   $('playBest').disabled = !bestTake(l.i);
@@ -556,6 +561,11 @@ async function renderTakes() {
     if (Number.isFinite(a.f0) && Number.isFinite(b.f0) && Math.abs(12 * Math.log2(b.f0 / a.f0)) >= 1) d.push(`평균 높이 ${12 * Math.log2(b.f0 / a.f0) > 0 ? '+' : ''}${(12 * Math.log2(b.f0 / a.f0)).toFixed(1)}반음`);
     $('takeNote').textContent = d.length ? `방금 테이크는 바로 전 테이크보다: ${d.join(' · ')}` : '방금 테이크는 바로 전 테이크와 숫자상 비슷해요. 감정을 더 크게 바꿔 보세요.';
   } else $('takeNote').textContent = '☆를 눌러 베스트 테이크를 고르면 장면 듣기와 WAV 저장에 그 테이크가 쓰여요. 고르지 않으면 가장 최근 테이크가 쓰여요.';
+  const last = list[list.length - 1].stats, extra = [];
+  if (ref) { const rd = ref.x.length / RATE, dd = last.dur - rd; extra.push(`원본 ${rd.toFixed(1)}초 · 방금 테이크 ${last.dur.toFixed(1)}초 (${dd > 0 ? '+' : ''}${dd.toFixed(1)}초${Math.abs(dd) <= 0.3 ? ', 입 길이에 맞아요 ✓' : dd > 0 ? ', 더빙이면 조금 빠르게' : ', 더빙이면 조금 느리게'})`); }
+  const mk = marks(l.text); if (mk.breath) extra.push(`대본에 숨 표시 ${mk.breath}곳 · 방금 테이크 쉼 ${last.pauses}번${last.pauses === mk.breath ? ' ✓' : last.pauses < mk.breath ? ' (표시한 곳에서 덜 쉬었어요)' : ' (표시 안 한 곳에서도 쉬었어요)'}`);
+  if (mk.emph) extra.push(`강조 ${mk.emph}곳 표시됨 · 강조는 크게보다 높이나 길이로도 줄 수 있어요`);
+  if (extra.length) $('takeNote').textContent += ' · ' + extra.join(' · ');
   renderEmo(list);
 }
 function drawSpark(cv, c) {
@@ -605,7 +615,25 @@ function renderEmo(list) {
   const weak = hiSpan < 1.5 && rSpan < 0.7 && iSpan < 2 && dSpan < 4;
   const fmt = (v, d = 1) => Number.isFinite(v) ? v.toFixed(d) : '–';
   box.innerHTML = `<h3 class="co-h3">감정별 비교</h3><div class="histwrap"><table class="hist"><thead><tr><th>감정</th><th>테이크</th><th>평균 높이</th><th>말 빠르기</th><th>억양 폭</th><th>크기 변화</th><th>길이</th></tr></thead><tbody>${rows.map(r => `<tr><td><b>${r.k}</b></td><td>${r.n}</td><td>${Number.isFinite(r.f0) ? Math.round(r.f0) + ' Hz' : '–'}</td><td>${fmt(r.rate)}</td><td>${fmt(r.into)}</td><td>${fmt(r.dyn, 0)}</td><td>${fmt(r.dur)}초</td></tr>`).join('')}</tbody></table></div>
+    ${expectHtml(rows)}
     <p class="cap">${weak ? '감정마다 숫자 차이가 아주 작아요. 듣는 사람에게는 비슷하게 들릴 수 있어요. 높이·빠르기·크기 중 하나를 확실히 바꿔 보세요.' : notes.join(' · ') + '. 차이가 작은 항목은 감정이 덜 드러난 부분이에요.'}</p>`;
+}
+
+// 감정별로 연구에서 알려진 소리 방향 (여러 감정 테이크의 가운데값과 비교)
+const EXPECT = {
+  기쁨: [['f0', 1, '높게'], ['rate', 1, '빠르게'], ['dyn', 1, '크기 변화 크게']],
+  화남: [['rate', 1, '빠르게'], ['dyn', 1, '크기 변화 크게'], ['f0', 1, '높게']],
+  슬픔: [['f0', -1, '낮게'], ['rate', -1, '느리게'], ['into', -1, '억양 좁게']],
+  담담: [['into', -1, '억양 좁게'], ['dyn', -1, '크기 변화 작게']],
+  무서움: [['f0', 1, '높게'], ['rate', 1, '빠르게']],
+  놀람: [['f0', 1, '높게'], ['into', 1, '억양 넓게']],
+  귀여움: [['f0', 1, '높게']],
+};
+function expectHtml(rows) {
+  const mid = k => med(rows.map(r => r[k]).filter(Number.isFinite)), M = { f0: mid('f0'), rate: mid('rate'), into: mid('into'), dyn: mid('dyn') };
+  const th = { f0: v => 12 * Math.log2(v / M.f0), rate: v => v - M.rate, into: v => v - M.into, dyn: v => v - M.dyn }, need = { f0: 0.5, rate: 0.2, into: 0.5, dyn: 1 };
+  const out = rows.filter(r => EXPECT[r.k]).map(r => `<li><b>${r.k}</b>: ${EXPECT[r.k].map(([k, dir, lab]) => { const v = r[k]; if (!Number.isFinite(v) || !Number.isFinite(M[k])) return `${lab} –`; const d = th[k](v); return `${lab} ${d * dir >= need[k] ? '✓' : d * dir <= -need[k] ? '✗' : '△'}`; }).join(' · ')}</li>`);
+  return out.length ? `<ul class="sc-expect">${out.join('')}</ul><p class="cap" style="margin-top:0">연구에서 알려진 감정별 소리 방향과 비교했어요 (✓ 맞음, △ 차이 작음, ✗ 반대). 정답이 아니라, 감정이 소리로 드러났는지 보는 참고예요.</p>` : '';
 }
 
 // ---------- 원본 대사 ----------
@@ -644,7 +672,7 @@ if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pic
 function speak(text, role) {
   return new Promise(res => {
     if (!$('ttsOn').checked || !window.speechSynthesis) { setTimeout(res, Math.min(4000, 300 + text.length * 120)); return; }
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; if (koVoice) u.voice = koVoice;
+    const u = new SpeechSynthesisUtterance(plainText(text)); u.lang = 'ko-KR'; if (koVoice) u.voice = koVoice;
     const roles = [...new Set(lines.map(l => l.role).filter(r => r && r !== myRole()))], k = Math.max(0, roles.indexOf(role));
     u.pitch = [1.0, 0.8, 1.2, 0.9][k % 4]; u.rate = 1.05;
     let done = false; const fin = () => { if (!done) { done = true; res(); } };
