@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611230100">
+<link rel="stylesheet" href="assets/style.css?v=202611230200">
 </head>
 <body>
 <div class="wrap">
@@ -96,6 +96,15 @@
       <div class="lvl wide tr-bar"><i id="drBar" style="width:0%"></i></div>
       <ol class="tr-reps" id="drReps"></ol>
     </div>
+  </section>
+
+  <section class="panel" id="inSec">
+    <div class="chart-head"><h2>여목 말투 <span class="cap" style="margin:0">높이·울림 다음은 억양</span></h2></div>
+    <p class="cap" style="margin-top:0">같은 문장을 평소 말투와 여목 말투로 한 번씩 녹음해서 비교해요. 한국어 연구에서 여성 말투는 평서문 끝이 길고 완만하게 내려가고, 말끝 소리가 더 길고, 높낮이가 넓게 움직이는 쪽이었어요. 마이크를 켜고 하세요.</p>
+    <div class="sc-sub"><label class="ym-field">문장 <select id="inSent"><option>오늘 날씨 정말 좋다.</option><option>이거 네가 만든 거야?</option><option>와, 진짜 맛있어!</option><option>그럼 내일 다시 연락할게요.</option><option>음… 잘 모르겠는데.</option></select></label>
+      <button type="button" data-in="base">● 평소 말투로</button><button type="button" class="primary-sm" data-in="fem">● 여목 말투로</button><span class="cap" id="inMsg" style="margin:0"></span></div>
+    <div class="histwrap"><table class="hist"><thead><tr><th></th><th>평균 높이</th><th>높낮이 폭</th><th>마지막 말덩이</th><th>문장 끝 방향</th><th>길이</th></tr></thead><tbody id="inBody"></tbody></table></div>
+    <p class="cap" id="inNote" style="margin-bottom:0"></p>
   </section>
 
   <section class="panel" id="brSec">
@@ -237,9 +246,9 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611230100"></script>
-<script src="assets/coach.js?v=202611230100"></script>
-<script src="assets/yeomok-style.js?v=202611230100"></script>
+<script src="assets/voicefeat.js?v=202611230200"></script>
+<script src="assets/coach.js?v=202611230200"></script>
+<script src="assets/yeomok-style.js?v=202611230200"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -374,7 +383,7 @@ function onFrame(fr) {
   const now = performance.now();
   const item = { t: now, voiced, f0: fr.f0, res: fr.res, h1h2: fr.h1h2, clar: fr.clarity, cpp: fr.cpp };
   frames.push(item); while (frames.length && now - frames[0].t > 12500) frames.shift();
-  brFrame(fr, voiced, now); rmFrame(fr, voiced, now); loadFrame(fr, voiced);
+  brFrame(fr, voiced, now); rmFrame(fr, voiced, now); inFrame(fr, voiced, now); loadFrame(fr, voiced);
   if (!voiced) return;
   recent.push(item); while (recent.length > 7) recent.shift();
   if (collect) { collect.items.push(item); }
@@ -462,6 +471,41 @@ $('brFile').addEventListener('change', async e => {
     $('brGame').textContent = `기준: ${f.name}. 이 녹음의 높이(${VF.note(BR.f0)}) 근처에서 같은 밝기를 내 보세요.`;
   } catch (_) { $('brGame').textContent = '녹음을 읽지 못했거나 목소리가 너무 짧아요.'; }
 });
+
+// ---- 여목 말투(억양) ----
+let IN = { base: null, fem: null }, inCap = null;
+function inFrame(fr, voiced, now) { if (inCap) inCap.fr.push({ t: now, v: voiced, f0: fr.f0, db: fr.db }); }
+function inStats(F) {
+  const v = F.filter(x => x.v && x.f0 > 60); if (v.length < 15) return null;
+  const st = v.map(x => 12 * Math.log2(x.f0 / 100)), q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
+  let a = 0; while (a < F.length && !F[a].v) a++; let b = F.length - 1; while (b > a && !F[b].v) b--;
+  let k = b; for (let i = b; i >= a; i--) { if (F[i].v) k = i; else if (F[k].t - F[i].t > 150) break; } // 마지막 소리 덩어리(0.15초 넘게 끊기기 전까지)의 시작
+  const lastSeg = F.slice(k, b + 1).filter(x => x.v && x.f0 > 60), endLen = (F[b].t - F[k].t) / 1000;
+  const tail = lastSeg.filter(x => x.t >= F[b].t - 350), head = lastSeg.filter(x => x.t < F[b].t - 350);
+  const end = tail.length >= 3 && head.length >= 2 ? 12 * Math.log2(med(tail.map(x => x.f0)) / med(head.map(x => x.f0))) : NaN;
+  return { f0: med(v.map(x => x.f0)), span: q(st, 0.95) - q(st, 0.05), endLen, end, dur: (F[b].t - F[a].t) / 1000 };
+}
+document.querySelectorAll('[data-in]').forEach(btn => btn.addEventListener('click', () => {
+  const k = btn.dataset.in;
+  if (inCap) { const c = inCap; inCap = null; document.querySelectorAll('[data-in]').forEach(x => { x.disabled = false; x.textContent = x.dataset.in === 'base' ? '● 평소 말투로' : '● 여목 말투로'; });
+    const r = inStats(c.fr); if (!r) { $('inMsg').textContent = '소리가 충분히 잡히지 않았어요. 문장을 또렷하게 다시 말해 보세요.'; return; } IN[c.k] = r; inRender(); return; }
+  if (!mic) { $('inMsg').textContent = '먼저 위의 「마이크 시작」을 눌러 주세요.'; return; }
+  inCap = { k, fr: [] }; document.querySelectorAll('[data-in]').forEach(x => { x.disabled = x !== btn; }); btn.textContent = '■ 다 말했어요'; $('inMsg').textContent = `「${$('inSent').value}」를 말하고 버튼을 다시 누르세요.`;
+}));
+$('inSent').addEventListener('change', () => { IN = { base: null, fem: null }; inRender(); });
+function inRender() {
+  const f = (v, d, u) => Number.isFinite(v) ? v.toFixed(d) + u : '–', dir = v => !Number.isFinite(v) ? '–' : v > 1 ? `올라감 (+${v.toFixed(1)}반음)` : v < -1 ? `내려감 (${v.toFixed(1)}반음)` : '거의 평평';
+  const row = (lab, r) => r ? `<tr><td><b>${lab}</b></td><td>${Math.round(r.f0)} Hz</td><td>${f(r.span, 1, '반음')}</td><td>${f(r.endLen * 1000, 0, ' ms')}</td><td>${dir(r.end)}</td><td>${f(r.dur, 1, '초')}</td></tr>` : `<tr><td><b>${lab}</b></td><td colspan="5" class="muted">아직 녹음 안 함</td></tr>`;
+  $('inBody').innerHTML = row('평소', IN.base) + row('여목', IN.fem); $('inMsg').textContent = '';
+  const A = IN.base, B = IN.fem; if (!A || !B) { $('inNote').textContent = ''; return; }
+  const q = $('inSent').value.trim().endsWith('?'), n = [];
+  n.push(B.span - A.span >= 2 ? `높낮이 폭이 ${(B.span - A.span).toFixed(1)}반음 넓어졌어요 ✓` : '높낮이 폭이 평소와 비슷해요. 중요한 말을 더 높게 올려 강조해 보세요.');
+  n.push(B.endLen - A.endLen >= 0.06 ? '말끝이 평소보다 길어졌어요 ✓' : '말끝을 조금 더 길게, 부드럽게 끌어 보세요.');
+  if (q) n.push(Number.isFinite(B.end) && B.end > 1 ? '물음 끝이 올라갔어요 ✓' : '물음 끝을 짧게 올려 보세요.');
+  else n.push(Number.isFinite(B.end) && B.end < -1 && Number.isFinite(A.end) && B.end > A.end ? '끝이 완만하게 내려갔어요 ✓' : Number.isFinite(B.end) && B.end <= -1 ? '끝이 내려가요. 평소보다 더 완만하게 떨어뜨려 보세요.' : '평서문 끝은 툭 끊지 말고 길고 완만하게 내려 보세요.');
+  $('inNote').textContent = n.join(' · ');
+}
+inRender();
 $('brGoal').addEventListener('change', brRender);
 brRender();
 

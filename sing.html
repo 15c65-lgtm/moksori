@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611230100">
+<link rel="stylesheet" href="assets/style.css?v=202611230200">
 </head>
 <body>
 <div class="wrap">
@@ -62,6 +62,7 @@
         <label class="tog"><input type="checkbox" id="phones"> 이어폰 쓰는 중</label>
         <label class="ym-field">반주 크기 <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8" aria-label="반주 크기"></label>
       </div>
+      <p class="cap sg-key" id="keyMsg" hidden></p>
       <p class="cap" id="playMsg" style="margin:0">스피커로 틀면 마이크에 반주가 섞여요. 되도록 이어폰을 끼고 「이어폰 쓰는 중」을 켜 주세요.</p>
     </div>
     <div class="sg-side">
@@ -98,7 +99,7 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611230100"></script>
+<script src="assets/voicefeat.js?v=202611230200"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -304,6 +305,25 @@ $('mixSave').addEventListener('click', async () => {
   const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })); el.download = `${(song().title || '노래').replace(/[\\/:*?"<>|]/g, '')}-내노래.wav`; document.body.appendChild(el); el.click(); el.remove();
 });
 
+
+// ---------- 키 추천: 정답 음정과 내 음역(음역대 페이지 기록)을 비교 ----------
+function keyAdvice() {
+  const box = $('keyMsg'); box.hidden = true; if (!guide) return;
+  let r = null; try { const R = JSON.parse(localStorage.getItem('moksori.range') || '{}').results || []; r = R[R.length - 1]; } catch (_) {}
+  const v = [...guide].filter(x => !isNaN(x)); if (v.length < 50) return;
+  const sv = v.sort((a, b) => a - b), lo = sv[Math.floor(sv.length * 0.05)], hi = sv[Math.floor(sv.length * 0.95)];
+  box.hidden = false;
+  if (!r || !r.low || !(r.chest || r.fals)) { box.innerHTML = `이 노래 음역: ${nm(lo)} ~ ${nm(hi)}. <a href="range.html">음역대 측정</a>을 해 두면 나에게 맞는 키를 추천해 줘요.`; return; }
+  const cLo = r.low + 2, cHi = r.chest || r.fals, fLo = r.low, fHi = Math.max(r.chest || 0, r.fals || 0);
+  // 키는 -6~+6 반음 안에서 고르고, 옥타브는 따로 (남자가 여자 노래를 한 옥타브 아래로 부르는 것처럼)
+  const costOf = sh => { let c = 0; for (const m of sv) { const x = m + sh; c += x < fLo || x > fHi ? 4 : x < cLo || x > cHi ? 1 : 0; } return c / sv.length; };
+  let best = 0, oct = 0, bestCost = 1e9;
+  for (let k = -6; k <= 6; k++) for (const o of [-24, -12, 0, 12]) { const c = costOf(k + o) + Math.abs(k) * 0.01; if (c < bestCost) { bestCost = c; best = k; oct = o; } }
+  const out = sv.filter(m => m + best + oct < fLo || m + best + oct > fHi).length / sv.length;
+  const octTxt = oct ? ` · ${Math.abs(oct / 12)}옥타브 ${oct < 0 ? '아래' : '위'}로` : '';
+  box.innerHTML = `이 노래 음역 ${nm(lo)} ~ ${nm(hi)} · 내 편한 음역 ${nm(cLo)} ~ ${nm(cHi)} → 추천 키 <b>${best > 0 ? '+' + best : best}${best ? '반음' : ' (원래 키)'}${octTxt}</b>${out > 0.03 ? ` (그래도 ${Math.round(out * 100)}%는 내 음역 밖이에요)` : ''}${best !== keyShift() ? ' <button type="button" id="keyApply">추천 키로</button>' : ' ✓'}${oct && !$('octFree').checked ? ' · 「옥타브 차이는 맞은 걸로」를 켜 두세요' : ''}<br><span class="cap">정답 음정 줄만 옮겨 보여 줘요. 반주 키는 그대로라서, 실제로 키를 바꿔 부르려면 키를 바꾼 반주(MR)를 쓰세요.</span>`;
+  const b = $('keyApply'); if (b) b.addEventListener('click', () => { $('keySel').value = String(best); $('keySel').dispatchEvent(new Event('change')); keyAdvice(); });
+}
 // ---------- 노래 고르기·설정 ----------
 async function loadSong() {
   stopSrc(); playingT = false; offset = 0; track = null; guide = null; MY = null; SC = null; myPts = []; loop = -1; $('lineLoop').classList.remove('on');
@@ -314,12 +334,12 @@ async function loadSong() {
   try { const f = await DB.get(s.id + ':track'); if (f) { $('playMsg').textContent = '음악을 불러오는 중…'; track = await decode(f.blob); $('playMsg').textContent = ''; } } catch (_) { $('playMsg').innerHTML = '<span class="err">저장된 음악 파일을 읽지 못했어요.</span>'; }
   try { const c = await DB.get(s.id + ':guide'); if (c && c.contour) guide = c.contour; } catch (_) {}
   $('ytBox').hidden = true; if (!track && s.yt) ytSetup(s.yt);
-  fitRange(); $('accNote').textContent = guide ? '정답 음정이 있을 때 ±50센트(반음의 절반) 안이면 맞은 걸로 쳐요.' : '정답 음정이 없어서 내 음정만 그려요. 「노래 설정」에서 가이드 파일을 넣으면 채점해요.'; $('lineScores').innerHTML = '';
+  fitRange(); keyAdvice(); $('accNote').textContent = guide ? '정답 음정이 있을 때 ±50센트(반음의 절반) 안이면 맞은 걸로 쳐요.' : '정답 음정이 없어서 내 음정만 그려요. 「노래 설정」에서 가이드 파일을 넣으면 채점해요.'; $('lineScores').innerHTML = '';
 }
 $('sgSel').addEventListener('change', () => { SG.cur = $('sgSel').value; saveSG(); loadSong(); });
 $('keySel').innerHTML = Array.from({ length: 25 }, (_, i) => i - 12).map(k => `<option value="${k}">${k > 0 ? '+' + k : k}${k ? '반음' : ' (원래 키)'}</option>`).join('');
 $('keySel').value = '0';
-$('keySel').addEventListener('change', () => { const s = song(); if (s) { s.key = +$('keySel').value; saveSG(); } fitRange(); });
+$('keySel').addEventListener('change', () => { const s = song(); if (s) { s.key = +$('keySel').value; saveSG(); } fitRange(); keyAdvice(); });
 let pend = {};
 function openEdit(isNew) { const s = isNew ? null : song(); pend = { isNew, track: null, guide: null, guideFromTrack: false };
   $('editBox').hidden = false; $('edTitle').value = s ? s.title : ''; $('edYt').value = s && s.yt ? 'https://youtu.be/' + s.yt : ''; $('edLyrics').value = s ? s.lyrics || '' : ''; $('edDel').hidden = isNew;
