@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611222000">
+<link rel="stylesheet" href="assets/style.css?v=202611222300">
 </head>
 <body>
 <div class="wrap">
@@ -101,6 +101,32 @@
     </div>
   </section>
 
+  <section class="panel" id="r2Box">
+    <div class="chart-head"><h2>2차 실기 · 면접 대비</h2><div class="sc-tags" id="r2Tabs"><button type="button" class="sc-tag on" data-r2="cold">즉석 대본</button><button type="button" class="sc-tag" data-r2="iv">면접 질문</button></div></div>
+    <div id="coldBox">
+      <p class="cap" style="margin-top:0">2·3차는 현장에서 처음 보는 대본(라디오 드라마, 내레이션 등)을 받아 바로 연기해요. 처음 보는 대본을 정해진 시간만 보고 녹음하는 연습이에요. 대본은 이 사이트에서 새로 쓴 연습용이에요.</p>
+      <div class="sc-sub">
+        <label class="ym-field">종류 <select id="cdKind"><option value="">아무거나</option><option>라디오 드라마</option><option>내레이션</option><option>해설</option><option>애니</option><option>광고</option></select></label>
+        <label class="ym-field">준비 시간 <select id="cdPrep"><option value="20">20초</option><option value="40" selected>40초</option><option value="60">1분</option></select></label>
+        <button type="button" class="primary-sm" id="cdGo">새 대본 받기</button>
+      </div>
+      <div class="ex-stage" id="cdStage" hidden>
+        <div class="ex-say" id="cdHead"></div>
+        <div class="ex-dir" id="cdDir"></div>
+        <div class="ex-text" id="cdText"></div>
+      </div>
+      <div class="sc-ctl" id="cdCtl" hidden><button type="button" class="primary-sm sc-rec" id="cdRec">● 지금 녹음</button><button type="button" id="cdPlay" disabled>▶ 들어 보기</button><span class="ex-count" id="cdCount"></span></div>
+      <div class="ex-check" id="cdCheck"></div>
+    </div>
+    <div id="ivBox" hidden>
+      <p class="cap" style="margin-top:0">면접에서는 답의 내용만큼 발음, 빠르기, 안정감을 봐요. 질문을 끝까지 듣고 1~2초 정리한 뒤, 결론부터 말하는 연습을 해요.</p>
+      <div class="sc-sub"><button type="button" class="primary-sm" id="ivGo">질문 받기</button><label class="tog"><input type="checkbox" id="ivSpeak" checked> 질문을 소리로 읽어 주기</label></div>
+      <div class="ex-stage" id="ivStage" hidden><div class="ex-text" id="ivQ"></div><div class="ex-say" id="ivTip"></div></div>
+      <div class="sc-ctl" id="ivCtl" hidden><button type="button" class="primary-sm sc-rec" id="ivRec">● 답하기</button><button type="button" id="ivPlay" disabled>▶ 들어 보기</button><span class="ex-count" id="ivCount"></span></div>
+      <div class="ex-check" id="ivCheck"></div>
+    </div>
+  </section>
+
   <section class="panel" id="pastBox" hidden>
     <div class="chart-head"><h2>지난 모의 시험</h2><span class="cap" style="margin:0" id="pastCount"></span></div>
     <div class="sv-list" id="pastList"></div>
@@ -117,9 +143,9 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611222000"></script>
-<script src="assets/exams.js?v=202611222000"></script>
-<script src="assets/lame.min.js?v=202611222000"></script>
+<script src="assets/voicefeat.js?v=202611222300"></script>
+<script src="assets/exams.js?v=202611222300"></script>
+<script src="assets/lame.min.js?v=202611222300"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -136,7 +162,7 @@ const exName = e => `${ST[e.station].name} ${e.gen}기 · ${GN[e.gender]}`;
 // 문항 = 사이트 기본값 + 내가 고친 것 + 붙여 넣은 대본
 function itemsOf(e) {
   const d = DATA[e.id] || {}, base = e.items || [], n = Math.max(base.length, (d.items || []).length);
-  const out = []; for (let i = 0; i < n; i++) { const b = base[i] || {}, u = (d.items || [])[i] || {}; if (u.gone) continue; out.push({ i, type: u.type != null ? u.type : b.type || '', dir: u.dir != null ? u.dir : b.dir || '', file: b.file || '', intro: !!b.intro, text: u.text || '' }); }
+  const out = []; for (let i = 0; i < n; i++) { const b = base[i] || {}, u = (d.items || [])[i] || {}; if (u.gone) continue; out.push({ i, type: u.type != null ? u.type : b.type || '', dir: u.dir != null ? u.dir : b.dir || '', file: b.file || '', group: b.group || '', intro: !!b.intro, text: u.text || '' }); }
   return out;
 }
 function setItem(e, i, patch) { const d = DATA[e.id] = DATA[e.id] || {}; d.items = d.items || []; d.items[i] = Object.assign({}, d.items[i] || {}, patch); keep('moksori.exam.data', DATA); }
@@ -228,14 +254,14 @@ $('adGo').addEventListener('click', () => {
 });
 
 // ---------- 마이크 (제출용이라 원래 품질 그대로) ----------
-let actx = null, mic = null, rec = null;
+let actx = null, mic = null, rec = null, cap = null;
 async function ensureMic() {
   if (mic) return true;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
     actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') await actx.resume();
     const src = actx.createMediaStreamSource(stream), proc = actx.createScriptProcessor(4096, 1, 1), mute = actx.createGain(); mute.gain.value = 0;
-    proc.onaudioprocess = ev => { const x = ev.inputBuffer.getChannelData(0); let pk = 0; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i])); $('mkLvl').style.width = Math.min(100, Math.max(0, (20 * Math.log10(pk + 1e-9) + 60) / 60 * 100)) + '%'; $('mkLvl').classList.toggle('hot', pk > 0.97); if (rec) rec.chunks.push(new Float32Array(x)); };
+    proc.onaudioprocess = ev => { const x = ev.inputBuffer.getChannelData(0); let pk = 0; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i])); $('mkLvl').style.width = Math.min(100, Math.max(0, (20 * Math.log10(pk + 1e-9) + 60) / 60 * 100)) + '%'; $('mkLvl').classList.toggle('hot', pk > 0.97); if (rec) rec.chunks.push(new Float32Array(x)); if (cap) cap.chunks.push(new Float32Array(x)); };
     src.connect(proc); proc.connect(mute); mute.connect(actx.destination); mic = { stream, src, proc, mute }; return true;
   } catch (_) { $('mkCheck').innerHTML = `<span class="err">마이크를 쓸 수 없어요. ${location.protocol === 'file:' ? '사이트 주소로 열어 주세요.' : '주소창 자물쇠 아이콘에서 허용해 주세요.'}</span>`; return false; }
 }
@@ -248,7 +274,7 @@ const today = () => { const d = new Date(); return `${d.getFullYear()}${String(d
 function mockSteps(e, name) {
   const s = ST[e.station], it = itemsOf(e), steps = [], v = { 기: e.gen, 이름: name || '○○○', 성별: GN[e.gender] };
   if (s.intro && !it.some(x => x.intro)) steps.push({ key: 'intro', label: '이름', say: fill(s.intro, v), dir: '가장 자연스러운 내 목소리로', text: '' });
-  it.forEach((x, k) => steps.push({ key: 'q' + x.i, no: k + 1, label: `${k + 1}번`, type: x.type, file: x.file || x.type || `문항${k + 1}`,
+  it.forEach((x, k) => steps.push({ key: 'q' + x.i, no: k + 1, group: x.group, label: `${k + 1}번`, type: x.type, file: x.file || x.type || `문항${k + 1}`,
     say: x.intro ? '' : s.announce ? fill(s.announce, { 번호: k + 1, 종류: x.type || '캐릭터' }) : '', dir: [x.type, x.dir].filter(Boolean).join(' — '),
     text: x.intro && !x.text ? fill(s.intro || '{이름}입니다.', v) : x.text.replace(/\(\s*\)/, `(${name || '내 이름'})`) }));
   return steps;
@@ -343,7 +369,11 @@ $('mkSave').addEventListener('click', async () => {
   const enc = x => fmt === 'mp3' ? mp3Blob(x, sr, kb) : wavBlob(x, sr);
   try {
     if (s.file === 'split') {
-      for (const st of MK.steps) { const t = MK.takes[st.key]; if (!t) continue; const nm = fill(s.fileName, { 수험번호: MK.no || '수험번호', 번호: st.no || 0, 종류: st.file.replace(/\s+/g, '_') }); const b = enc(t.pcm); download(b, safe(nm) + '.' + fmt); made.push([nm, b.size]); await new Promise(r => setTimeout(r, 400)); }
+      // 같은 group은 한 파일로, 이름 녹음은 첫 파일 앞에
+      const files = [], intro = MK.takes.intro; let first = true;
+      for (const st of MK.steps) { if (st.key === 'intro') continue; const t = MK.takes[st.key]; if (!t) continue; const g = st.group && files.find(f => f.group === st.group); if (g) g.parts.push(t.pcm); else files.push({ group: st.group, name: st.file, parts: [t.pcm] }); }
+      if (intro && files.length && s.introInFirst) files[0].parts.unshift(intro.pcm); else if (intro) files.unshift({ name: '이름', parts: [intro.pcm] });
+      for (let k = 0; k < files.length; k++) { const f = files[k], nm = fill(s.fileName, { 수험번호: MK.no || '수험번호', 번호: k + 1, 종류: String(f.name).replace(/\s+/g, '_') }), b = enc(join(f.parts, sr, 1.0)); download(b, safe(nm) + '.' + fmt); made.push([nm, b.size]); await new Promise(r => setTimeout(r, 400)); }
     } else {
       const parts = MK.steps.map(x => MK.takes[x.key]).filter(Boolean).map(t => t.pcm), all = join(parts, sr, 1.0), nm = s.fileName ? fill(s.fileName, { 응시일: today(), 이름: MK.name }) : `${s.name}_${MK.exam.gen}기_${MK.name}`, b = enc(all);
       download(b, safe(nm) + '.' + fmt); made.push([nm, b.size]);
@@ -378,6 +408,43 @@ $('pastList').addEventListener('click', async e => {
   else if (b.dataset.act === 'del') { if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = '한 번 더'; setTimeout(() => { b.classList.remove('arm'); b.textContent = '삭제'; }, 3000); return; } await DB.del(v.id); renderPast(); }
 });
 
+
+// ---------- 2차 즉석 대본 · 면접 ----------
+$('r2Tabs').addEventListener('click', e => { const b = e.target.closest('[data-r2]'); if (!b) return; $('r2Tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); $('coldBox').hidden = b.dataset.r2 !== 'cold'; $('ivBox').hidden = b.dataset.r2 !== 'iv'; capStop(true); });
+let CD = null, IV = null, capTimer = null;
+const mmss = x => `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, '0')}`;
+async function capStart(onTick) { if (!(await ensureMic())) return false; stopPlay(); cap = { chunks: [], t0: Date.now() }; $('tally').classList.add('on'); $('tally').textContent = 'REC'; clearInterval(capTimer); capTimer = setInterval(() => onTick && onTick((Date.now() - cap.t0) / 1000), 200); return true; }
+function capStop(discard) { clearInterval(capTimer); if (!cap) return null; const c = cap; cap = null; $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; if (discard) return null; let n = 0; for (const x of c.chunks) n += x.length; const x = new Float32Array(n); let o = 0; for (const y of c.chunks) { x.set(y, o); o += y.length; } return { x, raw: x, sec: (Date.now() - c.t0) / 1000 }; }
+function pausesOf(x, sr) { const w = Math.round(sr * 0.05), e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); } if (!e.length) return { n: 0, longest: 0 }; const pk = [...e].sort((a, b) => b - a)[Math.floor(e.length * 0.05)], th = pk - 30; let a = 0; while (a < e.length && e[a] < th) a++; let b = e.length - 1; while (b > a && e[b] < th) b--; let n = 0, run = 0, longest = 0; for (let i = a; i <= b; i++) { if (e[i] < th) run++; else { if (run * 0.05 >= 0.8) n++; longest = Math.max(longest, run * 0.05); run = 0; } } return { n, longest }; }
+$('cdGo').addEventListener('click', () => {
+  capStop(true); clearInterval(CD && CD.prepT); const k = $('cdKind').value, g = cur ? cur.gender : '';
+  const pool = window.COLD_READS.filter(c => (!k || c.kind === k) && (!c.who || !g || c.who === g)), pick = pool.filter(c => !CD || c !== CD.c); const c = (pick.length ? pick : pool)[Math.floor(Math.random() * (pick.length ? pick : pool).length)];
+  CD = { c, left: +$('cdPrep').value, take: null }; $('cdStage').hidden = $('cdCtl').hidden = false; $('cdHead').textContent = c.kind; $('cdDir').textContent = `(${c.dir})`;
+  $('cdText').innerHTML = esc(c.text).replace(/\s*(\/\/|\/)\s*/g, (_, m) => m === '//' ? ' <i class="ex-br">//</i><br>' : ' <i class="ex-br">/</i> ');
+  $('cdPlay').disabled = true; $('cdCheck').textContent = ''; $('cdRec').textContent = '● 지금 녹음';
+  $('cdCount').textContent = `준비 ${CD.left}초`; CD.prepT = setInterval(() => { if (!CD || cap) return; CD.left--; $('cdCount').textContent = `준비 ${Math.max(0, CD.left)}초`; if (CD.left <= 0) { clearInterval(CD.prepT); $('cdRec').click(); } }, 1000);
+});
+$('cdRec').addEventListener('click', async () => {
+  if (!CD) return;
+  if (cap) { const r = capStop(); $('cdRec').textContent = '● 다시 녹음'; const y = trim(r.x, actx.sampleRate); if (y.length < actx.sampleRate * 0.5) { $('cdCheck').innerHTML = '<span class="err">소리가 거의 없어요.</span>'; return; } CD.take = y; $('cdPlay').disabled = false; const c = await check(y, actx.sampleRate), p = pausesOf(y, actx.sampleRate); $('cdCheck').innerHTML = checkHtml(c) + `<span class="ex-flag">${p.n ? `0.8초 넘게 멈춘 곳 ${p.n}번 (가장 긴 쉼 ${p.longest.toFixed(1)}초)` : '중간에 길게 멈춘 곳 없음'}</span>`; return; }
+  clearInterval(CD.prepT); $('cdCount').textContent = '';
+  if (await capStart(sec => { $('cdCount').textContent = `녹음 중 ${mmss(sec)}`; if (sec > 120) $('cdRec').click(); })) $('cdRec').textContent = '■ 녹음 끝';
+});
+$('cdPlay').addEventListener('click', () => { if (CD && CD.take) playF32(CD.take, actx.sampleRate); });
+function speakQ(t) { return new Promise(res => { if (!$('ivSpeak').checked || !window.speechSynthesis) return res(); const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; const v = speechSynthesis.getVoices().find(v => /^ko/i.test(v.lang)); if (v) u.voice = v; let d = false; const f = () => { if (!d) { d = true; res(); } }; u.onend = f; u.onerror = f; setTimeout(f, 2500 + t.length * 200); speechSynthesis.speak(u); }); }
+$('ivGo').addEventListener('click', async () => {
+  capStop(true); const pool = window.INTERVIEW.filter(x => !IV || x !== IV.q), q = pool[Math.floor(Math.random() * pool.length)];
+  IV = { q, take: null }; $('ivStage').hidden = $('ivCtl').hidden = false; $('ivQ').textContent = q.q; $('ivTip').textContent = `목표 ${q.sec}초 안팎 · ${q.tip}`; $('ivCheck').textContent = ''; $('ivPlay').disabled = true; $('ivRec').textContent = '● 답하기'; $('ivCount').textContent = '';
+  $('ivRec').disabled = true; await speakQ(q.q); $('ivRec').disabled = false; $('ivCount').textContent = '1~2초 정리하고 답하기를 누르세요';
+});
+$('ivRec').addEventListener('click', async () => {
+  if (!IV) return;
+  if (cap) { const r = capStop(); $('ivRec').textContent = '● 다시 답하기'; const sr = actx.sampleRate, y = trim(r.x, sr); if (y.length < sr * 0.5) { $('ivCheck').innerHTML = '<span class="err">소리가 거의 없어요.</span>'; return; } IV.take = y; $('ivPlay').disabled = false;
+    const c = await check(y, sr), p = pausesOf(y, sr), d = y.length / sr, T = IV.q.sec, lead = (r.x.length - y.length) / sr;
+    $('ivCheck').innerHTML = `<span>답한 시간 ${d.toFixed(0)}초 (목표 ${T}초)</span>` + `<span class="ex-flag ${Math.abs(d - T) <= T * 0.25 ? 'ok' : 'warn'}">${d < T * 0.75 ? '조금 짧아요' : d > T * 1.25 ? '조금 길어요. 결론부터 말해 보세요' : '시간 알맞아요'}</span>` + `<span class="ex-flag ${p.n <= 2 ? 'ok' : 'warn'}">${p.n ? `0.8초 넘게 멈춘 곳 ${p.n}번` : '말이 끊기지 않았어요'}</span>` + c.flags.map(([k, t]) => `<span class="ex-flag ${k}">${esc(t)}</span>`).join('') + (Number.isFinite(c.f0) ? `<span>평균 높이 ${Math.round(c.f0)} Hz</span>` : ''); return; }
+  if (await capStart(sec => { $('ivCount').textContent = `${mmss(sec)} / ${mmss(IV.q.sec)}`; if (sec > IV.q.sec * 2 + 10) $('ivRec').click(); })) $('ivRec').textContent = '■ 답 끝';
+});
+$('ivPlay').addEventListener('click', () => { if (IV && IV.take) playF32(IV.take, actx.sampleRate); });
 window.addEventListener('beforeunload', e => { if (MK && !$('mkRun').hidden && Object.keys(MK.takes).length) { e.preventDefault(); e.returnValue = ''; } });
 renderAll(); renderPast();
 const q = new URLSearchParams(location.search).get('exam'); if (q && examOf(q)) openExam(q);
