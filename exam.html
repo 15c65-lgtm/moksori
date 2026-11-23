@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611230200">
+<link rel="stylesheet" href="assets/style.css?v=202611240300">
 </head>
 <body>
 <div class="wrap">
@@ -143,9 +143,9 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611230200"></script>
-<script src="assets/exams.js?v=202611230200"></script>
-<script src="assets/lame.min.js?v=202611230200"></script>
+<script src="assets/voicefeat.js?v=202611240300"></script>
+<script src="assets/exams.js?v=202611240300"></script>
+<script src="assets/lame.min.js?v=202611240300"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -317,13 +317,14 @@ async function finishTake(r) {
   const x = new Float32Array(n); let o = 0; for (const c of r.chunks) { x.set(c, o); o += c.length; }
   const y = trim(x, MK.rate);
   if (y.length < MK.rate * 0.4) { $('mkCheck').innerHTML = '<span class="err">소리가 거의 녹음되지 않았어요. 다시 해 주세요.</span>'; mkRender(); $('mkCheck').innerHTML = '<span class="err">소리가 거의 녹음되지 않았어요. 다시 해 주세요.</span>'; return; }
-  MK.takes[r.key] = { pcm: y, chk: await check(y, MK.rate) }; mkRender();
+  MK.takes[r.key] = { pcm: y, chk: await check(y, MK.rate, x) }; mkRender();
 }
 function trim(x, sr) { const w = Math.round(sr * 0.02), e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); } if (!e.length) return x; const pk = Math.max(...e), th = Math.max(pk - 40, -75); let a = 0, b = e.length - 1; while (a < e.length && e[a] < th) a++; while (b > a && e[b] < th) b--; return x.slice(Math.max(0, (a - 10) * w), Math.min(x.length, (b + 15) * w)); }
-async function check(x, sr) {
+function quietDb(x, sr) { const w = Math.round(sr * 0.05), e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); } let q = 1e9; for (let i = 0; i + 6 <= e.length; i++) { let m = -1e9; for (let k = i; k < i + 6; k++) m = Math.max(m, e[k]); q = Math.min(q, m); } return q < 1e8 ? q : NaN; }
+async function check(x, sr, raw) {
   let pk = 0, clip = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > pk) pk = a; if (a > 0.985) clip++; }
   const w = Math.round(sr * 0.05), fr = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; fr.push(10 * Math.log10(s / w + 1e-12)); }
-  const sorted = [...fr].sort((a, b) => a - b), floor = sorted[Math.floor(sorted.length * 0.08)] || -90, loud = sorted[Math.floor(sorted.length * 0.9)] || -90;
+  const sorted = [...fr].sort((a, b) => a - b), q = raw ? quietDb(raw, sr) : NaN, floor = Number.isFinite(q) ? q : sorted[Math.floor(sorted.length * 0.08)] || -90, loud = sorted[Math.floor(sorted.length * 0.9)] || -90;
   // 높이: 16 kHz로 줄여서 분석
   let f0 = NaN; try { const off = new OfflineAudioContext(1, Math.ceil(x.length / sr * 16000), 16000), b = off.createBuffer(1, x.length, sr); b.copyToChannel(x, 0); const s = off.createBufferSource(); s.buffer = b; s.connect(off.destination); s.start(); const y = (await off.startRendering()).getChannelData(0), fs = []; for (let i = 0; i + 1024 <= y.length; i += 512) { const r = VF.analyze(y.subarray(i, i + 1024)); if (r.f0 > 60 && r.clarity > 0.6) fs.push(r.f0); } f0 = med(fs); } catch (_) {}
   const flags = []; if (clip > sr * 0.002) flags.push(['bad', '소리가 찢어졌어요 (너무 커요)']); else if (pk > 0.95) flags.push(['warn', '가장 큰 소리가 거의 끝까지 닿았어요']);
@@ -415,7 +416,7 @@ let CD = null, IV = null, capTimer = null;
 const mmss = x => `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, '0')}`;
 async function capStart(onTick) { if (!(await ensureMic())) return false; stopPlay(); cap = { chunks: [], t0: Date.now() }; $('tally').classList.add('on'); $('tally').textContent = 'REC'; clearInterval(capTimer); capTimer = setInterval(() => onTick && onTick((Date.now() - cap.t0) / 1000), 200); return true; }
 function capStop(discard) { clearInterval(capTimer); if (!cap) return null; const c = cap; cap = null; $('tally').classList.remove('on'); $('tally').textContent = 'STANDBY'; if (discard) return null; let n = 0; for (const x of c.chunks) n += x.length; const x = new Float32Array(n); let o = 0; for (const y of c.chunks) { x.set(y, o); o += y.length; } return { x, raw: x, sec: (Date.now() - c.t0) / 1000 }; }
-function pausesOf(x, sr) { const w = Math.round(sr * 0.05), e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); } if (!e.length) return { n: 0, longest: 0 }; const pk = [...e].sort((a, b) => b - a)[Math.floor(e.length * 0.05)], th = pk - 30; let a = 0; while (a < e.length && e[a] < th) a++; let b = e.length - 1; while (b > a && e[b] < th) b--; let n = 0, run = 0, longest = 0; for (let i = a; i <= b; i++) { if (e[i] < th) run++; else { if (run * 0.05 >= 0.8) n++; longest = Math.max(longest, run * 0.05); run = 0; } } return { n, longest }; }
+function pausesOf(x, sr) { const w = Math.round(sr * 0.05), e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); } if (!e.length) return { n: 0, longest: 0 }; const srt = [...e].sort((a, b) => a - b), pk = srt[Math.floor(e.length * 0.95)], p90 = srt[Math.floor(e.length * 0.9)]; let qq = 1e9; for (let i = 0; i + 6 <= e.length; i++) { let m = -1e9; for (let k = i; k < i + 6; k++) m = Math.max(m, e[k]); qq = Math.min(qq, m); } if (qq > 1e8) qq = srt[0]; const th = Math.max(pk - 30, qq + 0.35 * (p90 - qq)); let a = 0; while (a < e.length && e[a] < th) a++; let b = e.length - 1; while (b > a && e[b] < th) b--; let n = 0, run = 0, longest = 0; for (let i = a; i <= b; i++) { if (e[i] < th) run++; else { if (run * 0.05 >= 0.8) n++; longest = Math.max(longest, run * 0.05); run = 0; } } return { n, longest }; }
 $('cdGo').addEventListener('click', () => {
   capStop(true); clearInterval(CD && CD.prepT); const k = $('cdKind').value, g = cur ? cur.gender : '';
   const pool = window.COLD_READS.filter(c => (!k || c.kind === k) && (!c.who || !g || c.who === g)), pick = pool.filter(c => !CD || c !== CD.c); const c = (pick.length ? pick : pool)[Math.floor(Math.random() * (pick.length ? pick : pool).length)];
@@ -426,7 +427,7 @@ $('cdGo').addEventListener('click', () => {
 });
 $('cdRec').addEventListener('click', async () => {
   if (!CD) return;
-  if (cap) { const r = capStop(); $('cdRec').textContent = '● 다시 녹음'; const y = trim(r.x, actx.sampleRate); if (y.length < actx.sampleRate * 0.5) { $('cdCheck').innerHTML = '<span class="err">소리가 거의 없어요.</span>'; return; } CD.take = y; $('cdPlay').disabled = false; const c = await check(y, actx.sampleRate), p = pausesOf(y, actx.sampleRate); $('cdCheck').innerHTML = checkHtml(c) + `<span class="ex-flag">${p.n ? `0.8초 넘게 멈춘 곳 ${p.n}번 (가장 긴 쉼 ${p.longest.toFixed(1)}초)` : '중간에 길게 멈춘 곳 없음'}</span>`; return; }
+  if (cap) { const r = capStop(); $('cdRec').textContent = '● 다시 녹음'; const y = trim(r.x, actx.sampleRate); if (y.length < actx.sampleRate * 0.5) { $('cdCheck').innerHTML = '<span class="err">소리가 거의 없어요.</span>'; return; } CD.take = y; $('cdPlay').disabled = false; const c = await check(y, actx.sampleRate, r.x), p = pausesOf(y, actx.sampleRate); $('cdCheck').innerHTML = checkHtml(c) + `<span class="ex-flag">${p.n ? `0.8초 넘게 멈춘 곳 ${p.n}번 (가장 긴 쉼 ${p.longest.toFixed(1)}초)` : '중간에 길게 멈춘 곳 없음'}</span>`; return; }
   clearInterval(CD.prepT); $('cdCount').textContent = '';
   if (await capStart(sec => { $('cdCount').textContent = `녹음 중 ${mmss(sec)}`; if (sec > 120) $('cdRec').click(); })) $('cdRec').textContent = '■ 녹음 끝';
 });
@@ -440,7 +441,7 @@ $('ivGo').addEventListener('click', async () => {
 $('ivRec').addEventListener('click', async () => {
   if (!IV) return;
   if (cap) { const r = capStop(); $('ivRec').textContent = '● 다시 답하기'; const sr = actx.sampleRate, y = trim(r.x, sr); if (y.length < sr * 0.5) { $('ivCheck').innerHTML = '<span class="err">소리가 거의 없어요.</span>'; return; } IV.take = y; $('ivPlay').disabled = false;
-    const c = await check(y, sr), p = pausesOf(y, sr), d = y.length / sr, T = IV.q.sec, lead = (r.x.length - y.length) / sr;
+    const c = await check(y, sr, r.x), p = pausesOf(y, sr), d = y.length / sr, T = IV.q.sec, lead = (r.x.length - y.length) / sr;
     $('ivCheck').innerHTML = `<span>답한 시간 ${d.toFixed(0)}초 (목표 ${T}초)</span>` + `<span class="ex-flag ${Math.abs(d - T) <= T * 0.25 ? 'ok' : 'warn'}">${d < T * 0.75 ? '조금 짧아요' : d > T * 1.25 ? '조금 길어요. 결론부터 말해 보세요' : '시간 알맞아요'}</span>` + `<span class="ex-flag ${p.n <= 2 ? 'ok' : 'warn'}">${p.n ? `0.8초 넘게 멈춘 곳 ${p.n}번` : '말이 끊기지 않았어요'}</span>` + c.flags.map(([k, t]) => `<span class="ex-flag ${k}">${esc(t)}</span>`).join('') + (Number.isFinite(c.f0) ? `<span>평균 높이 ${Math.round(c.f0)} Hz</span>` : ''); return; }
   if (await capStart(sec => { $('ivCount').textContent = `${mmss(sec)} / ${mmss(IV.q.sec)}`; if (sec > IV.q.sec * 2 + 10) $('ivRec').click(); })) $('ivRec').textContent = '■ 답 끝';
 });

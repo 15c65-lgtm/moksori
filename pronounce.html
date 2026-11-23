@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611230200">
+<link rel="stylesheet" href="assets/style.css?v=202611240300">
 </head>
 <body>
 <div class="wrap">
@@ -61,7 +61,7 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611230200"></script>
+<script src="assets/voicefeat.js?v=202611240300"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -94,7 +94,9 @@ async function ensureMic() {
 function trim(x) { const w = 320, e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); } if (!e.length) return x; const pk = Math.max(...e), th = Math.max(pk - 35, -70); let a = 0, b = e.length - 1; while (a < e.length && e[a] < th) a++; while (b > a && e[b] < th) b--; return x.slice(Math.max(0, (a - 5) * w), Math.min(x.length, (b + 8) * w)); }
 function stats(x, text) {
   const w = 320, e = []; for (let i = 0; i + w <= x.length; i += w) { let s = 0; for (let j = i; j < i + w; j++) s += x[j] * x[j]; e.push(10 * Math.log10(s / w + 1e-12)); }
-  const pk = [...e].sort((a, b) => b - a)[Math.floor(e.length * 0.05)] || -30, th = pk - 28; let run = 0, pauses = 0, pauseT = 0;
+  const srt = [...e].sort((a, b) => a - b), pk = srt[Math.floor(e.length * 0.95)] || -30, p90 = srt[Math.floor(e.length * 0.9)] || pk;
+  let quiet = 1e9; for (let i = 0; i + 15 <= e.length; i++) { let m = -1e9; for (let k = i; k < i + 15; k++) m = Math.max(m, e[k]); quiet = Math.min(quiet, m); } if (quiet > 1e8) quiet = srt[0] || -90;
+  const th = Math.max(pk - 28, quiet + 0.35 * (p90 - quiet)); let run = 0, pauses = 0, pauseT = 0;
   for (const v of e) { if (v < th) run++; else { if (run * 0.02 >= 0.25) { pauses++; pauseT += run * 0.02; } run = 0; } }
   const dur = x.length / SR, n = sylCount(text), speak = Math.max(0.3, dur - pauseT);
   return { dur, n, rate: n / dur, artic: n / speak, pauses, pauseT };

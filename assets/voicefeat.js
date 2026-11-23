@@ -1,5 +1,5 @@
 // 여목 연습용 실시간 프레임 분석 (16 kHz, 1024 샘플 프레임)
-// 결과: 음높이(f0), 맑음(주기성), H1-H2(진성↔가성 단서), 포먼트 F1~F3, 공명(F1~F3 기하평균), 밝기(고음역 배음 비)
+// 결과: 음높이(f0), 맑음(주기성), H1-H2(진성↔가성 단서), 포먼트 F1~F3(F12는 F3 없이도 F1·F2), 공명(F1~F3 기하평균), 밝기(고음역 배음 비)
 // 공명은 음이 높으면(약 330 Hz 위) 배음 간격이 넓어 덜 정확함 → 그때는 밝기를 함께 볼 것
 const VF = (() => {
   const SR = 16000, N = 1024, NFFT = 2048, ORDER = 18;
@@ -74,14 +74,14 @@ const VF = (() => {
     const F1 = peaks.find(f => f >= 250 && f <= 1300);
     const F2 = F1 && peaks.find(f => f > F1 + 150 && f >= 700 && f <= 2900);
     const F3 = F2 && peaks.find(f => f > F2 + 200 && f >= 1700 && f <= 4000);
-    if (!F1 || !F2 || !F3) return null;
-    return [F1, F2, F3];
+    if (!F1 || !F2) return null;
+    return F3 ? [F1, F2, F3] : { partial: [F1, F2] }; // F3을 못 찾아도 F1·F2는 돌려줌 (높은 목소리·숨 섞인 소리에서 자주 생김)
   }
 
   function analyze(x) {
     let e = 0; for (let i = 0; i < N; i++) e += x[i] * x[i];
     const db = 10 * Math.log10(e / N + 1e-12);
-    const out = { db, f0: 0, clarity: 0, h1h2: NaN, h1h2raw: NaN, cpp: NaN, F: null, res: NaN, bright: NaN };
+    const out = { db, f0: 0, clarity: 0, h1h2: NaN, h1h2raw: NaN, cpp: NaN, F: null, F12: null, res: NaN, bright: NaN };
     if (db < -65) return out;
     const p = pitch(x); out.f0 = p.f0; out.clarity = p.clarity;
     if (!p.f0) return out;
@@ -111,8 +111,10 @@ const VF = (() => {
       for (let k = 1; k * p.f0 <= 5000; k++) { const f = k * p.f0, a = Math.pow(10, harmonicDb(mag, f, df) / 10); if (f < 1500) lo += a; else hi += a; }
       if (lo > 0 && hi > 0) out.bright = 10 * Math.log10(hi / lo);
     }
-    const F = formants(x);
+    let F = formants(x);
+    if (F && !Array.isArray(F)) { out.F12 = F.partial; F = null; }
     if (F) {
+      out.F12 = [F[0], F[1]];
       out.F = F; out.res = Math.cbrt(F[0] * F[1] * F[2]);
       // 포먼트 보정(H1*-H2*): 성도 공명이 H1·H2를 키운 만큼 빼서 성대 자체의 차이만 남김
       const T = f => F.reduce((s, Fi, i) => { const b = (80 + 30 * i) / 2; return s + 20 * Math.log10((Fi * Fi + b * b) / Math.sqrt(((f - Fi) ** 2 + b * b) * ((f + Fi) ** 2 + b * b))); }, 0);

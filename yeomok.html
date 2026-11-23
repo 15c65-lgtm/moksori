@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611230200">
+<link rel="stylesheet" href="assets/style.css?v=202611240300">
 </head>
 <body>
 <div class="wrap">
@@ -246,9 +246,9 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611230200"></script>
-<script src="assets/coach.js?v=202611230200"></script>
-<script src="assets/yeomok-style.js?v=202611230200"></script>
+<script src="assets/voicefeat.js?v=202611240300"></script>
+<script src="assets/coach.js?v=202611240300"></script>
+<script src="assets/yeomok-style.js?v=202611240300"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -513,19 +513,22 @@ brRender();
 const RM = { 1: [300, 1400], 2: [800, 2400] };
 const rmX = (k, hz) => Math.max(0, Math.min(100, (hz - RM[k][0]) / (RM[k][1] - RM[k][0]) * 100));
 document.querySelectorAll('.rm-band').forEach(el => { const k = el.parentElement.id === 'rmT1' ? 1 : 2, a = +el.dataset.a, b = +el.dataset.b; el.style.left = rmX(k, a) + '%'; el.style.width = (rmX(k, b) - rmX(k, a)) + '%'; });
-let rmRecent = [], rmLast = 0;
+let rmRecent = [], rmLast = 0, rmLastShown = 0;
 function rmFrame(fr, voiced, now) {
-  if (voiced && fr.F && fr.F[0] > 0 && fr.F[1] > 0) rmRecent.push({ t: now, a: fr.F[0], b: fr.F[1], f0: fr.f0 });
-  if (gdCollect && voiced && fr.F && fr.F[0] > 0 && fr.F[1] > 0) gdCollect.push({ a: fr.F[0], b: fr.F[1], f0: fr.f0 });
+  if (voiced && fr.F12) rmRecent.push({ t: now, a: fr.F12[0], b: fr.F12[1], f0: fr.f0 });
+  if (gdCollect && voiced && fr.F12) gdCollect.push({ a: fr.F12[0], b: fr.F12[1], f0: fr.f0 });
   while (rmRecent.length && now - rmRecent[0].t > 600) rmRecent.shift();
   if (now - rmLast < 120) return; rmLast = now;
-  if (rmRecent.length < 5) { $('rmM1').hidden = $('rmM2').hidden = true; $('rmV1').textContent = $('rmV2').textContent = '–'; if (mic) $('rmMsg').textContent = '「아~」를 길게 내 보세요.'; return; }
+  if (rmRecent.length < 5) { // 잠깐 끊겨도 1.5초 동안은 마지막 값을 흐리게 남겨 둠
+    const held = rmLastShown && now - rmLastShown < 1500; document.querySelectorAll('#rmT1 > b, #rmT2 > b, #rmV1, #rmV2').forEach(el => el.classList.toggle('rm-held', !!held));
+    if (held) return; $('rmM1').hidden = $('rmM2').hidden = true; $('rmV1').textContent = $('rmV2').textContent = '–'; if (mic) $('rmMsg').textContent = '「아~」를 길게 내 보세요.'; return; }
+  rmLastShown = now; document.querySelectorAll('.rm-held').forEach(el => el.classList.remove('rm-held'));
   const a = med(rmRecent.map(r => r.a)), b = med(rmRecent.map(r => r.b)), f = med(rmRecent.map(r => r.f0));
   $('rmM1').hidden = $('rmM2').hidden = false; $('rmM1').style.left = rmX(1, a) + '%'; $('rmM2').style.left = rmX(2, b) + '%';
   $('rmV1').textContent = Math.round(a) + ' Hz'; $('rmV2').textContent = Math.round(b) + ' Hz';
   const w1 = a < 700 ? '첫 번째 울림은 아직 남자 쪽이에요. 침 삼킬 때처럼 목울대를 살짝 올려 보세요.' : a < 800 ? '첫 번째 울림이 거의 다 왔어요. 800을 넘기면 여자 칸이에요.' : a <= 1100 ? '첫 번째 울림이 여자 칸에 들어왔어요 ✓' : '첫 번째 울림이 아이 목소리 쪽이에요.';
   const w2 = b < 1350 ? '두 번째 울림은 남자 쪽이에요. 살짝 웃는 입으로, 혀를 높여 보세요.' : b < 1500 ? '두 번째 울림이 가까워졌어요. 입을 조금 더 작게 해 보세요.' : b <= 1800 ? '두 번째 울림이 여자 칸에 들어왔어요 ✓' : '두 번째 울림이 아이 목소리 쪽이에요.';
-  const hi = f > 300 ? `<b class="warn">지금 높이(${Math.round(f)} Hz)가 너무 높아서 값이 정확하지 않아요. 300 Hz 아래로 낮춰서 재 보세요.</b><br>` : '';
+  const hi = f > 330 ? `<b class="warn">지금 높이(${Math.round(f)} Hz)에서는 울림 값이 크게 틀릴 수 있어요. 280 Hz 아래로 낮춰서 재 보세요.</b><br>` : f > 280 ? `<span class="warn">높이(${Math.round(f)} Hz)가 높아서 값이 조금 흔들릴 수 있어요.</span><br>` : '';
   const ok = a >= 800 && a <= 1100 && b >= 1500 && b <= 1800;
   $('rmMsg').innerHTML = hi + (ok ? '<b class="good">두 울림 모두 여자 칸이에요. 이 느낌 그대로 짧은 말을 해 보세요.</b>' : w1 + '<br>' + w2);
 }
@@ -568,9 +571,9 @@ $('rmFile').addEventListener('change', async e => {
     const dur = Math.min(ab.duration, 60), off = new OfflineAudioContext(1, Math.ceil(dur * 16000), 16000), src = off.createBufferSource(); src.buffer = ab; src.connect(off.destination); src.start();
     const x = (await off.startRendering()).getChannelData(0), fr = []; let pk = -99;
     for (let i = 0; i + 1024 <= x.length; i += 512) { const r = VF.analyze(x.subarray(i, i + 1024)); fr.push(r); if (r.db > pk) pk = r.db; }
-    const v = fr.filter(r => r.db > pk - 30 && r.f0 > 60 && r.clarity > 0.6), w = v.filter(r => r.F);
+    const v = fr.filter(r => r.db > pk - 30 && r.f0 > 60 && r.clarity > 0.6), w = v.filter(r => r.F12);
     if (v.length < 20) throw new Error('short');
-    MODEL = { name: f.name, blob: f, f0: med(v.map(r => r.f0)), a: w.length >= 10 ? med(w.map(r => r.F[0])) : 0, b: w.length >= 10 ? med(w.map(r => r.F[1])) : 0 };
+    MODEL = { name: f.name, blob: f, f0: med(v.map(r => r.f0)), a: w.length >= 10 ? med(w.map(r => r.F12[0])) : 0, b: w.length >= 10 ? med(w.map(r => r.F12[1])) : 0 };
     try { await mdbDo('readwrite', st => st.put(MODEL, 'model')); } catch (_) {}
     modelShow();
   } catch (_) { $('rmModelTxt').textContent = '녹음을 읽지 못했거나 목소리가 너무 짧아요.'; }

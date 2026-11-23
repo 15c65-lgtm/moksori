@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611230200">
+<link rel="stylesheet" href="assets/style.css?v=202611240300">
 </head>
 <body>
 <div class="wrap">
@@ -163,9 +163,9 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611230200"></script>
-<script src="assets/voicefeat.js?v=202611230200"></script>
-<script src="assets/scripts.js?v=202611230200"></script>
+<script src="assets/core.js?v=202611240300"></script>
+<script src="assets/voicefeat.js?v=202611240300"></script>
+<script src="assets/scripts.js?v=202611240300"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -520,7 +520,11 @@ function syllables(text) { const h = (text.match(/[가-힣]/g) || []).length, la
 function analyze(x, text) {
   const N = 1024, hop = 512, fr = []; let pk = -99;
   for (let i = 0; i + N <= x.length; i += hop) { const r = VF.analyze(x.subarray(i, i + N)); fr.push(r); if (r.db > pk) pk = r.db; }
-  const speech = fr.map(r => r.db > pk - 30), voiced = fr.filter((r, i) => speech[i] && r.f0 > 60 && r.clarity > 0.5);
+  // 말소리 기준: 최고-30dB, 단 배경 잡음이 크면 (가장 조용한 0.3초 ~ 큰 소리) 사이 35% 지점 위
+  const dbsAll = fr.map(r => r.db), srt = [...dbsAll].sort((a, b) => a - b), p90 = srt[Math.floor(srt.length * 0.9)] || pk;
+  let quiet = 1e9; for (let i = 0; i + 9 <= dbsAll.length; i++) { let m = -1e9; for (let k = i; k < i + 9; k++) m = Math.max(m, dbsAll[k]); quiet = Math.min(quiet, m); } if (quiet > 1e8) quiet = srt[0] || -90;
+  const sth = Math.max(pk - 30, quiet + 0.35 * (p90 - quiet));
+  const speech = fr.map(r => r.db > sth), voiced = fr.filter((r, i) => speech[i] && r.f0 > 60 && r.clarity > 0.5);
   // 쉼: 말소리 사이 0.25초 넘는 조용한 구간
   let pauses = 0, run = 0, started = false; const minRun = Math.round(0.25 * RATE / hop);
   for (let i = 0; i < speech.length; i++) { if (speech[i]) { if (started && run >= minRun) pauses++; run = 0; started = true; } else run++; }
