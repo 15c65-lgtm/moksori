@@ -62,6 +62,7 @@ async def t_room(p):
     await A.click('#rmOpen'); await A.fill('#rmNick', '가'); await A.click('#rmCreate'); await A.wait_for_timeout(600); code = await A.inner_text('#rmCodeTxt')
     await B.goto(BASE + f'script.html?room={code}&local=1'); await B.fill('#rmNick', '나'); await B.click('#rmJoin'); await B.wait_for_timeout(3500)
     ok('같이 읽기 역할 나눔', await B.input_value('#rmRole') == '나', await B.input_value('#rmRole'))
+    await A.click('.rm-diag summary'); await A.wait_for_timeout(1800); dg = await A.inner_text('#rmDiag'); ok('같이 읽기 연결 상태 표시', '서버 연결됨' in dg and '연결됨' in dg.split('목소리')[-1], dg.replace(chr(10), ' / '))
     await A.click('#rmStart')
     for _ in range(12):
         await A.wait_for_timeout(2000)

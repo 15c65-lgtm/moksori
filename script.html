@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611240300">
-<script src="assets/report.js?v=202611240300"></script>
+<link rel="stylesheet" href="assets/style.css?v=202611240400">
+<script src="assets/report.js?v=202611240400"></script>
 </head>
 <body>
 <div class="wrap">
@@ -69,6 +69,7 @@
         <button type="button" id="rmWav">합친 장면 WAV 저장</button>
       </div>
       <p class="rm-msg" id="rmMsg"></p>
+      <details class="rm-diag"><summary>연결 상태 보기</summary><ul id="rmDiag"></ul></details>
       <p class="cap" id="rmNote" style="margin:0">아무도 안 맡은 역할은 기계 음성이 읽어요(저장 파일에는 안 들어가요). 녹음한 소리는 친구에게 보내지기만 하고 서버에 저장되지 않아요.</p>
     </div>
   </section>
@@ -164,9 +165,9 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611240300"></script>
-<script src="assets/voicefeat.js?v=202611240300"></script>
-<script src="assets/scripts.js?v=202611240300"></script>
+<script src="assets/core.js?v=202611240400"></script>
+<script src="assets/voicefeat.js?v=202611240400"></script>
+<script src="assets/scripts.js?v=202611240400"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -363,6 +364,7 @@ $('edSubFile').addEventListener('change', async e => { const f = e.target.files[
 
 // ---------- 유튜브 원본 영상 ----------
 let ytP = null, ytReady = false, ytVid = '', ytTimer = null, ytSeg = null, ytApi = null;
+const ytErr = c => c === 2 ? '영상 주소가 잘못됐어요' : c === 5 ? '이 브라우저에서 영상을 틀 수 없어요' : c === 100 ? '지워졌거나 비공개 영상이에요' : c === 101 || c === 150 ? '영상 주인이 다른 사이트에서 틀지 못하게 막아 뒀어요. 다른 영상(같은 장면을 올린 다른 사람 영상)으로 해 보세요' : `영상을 틀지 못했어요 (오류 ${c})`;
 function ytLoadApi() { return ytApi || (ytApi = new Promise((res, rej) => { if (window.YT && YT.Player) return res(); const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(); }; const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; sc.onerror = () => { ytApi = null; rej(new Error('yt')); }; document.head.appendChild(sc); })); }
 async function ytSetup() {
   const id = curScript().yt || ''; $('ytBox').hidden = !id; ytStop();
@@ -373,8 +375,8 @@ async function ytSetup() {
     if (ytP && ytReady) { ytP.cueVideoById(id); $('ytMsg').textContent = ''; ytShowLine(); return; }
     ytP = new YT.Player('ytPlayer', { videoId: id, playerVars: { playsinline: 1, rel: 0 }, events: {
       onReady: () => { ytReady = true; $('ytMsg').textContent = ''; ytShowLine(); },
-      onError: () => { $('ytMsg').innerHTML = '<span class="err">이 영상은 다른 사이트에서 틀 수 없게 막혀 있거나 주소가 틀렸어요. 다른 영상으로 해 보세요.</span>'; } } });
-  } catch (_) { ytVid = ''; $('ytMsg').innerHTML = '<span class="err">유튜브에 연결하지 못했어요. 인터넷이나 차단 프로그램을 확인해 주세요.</span>'; }
+      onError: e => { const m = ytErr(e && e.data); $('ytMsg').innerHTML = `<span class="err">${m}</span>`; if (window.Diag) Diag.set('유튜브', `${id}: ${m}`); } } });
+  } catch (_) { ytVid = ''; $('ytMsg').innerHTML = '<span class="err">유튜브에 연결하지 못했어요. 인터넷이나 광고 차단 프로그램(유튜브를 막는 확장 프로그램)을 확인해 주세요.</span>'; if (window.Diag) Diag.set('유튜브', '유튜브 플레이어를 불러오지 못함'); }
 }
 function ytSegOf(l) { if (!l || l.t0 == null) return null; const nx = lines.find(x => x.t0 != null && x.t0 > l.t0 + 0.2); return [l.t0, l.t1 != null && l.t1 > l.t0 ? l.t1 : nx ? Math.min(nx.t0, l.t0 + 15) : l.t0 + 5]; }
 function ytShowLine() {
@@ -767,6 +769,21 @@ async function openWire(code, me, onMsg, onMembers) {
   await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timeout')), 10000); ch.subscribe(s => { if (s === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') { clearTimeout(to); rej(new Error(s)); } }); });
   return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), track: st => ch.track(st), close: () => { try { ch.untrack(); sb.removeChannel(ch); } catch (_) {} } };
 }
+// 연결 상태 (어디서 막혔는지 쉬운 말로)
+const DG = { server: null, script: null, parts: 0 };
+function diag() {
+  if (!room) return; const it = [];
+  it.push([DG.server === true, DG.server === true ? '서버 연결됨' : DG.server === false ? '서버에 연결하지 못함 → 인터넷 연결이나 학교·회사 와이파이 차단을 확인' : '서버 연결 중…']);
+  const others = room.members.filter(m => m.id !== room.me.id);
+  it.push([others.length > 0, others.length ? `친구 ${others.length}명 찾음` : '아직 친구가 없어요 → 방 코드가 같은지 확인']);
+  if (!meIsHost()) it.push([room.gotScript, room.gotScript ? '대본 받음' : '대본을 기다리는 중 → 방장 화면이 켜져 있는지 확인']);
+  for (const m of others) { const p = room.peers[m.id]; const how = p && p.route ? (p.route === 'host' ? '같은 와이파이로 직접' : p.route === 'srflx' || p.route === 'prflx' ? '인터넷을 거쳐 직접' : p.route) : '';
+    it.push([p && p.state === 'ok', `${m.name}님 목소리: ${!p ? '연결 준비 전' : p.state === 'ok' ? `연결됨${how ? ` (${how})` : ''}` : p.state === 'bad' ? '연결 실패 → 이 망에서는 직접 연결이 막혀요. 전화를 따로 켜 두세요 (읽기·녹음 합치기는 그대로 돼요)' : '연결 중… (10초 넘게 이 상태면 망에서 막힌 것)'}`]); }
+  it.push([true, `받은 친구 녹음 ${room.audio.size}줄${room.parts.size ? ` · 받는 중 ${room.parts.size}개` : ''}`]);
+  $('rmDiag').innerHTML = it.map(([o, t]) => `<li class="${o ? 'ok' : 'no'}">${o ? '✓' : '…'} ${esc(t)}</li>`).join('');
+  if (window.Diag) Diag.set('같이 읽기', it.map(x => x[1]).join(' / '));
+}
+setInterval(() => { if (room) diag(); }, 1500);
 const roomSend = m => { if (room) { m.from = room.me.id; return room.wire.send(m); } };
 const meIsHost = () => room && room.host === room.me.id;
 const nameOf = id => { const m = room && room.members.find(x => x.id === id); return m ? m.name : '친구'; };
@@ -778,8 +795,8 @@ async function enterRoom(code, create) {
   $('rmCreate').disabled = $('rmJoin').disabled = true;
   const me = { id: Math.random().toString(36).slice(2, 10), name: nick, at: Date.now() };
   room = { code, me, host: create ? me.id : null, members: [], peers: {}, audio: new Map(), parts: new Map(), seq: 0, role: '', muted: false, gotScript: create, wire: null };
-  try { room.wire = await openWire(code, me, onRoomMsg, onMembers); }
-  catch (e) { room = null; $('rmCreate').disabled = $('rmJoin').disabled = false; $('rmOut').querySelector('.cap').innerHTML = '<span class="err">방에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 해 보세요.</span>'; return; }
+  try { room.wire = await openWire(code, me, onRoomMsg, onMembers); DG.server = true; }
+  catch (e) { DG.server = false; if (window.Diag) Diag.set('같이 읽기', '서버 연결 실패: ' + (e && e.message)); room = null; $('rmCreate').disabled = $('rmJoin').disabled = false; $('rmOut').querySelector('.cap').innerHTML = '<span class="err">방에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 해 보세요.</span>'; return; }
   room.outTrack = mic.stream.getAudioTracks()[0].clone();
   $('rmOut').hidden = true; $('rmIn').hidden = false; $('rmCodeTxt').textContent = code;
   history.replaceState(null, '', location.pathname + '?room=' + code + (qs.get('local') ? '&local=1' : ''));
@@ -883,7 +900,8 @@ function peer(id) {
   const ms = new MediaStream([room.outTrack]); pc.addTrack(room.outTrack, ms);
   pc.onicecandidate = e => { if (e.candidate) roomSend({ t: 'sig', to: id, ice: e.candidate.toJSON() }); };
   pc.ontrack = e => { if (!p.audio) { p.audio = new Audio(); p.audio.autoplay = true; p.audio.playsInline = true; } p.audio.srcObject = e.streams[0] || new MediaStream([e.track]); p.audio.play().catch(() => { $('rmHear').hidden = false; }); };
-  pc.onconnectionstatechange = () => { const s = pc.connectionState; p.state = s === 'connected' ? 'ok' : s === 'failed' || s === 'disconnected' ? 'bad' : 'wait'; if (s === 'failed') rmMsg(`${esc(nameOf(id))}님과 목소리를 직접 연결하지 못했어요(학교·회사 와이파이나 일부 데이터 망에서 막혀요). 읽기 진행과 녹음 합치기는 그대로 되니까, 전화를 따로 켜 두고 하세요.`); renderRoom(); };
+  pc.onconnectionstatechange = () => { const s = pc.connectionState; p.state = s === 'connected' ? 'ok' : s === 'failed' || s === 'disconnected' ? 'bad' : 'wait';
+    if (s === 'connected') pc.getStats().then(st => { let pair = null; st.forEach(r => { if (r.type === 'transport' && r.selectedCandidatePairId) pair = st.get(r.selectedCandidatePairId); }); if (!pair) st.forEach(r => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r; }); const lc = pair && st.get(pair.localCandidateId); p.route = lc ? lc.candidateType : ''; diag(); }).catch(() => {}); if (s === 'failed') rmMsg(`${esc(nameOf(id))}님과 목소리를 직접 연결하지 못했어요(학교·회사 와이파이나 일부 데이터 망에서 막혀요). 읽기 진행과 녹음 합치기는 그대로 되니까, 전화를 따로 켜 두고 하세요.`); renderRoom(); };
   return p;
 }
 async function callPeer(id) { try { const p = peer(id), o = await p.pc.createOffer(); await p.pc.setLocalDescription(o); roomSend({ t: 'sig', to: id, sdp: { type: p.pc.localDescription.type, sdp: p.pc.localDescription.sdp } }); } catch (_) {} }

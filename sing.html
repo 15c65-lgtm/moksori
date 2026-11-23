@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611240300">
-<script src="assets/report.js?v=202611240300"></script>
+<link rel="stylesheet" href="assets/style.css?v=202611240400">
+<script src="assets/report.js?v=202611240400"></script>
 </head>
 <body>
 <div class="wrap">
@@ -100,7 +100,7 @@
   </section>
 </div>
 
-<script src="assets/voicefeat.js?v=202611240300"></script>
+<script src="assets/voicefeat.js?v=202611240400"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -151,7 +151,7 @@ let ytApi = null;
 function ytLoadApi() { return ytApi || (ytApi = new Promise((res, rej) => { if (window.YT && YT.Player) return res(); window.onYouTubeIframeAPIReady = () => res(); const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; sc.onerror = () => { ytApi = null; rej(new Error('yt')); }; document.head.appendChild(sc); })); }
 async function ytSetup(id) {
   $('ytBox').hidden = !id; if (!id) return;
-  try { await ytLoadApi(); if (yt && ytReady) { yt.cueVideoById(id); return; } ytReady = false; yt = new YT.Player('ytPlayer', { videoId: id, playerVars: { playsinline: 1, rel: 0 }, events: { onReady: () => { ytReady = true; }, onStateChange: e => { if (e.data === 1) onStart(); else if (e.data === 2 || e.data === 0) onStop(e.data === 0); } } }); }
+  try { await ytLoadApi(); if (yt && ytReady) { yt.cueVideoById(id); return; } ytReady = false; yt = new YT.Player('ytPlayer', { videoId: id, playerVars: { playsinline: 1, rel: 0 }, events: { onReady: () => { ytReady = true; }, onError: e => { const c = e && e.data, m = c === 101 || c === 150 ? '영상 주인이 다른 사이트에서 틀지 못하게 막아 뒀어요. 다른 영상으로 해 보세요' : c === 100 ? '지워졌거나 비공개 영상이에요' : c === 2 ? '영상 주소가 잘못됐어요' : `영상을 틀지 못했어요 (오류 ${c})`; $('playMsg').innerHTML = `<span class="err">${m}</span>`; if (window.Diag) Diag.set('유튜브', m); }, onStateChange: e => { if (e.data === 1) onStart(); else if (e.data === 2 || e.data === 0) onStop(e.data === 0); } } }); }
   catch (_) { $('playMsg').innerHTML = '<span class="err">유튜브에 연결하지 못했어요.</span>'; }
 }
 
