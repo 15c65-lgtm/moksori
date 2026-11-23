@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css?v=202611240300">
+<script src="assets/report.js?v=202611240300"></script>
 </head>
 <body>
 <div class="wrap">
@@ -333,7 +334,7 @@ async function check(x, sr, raw) {
   if (loud - floor < 25) flags.push(['warn', '목소리와 잡음 차이가 작아요']);
   return { dur: x.length / sr, pkDb: 20 * Math.log10(pk + 1e-9), floor, f0, flags };
 }
-const checkHtml = c => `<span>길이 ${c.dur.toFixed(1)}초 · 가장 큰 소리 ${c.pkDb.toFixed(1)} dB · 잡음 ${c.floor.toFixed(0)} dB${Number.isFinite(c.f0) ? ` · 평균 높이 ${Math.round(c.f0)} Hz (${VF.note(c.f0)})` : ''}</span>` + (c.flags.length ? c.flags.map(([k, t]) => `<span class="ex-flag ${k}">${esc(t)}</span>`).join('') : '<span class="ex-flag ok">소리 상태 좋아요</span>');
+const checkHtml = c => (window.Diag && Diag.set('마지막 소리 점검', `${c.dur.toFixed(1)}초, 최대 ${c.pkDb.toFixed(1)} dB, 잡음 ${c.floor.toFixed(0)} dB, 높이 ${Number.isFinite(c.f0) ? Math.round(c.f0) : '–'} Hz, ${c.flags.map(f => f[1]).join(' / ') || '문제 없음'}`), 0) ||  `<span>길이 ${c.dur.toFixed(1)}초 · 가장 큰 소리 ${c.pkDb.toFixed(1)} dB · 잡음 ${c.floor.toFixed(0)} dB${Number.isFinite(c.f0) ? ` · 평균 높이 ${Math.round(c.f0)} Hz (${VF.note(c.f0)})` : ''}</span>` + (c.flags.length ? c.flags.map(([k, t]) => `<span class="ex-flag ${k}">${esc(t)}</span>`).join('') : '<span class="ex-flag ok">소리 상태 좋아요</span>');
 function stopPlay() { if (playing) { try { playing.stop(); } catch (_) {} playing = null; } }
 function playF32(x, sr) { stopPlay(); actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const b = actx.createBuffer(1, x.length, sr); b.copyToChannel(x, 0); const n = actx.createBufferSource(); n.buffer = b; n.connect(actx.destination); n.onended = () => { if (playing === n) playing = null; }; n.start(); playing = n; }
 $('mkPlay').addEventListener('click', () => { const t = MK.takes[MK.steps[MK.k].key]; if (t) playF32(t.pcm, MK.rate); });

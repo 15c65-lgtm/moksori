@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css?v=202611240300">
+<script src="assets/report.js?v=202611240300"></script>
 </head>
 <body>
 <div class="wrap">
@@ -496,6 +497,7 @@ async function stopRec() {
   if (x.length < RATE * 0.4) { $('recMsg').textContent = '소리가 거의 녹음되지 않았어요.'; if (scene) sceneNext(); return; }
   const t = { id: uid(), scriptId: curScript().id, line: r.line, lineText: lines.find(l => l.i === r.line).text, at: Date.now(), pcm: toI16(x), star: false, emo: $('emoSel').value };
   t.stats = analyze(x, t.lineText);
+  if (window.Diag) Diag.set('마지막 테이크', `${t.stats.dur.toFixed(1)}초, ${t.stats.rate.toFixed(1)}음절/초, 높이 ${Math.round(t.stats.f0) || '–'} Hz, 쉼 ${t.stats.pauses}번, 대사 「${t.lineText.slice(0, 30)}」`);
   const ref = await getRef(r.line); if (ref) t.sync = syncScore(ref.x, x);
   try { await DB.put(t); } catch (_) { $('recMsg').innerHTML = '<span class="err">저장하지 못했어요.</span>'; }
   takes.push(t); renderList(); renderPrompt(); renderTakes();

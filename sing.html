@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css?v=202611240300">
+<script src="assets/report.js?v=202611240300"></script>
 </head>
 <body>
 <div class="wrap">
@@ -208,6 +209,7 @@ function scoreView() {
   const li = lineAt(now()), L = SC.lines[li];
   $('accNow').textContent = L && L.n > 10 ? Math.round(L.hit / L.n * 100) + '%' : '–';
   $('accAll').textContent = SC.n > 20 ? Math.round(SC.hit / SC.n * 100) + '%' : '–';
+  if (window.Diag && SC.n > 20) Diag.set('노래 채점', `전체 ${Math.round(SC.hit / SC.n * 100)}%, 키 ${keyShift()}, 옥타브 무시 ${$('octFree').checked ? '켬' : '끔'}, 이어폰 ${$('phones').checked ? '켬' : '끔'}`);
 }
 function renderLineScores() {
   if (!SC || !guide) { $('lineScores').innerHTML = ''; return; }

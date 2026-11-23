@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css?v=202611240300">
+<script src="assets/report.js?v=202611240300"></script>
 </head>
 <body>
 <div class="wrap">
@@ -117,7 +118,7 @@ document.addEventListener('click', async e => {
 });
 function done(k, s) {
   const line = `${s.dur.toFixed(1)}초 · ${s.n}음절 · 빠르기 ${s.rate.toFixed(1)}음절/초 (쉼 뺀 말하는 빠르기 ${s.artic.toFixed(1)}) · 쉼 ${s.pauses}번`;
-  $(k + 'Stat').textContent = line;
+  $(k + 'Stat').textContent = line; if (window.Diag) Diag.set('발음 녹음', line);
   if (s.rate > 11) { $(k + 'Stat').textContent += ' · 글보다 녹음이 짧아요. 끝까지 읽었는지 확인해 주세요 (기록 안 남김)'; return; }
   if (k === 'tw') twRecord(s); if (k === 'dp') $('dpSave').disabled = false;
 }

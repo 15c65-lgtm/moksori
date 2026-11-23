@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css?v=202611240300">
+<script src="assets/report.js?v=202611240300"></script>
 </head>
 <body>
 <div class="wrap">
@@ -526,6 +527,7 @@ function rmFrame(fr, voiced, now) {
   const a = med(rmRecent.map(r => r.a)), b = med(rmRecent.map(r => r.b)), f = med(rmRecent.map(r => r.f0));
   $('rmM1').hidden = $('rmM2').hidden = false; $('rmM1').style.left = rmX(1, a) + '%'; $('rmM2').style.left = rmX(2, b) + '%';
   $('rmV1').textContent = Math.round(a) + ' Hz'; $('rmV2').textContent = Math.round(b) + ' Hz';
+  if (window.Diag) Diag.set('울림 재기', `첫째 ${Math.round(a)} / 둘째 ${Math.round(b)} Hz, 높이 ${Math.round(f)} Hz`);
   const w1 = a < 700 ? '첫 번째 울림은 아직 남자 쪽이에요. 침 삼킬 때처럼 목울대를 살짝 올려 보세요.' : a < 800 ? '첫 번째 울림이 거의 다 왔어요. 800을 넘기면 여자 칸이에요.' : a <= 1100 ? '첫 번째 울림이 여자 칸에 들어왔어요 ✓' : '첫 번째 울림이 아이 목소리 쪽이에요.';
   const w2 = b < 1350 ? '두 번째 울림은 남자 쪽이에요. 살짝 웃는 입으로, 혀를 높여 보세요.' : b < 1500 ? '두 번째 울림이 가까워졌어요. 입을 조금 더 작게 해 보세요.' : b <= 1800 ? '두 번째 울림이 여자 칸에 들어왔어요 ✓' : '두 번째 울림이 아이 목소리 쪽이에요.';
   const hi = f > 330 ? `<b class="warn">지금 높이(${Math.round(f)} Hz)에서는 울림 값이 크게 틀릴 수 있어요. 280 Hz 아래로 낮춰서 재 보세요.</b><br>` : f > 280 ? `<span class="warn">높이(${Math.round(f)} Hz)가 높아서 값이 조금 흔들릴 수 있어요.</span><br>` : '';

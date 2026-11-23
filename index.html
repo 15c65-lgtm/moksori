@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css?v=202611240300">
+<script src="assets/report.js?v=202611240300"></script>
 </head>
 <body>
 <div class="wrap">
@@ -89,6 +90,14 @@
 <script>
 (() => {
   try { const { ch } = Week.current(); if (ch) { document.getElementById('chHomeWho').textContent = `이번 주 대사 챌린지 · ${ch.character}`; document.getElementById('chHomeLine').textContent = `“${ch.line}”`; } } catch (_) {}
+})();
+(() => {
+  let U = {}; try { U = JSON.parse(localStorage.getItem('moksori.usage') || '{}'); } catch (_) {}
+  const tools = [...document.querySelectorAll('a.panel.tool')]; if (!tools.length) return;
+  const n = a => { const k = a.getAttribute('href').replace('.html', ''); return U[k] ? U[k].n : 0; }, total = tools.reduce((s, a) => s + n(a), 0);
+  tools.forEach(a => { if (!n(a)) { const p = a.querySelector('.pill'); if (p) p.textContent = '아직 안 써 봄'; } });
+  if (total < 5) return;
+  const box = tools[0].parentElement; tools.map((a, i) => [a, i]).sort((x, y) => n(y[0]) - n(x[0]) || x[1] - y[1]).forEach(([a]) => box.appendChild(a));
 })();
 (() => {
   const dk = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
