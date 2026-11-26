@@ -2,7 +2,7 @@
 // 페이지에서 지금 상태를 알려 주려면: Diag.set('울림', '920 / 1400 Hz')
 (() => {
   const PAGE = (location.pathname.split('/').pop() || 'index.html').replace('.html', '') || 'index';
-  const NAMES = { index: '첫 화면', mimic: '성대모사', yeomok: '여목 연습', range: '음역대', script: '대본 연습', collection: '내 모음집', challenge: '챌린지', exam: '공채 대비', sing: '노래 연습', pronounce: '발음 연습', routine: '오늘의 루틴' };
+  const NAMES = { index: '첫 화면', mimic: '성대모사', yeomok: '여목 연습', range: '음역대', script: '대본 연습', collection: '내 모음집', game: '게임', exam: '공채 대비', sing: '노래 연습', pronounce: '발음 연습', routine: '오늘의 루틴' };
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') || d; } catch (_) { return d; } };
   const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
   const day = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };

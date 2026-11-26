@@ -3,7 +3,7 @@ import asyncio, os, sys, json
 from playwright.async_api import async_playwright
 BASE = os.environ.get('BASE', 'http://localhost:8766/'); CH = os.environ.get('CHROME', '/usr/bin/google-chrome')
 FX = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
-PAGES = ['index', 'mimic', 'yeomok', 'range', 'script', 'collection', 'challenge', 'exam', 'sing', 'pronounce', 'routine']
+PAGES = ['index', 'mimic', 'yeomok', 'range', 'script', 'collection', 'game', 'exam', 'sing', 'pronounce', 'routine']
 results = []
 def ok(name, cond, info=''):
     results.append((name, bool(cond), info)); print(('PASS ' if cond else 'FAIL ') + name + (f'  ({info})' if info else ''))
@@ -75,9 +75,31 @@ async def t_report(p):
     await pg.click('.rp-btn'); await pg.fill('#rpText', '점검'); await pg.click('#rpCopy'); await pg.wait_for_timeout(200); t = await pg.evaluate('navigator.clipboard.readText()')
     ok('이상해요 알림 복사', '[목소리 연습실 문제 알림]' in t and '발음 연습' in t, t[:40]); await b.close()
 
+async def t_game(p):
+    b = await browser(p); pg = await page(b); await pg.goto(BASE + 'game.html'); await pg.wait_for_timeout(300)
+    r = await pg.evaluate("""() => { const T = GameT, o = [];
+      for (const L of [2, 5, 8]) { const s = T.pattern(L, 7 + L), x = T.synth(s, 165);
+        o.push([T.svScore(x, T.synth(s, 110, { tempo: 1.08 })).total, T.svScore(x, T.synth(s.map(q => q[0] === '_' ? q : [q[0], q[1], 3, 3]), 165)).total]); }
+      return o; }""")
+    ok('서바이벌: 같은 가락(낮은 목소리)은 높게', all(a >= 85 for a, _ in r), [round(a) for a, _ in r])
+    ok('서바이벌: 평평하게 부르면 낮게', all(f < 70 for _, f in r), [round(f) for _, f in r])
+    await b.close()
+    b = await browser(p, 'speech.wav'); pg = await page(b); await pg.goto(BASE + 'game.html#pt'); await pg.wait_for_timeout(300)
+    await pg.click('#ptAdd'); await pg.click('#ptStart')
+    for _ in range(3):
+        await pg.click('#ptRec'); await pg.wait_for_timeout(2300)
+        if 'on' in (await pg.get_attribute('#ptRec', 'class') or ''): await pg.click('#ptRec')
+        await pg.wait_for_selector('#ptNext:not([hidden])', timeout=5000); await pg.click('#ptNext')
+    await pg.click('#ptVotes button'); bd = await pg.inner_text('#ptBoard')
+    ok('돌려 하기: 순위·투표 점수', '5점' in bd and '2점' in bd, bd.replace('\n', ' / ')); ok('게임 페이지 오류 없음', not pg.errs, pg.errs)
+    await b.close()
+    b = await browser(p, 'singer.wav'); pg = await page(b); await pg.goto(BASE + 'game.html#fl'); await pg.wait_for_timeout(300)
+    await pg.click('#flStart'); await pg.wait_for_timeout(3000)
+    v = await pg.evaluate('GameT.fly.voicedT'); ok('목소리 비행기: 노래 소리로 날기', v > 1.5, f'{v:.1f}초'); await b.close()
+
 async def main():
     async with async_playwright() as p:
-        for t in (t_pages, t_meter, t_exam, t_sing, t_script, t_room, t_report):
+        for t in (t_pages, t_meter, t_exam, t_sing, t_script, t_room, t_report, t_game):
             try: await t(p)
             except Exception as e: ok(t.__name__ + ' 실행', False, str(e)[:200])
     bad = [r for r in results if not r[1]]; print(f'\n{len(results) - len(bad)}/{len(results)} 통과'); sys.exit(1 if bad else 0)

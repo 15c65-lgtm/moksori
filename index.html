@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611240400">
-<script src="assets/report.js?v=202611240400"></script>
+<link rel="stylesheet" href="assets/style.css?v=202611260900">
+<script src="assets/report.js?v=202611260900"></script>
 </head>
 <body>
 <div class="wrap">
@@ -30,11 +30,6 @@
     <h2 style="margin-bottom:10px">최근 성대모사 연습</h2>
     <div class="recent" id="recent"></div>
   </section>
-
-  <a class="panel ch-home" href="challenge.html" id="chHome">
-    <div><div class="ch-who" id="chHomeWho">이번 주 대사 챌린지</div><div class="ch-home-line" id="chHomeLine">이번 주 대사로 겨뤄 보세요</div></div>
-    <span class="primary-sm ch-home-go">순위표 · 도전하기 →</span>
-  </a>
 
   <section class="tools">
     <a class="panel tool" href="mimic.html" style="--c: var(--imi)">
@@ -77,6 +72,11 @@
       <h2>노래 연습</h2>
       <p>반주나 원곡을 틀고 노래하면 내 음정을 그래프로 그려요. 가이드 파일을 넣으면 정답 음정과 겹쳐 보고 줄마다 정확도를 매겨요. 가사 시간 찍기, 줄 반복, 키 바꾸기, 반주와 섞어 저장, 음 맞추기 게임까지.</p>
     </a>
+    <a class="panel tool" href="game.html" style="--c: var(--imi)">
+      <span class="pill live">새로 생김</span>
+      <h2>게임</h2>
+      <p>따라 부르기 서바이벌(목숨 3개), 한 폰으로 여럿이 돌아가며 흉내 내는 돌려 하기(점수 + 투표), 목소리 높이로 벽 사이를 지나가는 목소리 비행기.</p>
+    </a>
     <a class="panel tool" href="collection.html" style="--c: var(--ref)">
       <span class="pill live">새로 생김</span>
       <h2>내 모음집</h2>
@@ -86,11 +86,7 @@
 
   <footer>목소리 연습실 · 분석은 모두 내 기기 안에서 이뤄져요.</footer>
 </div>
-<script src="assets/challenges.js?v=202611240400"></script>
 <script>
-(() => {
-  try { const { ch } = Week.current(); if (ch) { document.getElementById('chHomeWho').textContent = `이번 주 대사 챌린지 · ${ch.character}`; document.getElementById('chHomeLine').textContent = `“${ch.line}”`; } } catch (_) {}
-})();
 (() => {
   let U = {}; try { U = JSON.parse(localStorage.getItem('moksori.usage') || '{}'); } catch (_) {}
   const tools = [...document.querySelectorAll('a.panel.tool')]; if (!tools.length) return;

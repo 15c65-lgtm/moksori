@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611240400">
-<script src="assets/report.js?v=202611240400"></script>
+<link rel="stylesheet" href="assets/style.css?v=202611260900">
+<script src="assets/report.js?v=202611260900"></script>
 </head>
 <body>
 <div class="wrap">
@@ -21,11 +21,6 @@
     </div>
     <div class="tally" id="tally">STANDBY</div>
   </header>
-
-  <section class="panel ch-banner" id="chBanner" hidden>
-    <div><div class="ym-lab" id="chWeek">이번 주 대사 챌린지</div><div class="ch-banner-line" id="chLine"></div><div class="ym-sub" id="chWho"></div></div>
-    <a href="challenge.html" class="ch-yt">순위표 보기 →</a>
-  </section>
 
   <section class="channels">
     <div class="panel ch" style="--c: var(--ref)" id="chA">
@@ -101,14 +96,6 @@
         <button type="button" class="primary-sm" id="saveBtn">보관함에 저장</button>
         <span class="save-msg" id="saveMsg"></span>
       </div>
-      <div class="ch-submit" id="chSubmit" hidden>
-        <div class="ch-checks" id="chChecks"></div>
-        <div class="ch-nick">
-          <input type="text" id="chNick" maxlength="12" placeholder="닉네임 (2~12자)" aria-label="챌린지 닉네임">
-          <button type="button" class="primary-sm" id="chSend">챌린지에 제출</button>
-        </div>
-        <p class="cap" id="chMsg"></p>
-      </div>
     </div>
   </section>
 
@@ -178,9 +165,6 @@
 <script src="assets/core.js"></script>
 <script src="assets/ai.js"></script>
 <script src="assets/store.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
-<script src="assets/challenges.js?v=202611240400"></script>
-<script src="assets/board.js?v=202611240400"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -225,7 +209,6 @@ async function toMono16k(buf) {
   return Float32Array.from(r.getChannelData(0));
 }
 async function loadFile(slot, file) {
-  if (slot === 'B' && typeof CHX !== 'undefined' && CHX) { $('nameB').innerHTML = '<span class="err">챌린지에서는 내 모사를 마이크로 직접 녹음해야 해요. ● 녹음을 눌러 주세요.</span>'; return; }
   const nameEl = $('name' + slot);
   nameEl.innerHTML = `<b>${esc(file.name)}</b> 불러오는 중…`;
   try {
@@ -247,7 +230,6 @@ async function loadBuffer(slot, name, buf, source) {
   $('run').disabled = false;
   $('hint').textContent = slots.A.demo || slots.B.demo ? (slots.A.demo ? '이제 원본 목소리도 올리거나 녹음해 주세요.' : '이제 내 성대모사를 녹음해 주세요.') : '준비됐어요. 비교 결과를 확인하세요.';
   if (!slots.A.demo && !slots.B.demo) run();
-  updateChallenge();
 }
 
 // ---- 마이크 녹음 ----
@@ -503,7 +485,7 @@ async function runAI(entry) {
     const c = VoiceAI.cos(slots.A.emb, slots.B.emb), v = VoiceAI.score(c);
     aiBody(`<div class="ai-num" style="color: var(${tone(v)})">${Math.round(v)}</div><div class="ai-lab">${VoiceAI.label(v)}</div><div class="ai-sub">화자 인증 모델 유사도 ${c.toFixed(3)} (같은 사람 기준 ≈ 0.86 이상)</div>`);
     if (entry) { entry.ai = v; saveHist(); renderHist(); }
-    lastAI = v; updateChallenge();
+    lastAI = v;
     if (savedRun && savedRun.token === runToken && window.Store) { try { const it = await Store.getItem(savedRun.id); if (it && it.ai == null) { it.ai = v; await Store.saveItem(it); libRefresh(); } } catch (_) {} }
   } catch (e) {
     if (my === aiToken) aiBody('<div class="ai-sub err">AI 분석에 실패했어요. 목소리가 1초 이상 들어 있는지 확인해 주세요.</div>');
@@ -619,7 +601,6 @@ const fmtDate = ts => { const d = new Date(ts), p = n => String(n).padStart(2, '
 const folderName = id => id ? ((folders.find(f => f.id === id) || {}).name || '미분류') : '미분류';
 function libNote(s, err) { $('libMsg').innerHTML = err ? `<span class="err">${s}</span>` : s; }
 function updateSaveBar() {
-  updateChallenge();
   const ok = last && !slots.A.demo && !slots.B.demo;
   $('saveBar').classList.toggle('off', !ok);
   $('saveBtn').disabled = !ok;
@@ -773,64 +754,6 @@ $('importFile').addEventListener('change', async e => {
   catch (_) { libNote('목소리 연습실 백업 파일이 아니에요. 「백업 내보내기」로 만든 .json 파일을 골라 주세요.', true); }
 });
 libRefresh();
-
-// ---- 이번 주 대사 챌린지 모드 (mimic.html?challenge) ----
-const CHM = new URLSearchParams(location.search).has('challenge') && window.Week ? Week.current() : null;
-const CHX = CHM && CHM.ch && CHM.ch.youtube ? CHM : null;
-let chSentToken = -1, chNickLoaded = false;
-const chKey = () => CHX ? `yt:${CHX.ch.youtube}:${+CHX.ch.start}:${+CHX.ch.end}` : '';
-function updateChallenge() {
-  if (!CHX || !$('chSubmit')) return;
-  const ready = last && !slots.A.demo && !slots.B.demo;
-  $('chSubmit').hidden = false;
-  const okA = slots.A && slots.A.source === chKey(), okB = slots.B && slots.B.source === 'mic' && !slots.B.demo, okAI = ready && lastAI != null;
-  const copy = ready && (last.overall >= 97 || (lastAI != null && lastAI >= 97));
-  const item = (ok, wait, txt) => `<span class="${ok ? 'ok' : wait ? 'wait' : 'no'}">${ok ? '✓' : wait ? '…' : '✗'} ${txt}</span>`;
-  $('chChecks').innerHTML = item(okA, false, okA ? '원본: 이번 주 구간 캡처' : '원본: 위 유튜브에서 ● 구간 캡처 필요') + item(okB, false, okB ? '내 모사: 마이크 녹음' : '내 모사: ● 녹음으로 직접 녹음') + item(okAI, ready && okA && okB, okAI ? `AI 닮음 ${Math.round(lastAI)}점` : 'AI 닮음 점수 계산 중');
-  const sent = chSentToken === runToken;
-  $('chSend').disabled = !(okA && okB && okAI) || copy || sent;
-  $('chSend').textContent = sent ? '제출 완료' : `챌린지에 제출${ready ? ` (총점 ${(last.overall * 0.7 + (lastAI != null ? lastAI : last.overall) * 0.3).toFixed(1)})` : ''}`;
-  if (copy) $('chMsg').innerHTML = '<span class="err">원본과 거의 똑같아요. 원본 소리가 마이크로 그대로 들어간 건 아닌지 확인하고, 이어폰을 끼고 다시 녹음해 주세요.</span>';
-  else if (!sent && okA && okB && okAI) $('chMsg').textContent = '좋아요! 제출하면 이번 주 순위표에 올라가요. 최고 점수만 반영돼서 여러 번 도전해도 괜찮아요.';
-}
-async function chLoadNick() {
-  if (chNickLoaded) return; chNickLoaded = true;
-  try { const me = await Board.me(); if (me && me.nickname) $('chNick').value = me.nickname; } catch (_) {}
-}
-$('chSend').addEventListener('click', async () => {
-  if (!CHX || !last) return;
-  const nick = $('chNick').value.trim(), bad = Board.checkNick(nick);
-  if (bad) { $('chMsg').innerHTML = `<span class="err">${esc(bad)}</span>`; $('chNick').focus(); return; }
-  $('chSend').disabled = true; $('chMsg').textContent = '제출하는 중…';
-  const token = runToken, parts = Object.fromEntries(Object.entries(last.parts).map(([k, v]) => [k, isNaN(v) ? null : Math.round(v)]));
-  try {
-    const me = await Board.me();
-    if (!me || me.nickname !== nick) await Board.setNickname(nick);
-    await Board.submit(CHX.id, last.overall, lastAI, parts);
-    chSentToken = token;
-    const mine = await Board.mine(CHX.id);
-    $('chMsg').innerHTML = mine ? `제출했어요! 이번 주 <b>${mine.rank}위</b>, 내 최고 총점 <b>${mine.total}</b>. <a href="challenge.html">순위표 보기 →</a>` : '제출했어요! <a href="challenge.html">순위표 보기 →</a>';
-  } catch (e) { $('chMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
-  updateChallenge();
-});
-if (CHM) {
-  $('chBanner').hidden = false;
-  if (!CHX) { $('chLine').textContent = CHM.ch ? `“${CHM.ch.line}”` : '이번 주 대사가 아직 없어요'; $('chWho').textContent = '원본 영상이 준비되면 도전할 수 있어요.'; }
-  else {
-    const c = CHX.ch;
-    $('chWeek').textContent = `${CHX.id} 이번 주 대사 챌린지 · ${Week.label(CHX.id)}`;
-    $('chLine').textContent = `“${c.line}”`; $('chWho').textContent = `${c.character} · ${c.work}${c.tip ? ' — ' + c.tip : ''}`;
-    aiWanted = true; // 챌린지는 AI 닮음 점수가 필요해요
-    setTab(true); document.querySelector('.tabs').hidden = true;
-    $('ytUrl').value = `https://youtu.be/${c.youtube}?t=${Math.floor(c.start)}`; $('ytUrl').readOnly = true; $('ytLoad').hidden = true;
-    ytOpen().then(() => { $('ytStart').value = fmtTime(+c.start); $('ytEnd').value = fmtTime(+c.end); ytMsg(`이번 주 원본 구간(${fmtTime(+c.start)}~${fmtTime(+c.end)})이 정해져 있어요. <b>● 구간 캡처</b>를 누르고 공유 창에서 <b>이 탭</b>과 <b>탭 오디오 공유</b>를 켜 주세요.`); });
-    for (const id of ['ytStart', 'ytEnd']) $(id).readOnly = true;
-    for (const id of ['ytSetS', 'ytSetE']) $(id).hidden = true;
-    const fb = document.querySelector('#chB .filebtn'); if (fb) fb.hidden = true;
-    $('nameB').textContent = '● 녹음을 누르고 대사를 따라 하세요. 챌린지는 마이크 녹음만 받아요.';
-    chLoadNick();
-  }
-}
 
 // ---- 시작: 예시 합성음으로 채워 두기 ----
 const xa = synth(SEQ), xb = synth(SEQ, { pitch: 1.12, tempo: 1.12, fscale: 1.07, flat: 0.6 });
