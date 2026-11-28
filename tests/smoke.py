@@ -75,31 +75,77 @@ async def t_report(p):
     await pg.click('.rp-btn'); await pg.fill('#rpText', '점검'); await pg.click('#rpCopy'); await pg.wait_for_timeout(200); t = await pg.evaluate('navigator.clipboard.readText()')
     ok('이상해요 알림 복사', '[목소리 연습실 문제 알림]' in t and '발음 연습' in t, t[:40]); await b.close()
 
+async def rec(pg, btn, wait=2300):
+    await pg.click(btn); await pg.wait_for_timeout(wait)
+    if 'on' in (await pg.get_attribute(btn, 'class') or ''): await pg.click(btn)
+    await pg.wait_for_timeout(700)
+
 async def t_game(p):
     b = await browser(p); pg = await page(b); await pg.goto(BASE + 'game.html'); await pg.wait_for_timeout(300)
     r = await pg.evaluate("""() => { const T = GameT, o = [];
       for (const L of [2, 5, 8]) { const s = T.pattern(L, 7 + L), x = T.synth(s, 165);
         o.push([T.svScore(x, T.synth(s, 110, { tempo: 1.08 })).total, T.svScore(x, T.synth(s.map(q => q[0] === '_' ? q : [q[0], q[1], 3, 3]), 165)).total]); }
-      return o; }""")
-    ok('서바이벌: 같은 가락(낮은 목소리)은 높게', all(a >= 85 for a, _ in r), [round(a) for a, _ in r])
-    ok('서바이벌: 평평하게 부르면 낮게', all(f < 70 for _, f in r), [round(f) for _, f in r])
+      const bp = T.battlePoints('A', { B: 72, C: 58 }), one = T.battlePoints('A', { B: 95 });
+      const y = T.synth(T.pattern(4, 3), 150), bk = [GM.backScore(y, GM.reverse(y)).score, GM.backScore(y, y).score];
+      return { o, bp: bp.pts, one: one.pts, bk }; }""")
+    o = r['o']
+    ok('서바이벌: 같은 가락(낮은 목소리)은 높게', all(a >= 85 for a, _ in o), [round(a) for a, _ in o])
+    ok('서바이벌: 평평하게 부르면 낮게', all(f < 70 for _, f in o), [round(f) for _, f in o])
+    ok('흉내 배틀 점수: 닮음 비례 + 등수 + 출제자', r['bp'] == {'B': 10, 'C': 7, 'A': 5} and r['one'] == {'B': 10, 'A': 0}, r)
+    ok('거꾸로 말하기: 제대로 100 근처, 그냥 말하면 0', r['bk'][0] >= 85 and r['bk'][1] <= 10, r['bk'])
     await b.close()
-    b = await browser(p, 'speech.wav'); pg = await page(b); await pg.goto(BASE + 'game.html#pt'); await pg.wait_for_timeout(300)
-    await pg.click('#ptAdd'); await pg.click('#ptStart')
+    b = await browser(p, 'speech.wav'); pg = await page(b); await pg.goto(BASE + 'game.html#bt'); await pg.wait_for_timeout(300)
+    await pg.click('#btStart')
     for _ in range(3):
-        await pg.click('#ptRec'); await pg.wait_for_timeout(2300)
-        if 'on' in (await pg.get_attribute('#ptRec', 'class') or ''): await pg.click('#ptRec')
-        await pg.wait_for_selector('#ptNext:not([hidden])', timeout=5000); await pg.click('#ptNext')
-    await pg.click('#ptVotes button'); bd = await pg.inner_text('#ptBoard')
-    ok('돌려 하기: 순위·투표 점수', '5점' in bd and '2점' in bd, bd.replace('\n', ' / ')); ok('게임 페이지 오류 없음', not pg.errs, pg.errs)
+        await rec(pg, '#btRec'); await pg.click('#btNext')
+    await pg.click('#btVotes button'); bd = await pg.inner_text('#btBoard')
+    ok('흉내 배틀(한 폰): 점수 차이가 남', len(set(l.split()[-1] for l in bd.split('\n') if l.strip())) >= 2, bd.replace('\n', ' / '))
+    await pg.goto(BASE + 'game.html?r=1#rl'); await pg.wait_for_timeout(300); await pg.click('#rlStart')
+    for k in range(3):
+        if k: await pg.click('#rlHear'); await pg.wait_for_timeout(200)
+        await rec(pg, '#rlRec'); await pg.click('#rlNext')
+    ch = await pg.inner_text('#rlChain'); ok('고장난 전화기(한 폰): 끝까지 비교', '살아남은 정도' in ch, ch.split('\n')[-1])
+    await pg.goto(BASE + 'game.html?r=2#bw'); await pg.wait_for_timeout(300); await rec(pg, '#bwRec1'); await rec(pg, '#bwRec2')
+    ok('거꾸로 말하기: 점수 나옴', '점' in await pg.inner_text('#bwMsg')); ok('게임 페이지 오류 없음', not pg.errs, pg.errs)
     await b.close()
     b = await browser(p, 'singer.wav'); pg = await page(b); await pg.goto(BASE + 'game.html#fl'); await pg.wait_for_timeout(300)
     await pg.click('#flStart'); await pg.wait_for_timeout(3000)
     v = await pg.evaluate('GameT.fly.voicedT'); ok('목소리 비행기: 노래 소리로 날기', v > 1.5, f'{v:.1f}초'); await b.close()
 
+async def t_gameroom(p):
+    b = await browser(p, 'speech.wav'); ctx = await b.new_context(viewport={'width': 900, 'height': 900}); P = []; errs = []
+    for n in ('가', '나', '다'):
+        pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)[:150])); await pg.goto(BASE + 'game.html?local=1'); await pg.fill('#onNick', n); P.append(pg)
+    A = P[0]; await A.click('#onCreate'); await A.wait_for_timeout(400); code = await A.inner_text('#onCodeTxt')
+    for x in P[1:]: await x.fill('#onCode', code); await x.click('#onJoin')
+    await A.wait_for_timeout(2500)
+    st = lambda pg: pg.evaluate('(()=>{const {S}=GameT.room(); return S?{phase:S.phase, g:S.g, score:S.score}:null})()')
+    ids = {await x.evaluate('GameT.room().R.me.id'): x for x in P}
+    await A.click('#onStart'); await A.wait_for_timeout(800)
+    s = await st(P[1]); ok('게임 방: 친구 폰도 같은 상태', s and s['phase'] == 'ask', s and s['phase'])
+    asker = ids[s['g']['asker']]; await rec(asker, '#gARec'); await asker.click('#gASend'); await A.wait_for_timeout(1500)
+    for x in P:
+        if x is not asker: await rec(x, '#gCRec'); await x.click('#gCSend')
+    await A.wait_for_timeout(1500)
+    for x in P:
+        bt = x.locator('#gVote [data-v]').first
+        if await bt.count(): await bt.click()
+    await A.wait_for_timeout(1500); s = await st(P[2])
+    ok('게임 방: 흉내 배틀 결과·점수', s['phase'] == 'res' and sum(s['score'].values()) > 0, s['score'])
+    await A.click('#onLobby'); await A.wait_for_timeout(500); await A.click('#onModes [data-m="who"]'); await A.click('#onStart'); await A.wait_for_timeout(800)
+    for x in P: await rec(x, '#gWRec'); await x.click('#gWSend')
+    await A.wait_for_timeout(3000)
+    for x in P:
+        sels = x.locator('#gGuess select')
+        for i in range(await sels.count()):
+            v = await sels.nth(i).evaluate('s=>[...s.options].map(o=>o.value).filter(Boolean)[0]'); await sels.nth(i).select_option(v)
+        await x.click('#gGSend')
+    await A.wait_for_timeout(1500); s = await st(P[1]); ok('게임 방: 누구 목소리? 끝까지', s['phase'] == 'wres', s['phase'])
+    ok('게임 방 오류 없음', not errs, errs); await b.close()
+
 async def main():
     async with async_playwright() as p:
-        for t in (t_pages, t_meter, t_exam, t_sing, t_script, t_room, t_report, t_game):
+        for t in (t_pages, t_meter, t_exam, t_sing, t_script, t_room, t_report, t_game, t_gameroom):
             try: await t(p)
             except Exception as e: ok(t.__name__ + ' 실행', False, str(e)[:200])
     bad = [r for r in results if not r[1]]; print(f'\n{len(results) - len(bad)}/{len(results)} 통과'); sys.exit(1 if bad else 0)

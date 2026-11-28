@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=202611260900">
-<script src="assets/report.js?v=202611260900"></script>
+<link rel="stylesheet" href="assets/style.css?v=202611281900">
+<script src="assets/report.js?v=202611281900"></script>
 </head>
 <body>
 <div class="wrap">
@@ -16,15 +16,60 @@
   <header>
     <div>
       <h1>게임</h1>
-      <p class="sub">놀면서 귀와 목을 같이 키우는 게임이에요. 녹음은 이 기기 안에서만 분석하고 어디에도 올리지 않아요.</p>
+      <p class="sub">놀면서 귀와 목을 같이 키우는 게임이에요. 녹음은 내 기기에서 분석하고, 친구랑 할 때는 친구 폰으로만 보내요. 서버에는 저장하지 않아요.</p>
     </div>
     <div class="tally" id="tally">STANDBY</div>
   </header>
 
-  <section class="gm-pick" id="pick">
-    <button type="button" class="panel gm-card on" data-g="sv" style="--c: var(--imi)"><b>따라 부르기 서바이벌</b><span>혼자 · 기계가 부르는 짧은 가락을 듣고 따라 해요. 목숨 3개, 판이 갈수록 길고 어려워져요.</span></button>
-    <button type="button" class="panel gm-card" data-g="pt" style="--c: var(--ref)"><b>돌려 하기</b><span>2~6명 · 한 폰으로 돌아가며 한 명이 문제를 내고 나머지가 흉내 내요. 점수와 투표로 겨뤄요.</span></button>
-    <button type="button" class="panel gm-card" data-g="fl" style="--c: var(--good)"><b>목소리 비행기</b><span>혼자 · 목소리를 높이면 위로, 낮추면 아래로 날아요. 벽 사이 틈을 지나가요.</span></button>
+  <!-- ===== 친구랑 각자 폰으로 ===== -->
+  <section class="panel gm-room" id="onBox">
+    <div class="chart-head"><h2>친구랑 각자 폰으로 <span class="gm-new">NEW</span></h2><span class="cap" style="margin:0">2~8명 · 방 코드 하나로 모여요</span></div>
+    <div id="onOut">
+      <p class="cap" style="margin-top:0">한 명이 방을 만들고 코드를 알려 주면, 나머지는 자기 폰에서 들어와요. 방장이 게임을 고르면 모두의 폰에서 동시에 진행돼요. 같은 방에 있거나 통화를 켜 두면 더 재밌어요.</p>
+      <div class="gm-modes-mini">
+        <span><b>흉내 배틀</b> 돌아가며 문제 내고 흉내, 점수 + 투표</span>
+        <span><b>동시 서바이벌</b> 다 같이 같은 가락, 점수 낮으면 목숨 잃기</span>
+        <span><b>비행기 레이스</b> 같은 하늘, 친구 비행기가 보여요</span>
+        <span><b>누구 목소리?</b> 목소리 바꿔 말하고 누군지 맞히기</span>
+        <span><b>고장난 전화기</b> 앞사람 소리만 듣고 이어 가기</span>
+      </div>
+      <div class="sc-sub gm-join">
+        <input type="text" id="onNick" maxlength="10" placeholder="내 이름" aria-label="내 이름">
+        <button type="button" class="primary-sm" id="onCreate">방 만들기</button>
+        <span class="cap" style="margin:0">또는</span>
+        <input type="text" id="onCode" maxlength="6" placeholder="방 코드" aria-label="방 코드" class="rm-code-in">
+        <button type="button" id="onJoin">들어가기</button>
+      </div>
+      <p class="gm-msg" id="onOutMsg"></p>
+    </div>
+    <div id="onIn" hidden>
+      <div class="rm-head"><div><div class="ym-lab">방 코드</div><div class="rm-code" id="onCodeTxt"></div></div><button type="button" id="onCopy">초대 링크 복사</button><button type="button" id="onLeave">나가기</button></div>
+      <div class="rm-mem gm-mem" id="onMem"></div>
+      <div id="onHost" class="gm-host" hidden>
+        <div class="ym-lab">방장: 게임 고르기</div>
+        <div class="sc-tags" id="onModes"></div>
+        <div class="gm-opts" id="onOpts"></div>
+        <div class="sc-ctl"><button type="button" class="primary-sm" id="onStart">▶ 시작</button><button type="button" id="onForce" hidden>기다리지 않고 넘어가기</button><button type="button" id="onLobby" hidden>게임 그만 (대기실로)</button></div>
+      </div>
+      <div class="gm-stage" id="onStage"></div>
+      <p class="gm-msg" id="onMsg"></p>
+      <details class="rm-diag"><summary>연결 상태 보기</summary><ul id="onDiag"></ul></details>
+    </div>
+  </section>
+
+  <!-- ===== 혼자 / 한 폰 고르기 ===== -->
+  <section>
+    <div class="gm-group-h">혼자 하기</div>
+    <div class="gm-pick">
+      <button type="button" class="panel gm-card on" data-g="sv" style="--c: var(--imi)"><b>따라 부르기 서바이벌</b><span>기계가 부르는 짧은 가락을 듣고 따라 해요. 목숨 3개, 판이 갈수록 길고 어려워져요.</span></button>
+      <button type="button" class="panel gm-card" data-g="fl" style="--c: var(--good)"><b>목소리 비행기</b><span>목소리를 높이면 위로, 낮추면 아래로. 벽 사이 틈을 지나가요.</span></button>
+      <button type="button" class="panel gm-card" data-g="bw" style="--c: var(--warn)"><b>거꾸로 말하기</b><span>낱말을 뒤집어 틀어 주면 그 소리를 흉내 내요. 내 소리를 다시 뒤집으면… 원래 낱말이 들릴까요?</span></button>
+    </div>
+    <div class="gm-group-h">한 폰으로 여럿이</div>
+    <div class="gm-pick two">
+      <button type="button" class="panel gm-card" data-g="bt" style="--c: var(--ref)"><b>흉내 배틀</b><span>돌아가며 한 명이 문제를 내고 나머지가 흉내 내요. 닮을수록 점수, 문제가 딱 좋으면 출제자도 점수.</span></button>
+      <button type="button" class="panel gm-card" data-g="rl" style="--c: var(--imi)"><b>고장난 전화기</b><span>앞사람 소리만 듣고 따라 해서 다음 사람에게. 마지막에 처음 소리와 비교하면 대폭소.</span></button>
+    </div>
   </section>
 
   <!-- 1. 따라 부르기 서바이벌 -->
@@ -32,7 +77,7 @@
     <div class="chart-head"><h2>따라 부르기 서바이벌</h2><span class="cap" style="margin:0" id="svBest"></span></div>
     <div class="gm-opts" id="svOpts">
       <label>내 목소리 <select id="svVoice"><option value="110">낮은 편</option><option value="165">중간</option><option value="220">높은 편</option></select></label>
-      <span class="cap" style="margin:0">가락의 <b>높낮이 모양</b>과 <b>길이</b>로 채점해요. 한 옥타브 낮거나 높게 불러도 괜찮아요. "아~", "음~", "라라라" 아무거나요.</span>
+      <span class="cap" style="margin:0">가락의 <b>높낮이 모양</b>, <b>오르내림 폭</b>, <b>길이</b>로 채점해요. 한 옥타브 낮거나 높게 불러도 괜찮아요. "아~", "음~", "라라라" 아무거나요.</span>
     </div>
     <div class="gm-hud" id="svHud" hidden>
       <div><div class="ym-lab">판</div><div class="ym-num sm" id="svLv">1</div></div>
@@ -50,49 +95,104 @@
     <p class="cap gm-legend" id="svLegend" hidden><i style="background:var(--ref)"></i>문제 가락 <i style="background:var(--imi)"></i>내 소리 · 높이는 각자 가운데 높이에 맞춰 겹쳐 그려요.</p>
   </section>
 
-  <!-- 2. 돌려 하기 -->
-  <section class="panel gm-box" id="ptBox" hidden>
-    <div class="chart-head"><h2>돌려 하기</h2><span class="cap" style="margin:0" id="ptRound"></span></div>
-    <div id="ptSetup">
-      <div class="gm-players" id="ptNames"></div>
-      <div class="sc-ctl">
-        <button type="button" id="ptAdd">+ 사람 추가</button>
-        <label class="gm-check"><input type="checkbox" id="ptVote" checked> 판마다 투표도 하기 (제일 닮은 사람 +2점)</label>
-      </div>
-      <p class="cap">차례대로 한 명이 문제를 내요. 대사, 캐릭터 흉내, 동물 소리, 효과음, 노래 한 소절 뭐든 좋아요. 나머지는 듣고 똑같이 따라 해요. 음색·높이·억양·발음·리듬·강세를 비교한 닮음 점수로 1등 3점, 2등 2점, 3등 1점을 받아요.</p>
-      <div class="sc-ctl"><button type="button" class="primary-sm" id="ptStart">게임 시작</button></div>
-    </div>
-    <div id="ptPlay" hidden>
-      <div class="gm-turn" id="ptTurn"></div>
-      <div class="sc-ctl" id="ptCtl">
-        <button type="button" class="rec" id="ptRec">● 녹음</button>
-        <label class="filebtn" id="ptFileBtn">파일로 내기<input type="file" id="ptFile" accept="audio/*,video/*"></label>
-        <button type="button" id="ptOrig">▶ 문제 듣기</button>
-        <button type="button" id="ptRedo" hidden>다시 하기</button>
-        <button type="button" class="primary-sm" id="ptNext" hidden>다음 사람 ▶</button>
-      </div>
-      <p class="gm-msg" id="ptMsg"></p>
-      <div id="ptResult" hidden>
-        <h3 class="gm-h3">이번 판 결과</h3>
-        <ol class="gm-rank" id="ptRank"></ol>
-        <div id="ptVoteBox" hidden><p class="cap">들어 보고, 다 같이 제일 닮았다고 생각하는 사람을 한 명 골라 주세요.</p><div class="sc-tags" id="ptVotes"></div></div>
-        <div class="sc-ctl"><button type="button" class="primary-sm" id="ptNextRound">다음 판 ▶</button><button type="button" id="ptEnd">게임 끝내기</button></div>
-      </div>
-      <h3 class="gm-h3">누적 점수</h3>
-      <ol class="gm-rank board" id="ptBoard"></ol>
-    </div>
-  </section>
-
-  <!-- 3. 목소리 비행기 -->
+  <!-- 2. 목소리 비행기 -->
   <section class="panel gm-box" id="flBox" hidden>
     <div class="chart-head"><h2>목소리 비행기</h2><span class="cap" style="margin:0" id="flBest"></span></div>
     <div class="gm-opts">
-      <label>높이 범위 <select id="flRange"></select></label>
+      <label>높이 범위 <select id="flRange" class="gm-range"></select></label>
       <label>빠르기 <select id="flSpeed"><option value="0.8">느리게</option><option value="1" selected>보통</option><option value="1.3">빠르게</option></select></label>
     </div>
     <div class="gm-fly"><canvas id="flCv" height="300"></canvas><div class="gm-fly-score" id="flScore">0</div></div>
     <div class="sc-ctl"><button type="button" class="primary-sm" id="flStart">● 시작</button><span class="cap" style="margin:0" id="flNow"></span></div>
-    <p class="gm-msg" id="flMsg">소리를 내지 않으면 비행기가 천천히 내려가요. "우~" 하고 높이를 오르내리며 틈을 지나가 보세요. 여목 연습이라면 높은 범위로 두고 가볍게 해 보세요. 목이 아프면 바로 쉬어요.</p>
+    <p class="gm-msg" id="flMsg">소리를 내지 않으면 비행기가 천천히 내려가요. "우~" 하고 높이를 오르내리며 틈을 지나가 보세요. ⭐을 먹으면 1점 더. 여목 연습이라면 높은 범위로 두고 가볍게 해 보세요. 목이 아프면 바로 쉬어요.</p>
+  </section>
+
+  <!-- 3. 거꾸로 말하기 -->
+  <section class="panel gm-box" id="bwBox" hidden>
+    <div class="chart-head"><h2>거꾸로 말하기</h2><span class="cap" style="margin:0" id="bwBest"></span></div>
+    <div class="gm-steps">
+      <div class="gm-step" id="bwS1"><div class="gm-sn">1</div><div>
+        <div>낱말: <b class="gm-word" id="bwWord"></b> <button type="button" class="linkbtn" id="bwNewWord">다른 낱말</button></div>
+        <div class="sc-ctl"><button type="button" class="rec" id="bwRec1">● 그냥 말하기</button><label class="filebtn">파일로<input type="file" id="bwFile" accept="audio/*,video/*"></label></div>
+        <p class="cap" style="margin:4px 0 0">먼저 낱말을 평소처럼 또박또박 말해서 녹음해요. 다른 낱말을 말해도 돼요.</p>
+      </div></div>
+      <div class="gm-step" id="bwS2"><div class="gm-sn">2</div><div>
+        <div class="sc-ctl"><button type="button" id="bwRev">▶ 거꾸로 듣기</button><button type="button" class="rec" id="bwRec2">● 거꾸로 흉내</button></div>
+        <p class="cap" style="margin:4px 0 0">뒤집힌 소리를 여러 번 듣고 그 소리를 그대로 흉내 내요. 이상하게 들려도 들리는 대로!</p>
+      </div></div>
+      <div class="gm-step" id="bwS3"><div class="gm-sn">3</div><div>
+        <div class="sc-ctl"><button type="button" class="primary-sm" id="bwFlip">▶ 내 소리 다시 뒤집기</button><button type="button" id="bwMine">▶ 내 흉내 그대로</button><button type="button" id="bwOrig">▶ 원래 낱말</button></div>
+        <p class="gm-msg" id="bwMsg"></p>
+      </div></div>
+    </div>
+    <div class="gm-opts"><label>도전자 <input type="text" id="bwWho" maxlength="10" placeholder="이름 (여럿이 하면)"></label><span class="cap" style="margin:0">같은 낱말로 폰을 돌려 가며 하면 아래에 순위가 쌓여요.</span></div>
+    <ol class="gm-rank" id="bwRank"></ol>
+  </section>
+
+  <!-- 한 폰 여럿: 사람 목록 (흉내 배틀·고장난 전화기 같이 씀) -->
+  <section class="panel gm-box" id="plBox" hidden>
+    <div class="chart-head"><h2>누가 하나요?</h2><span class="cap" style="margin:0">2~8명 · 순서대로 폰을 넘겨요</span></div>
+    <div class="gm-players" id="plNames"></div>
+    <div class="sc-ctl"><button type="button" id="plAdd">+ 사람 추가</button></div>
+  </section>
+
+  <!-- 4. 흉내 배틀 (한 폰) -->
+  <section class="panel gm-box" id="btBox" hidden>
+    <div class="chart-head"><h2>흉내 배틀</h2><span class="cap" style="margin:0" id="btRound"></span></div>
+    <div id="btSetup">
+      <div class="gm-opts">
+        <label class="gm-check"><input type="checkbox" id="btVote" checked> 판마다 투표 (한 표 +3)</label>
+        <label>문제 듣기 <select id="btListens"><option value="0">마음대로</option><option value="2">2번까지</option><option value="1">딱 1번 (어려움)</option></select></label>
+        <label>판 수 <select id="btRounds"><option value="1">한 바퀴</option><option value="2" selected>두 바퀴</option><option value="0">끝없이</option></select></label>
+      </div>
+      <div class="gm-rule"><b>점수 규칙</b> · 따라 한 사람: 닮음 점수 10점마다 1점, 2명 이상이면 1등 +3 · 2등 +1 · 문제 낸 사람: 따라 한 사람들 평균이 45~80점이면 <b>딱 좋은 문제 +5</b> (너무 쉽거나 너무 어려우면 0) · 투표 한 표 +3</div>
+      <div class="sc-ctl"><button type="button" class="primary-sm" id="btStart">게임 시작</button></div>
+    </div>
+    <div id="btPlay" hidden>
+      <div class="gm-turn" id="btTurn"></div>
+      <div class="gm-card-draw" id="btCard" hidden><span>문제 아이디어</span><b id="btCardTxt"></b><button type="button" class="linkbtn" id="btCardNew">다른 카드</button></div>
+      <div class="sc-ctl" id="btCtl">
+        <button type="button" class="rec" id="btRec">● 녹음</button>
+        <label class="filebtn" id="btFileBtn">파일로 내기<input type="file" id="btFile" accept="audio/*,video/*"></label>
+        <button type="button" id="btOrig">▶ 문제 듣기</button>
+        <button type="button" id="btRedo" hidden>다시 하기</button>
+        <button type="button" class="primary-sm" id="btNext" hidden>다음 사람 ▶</button>
+      </div>
+      <p class="gm-msg" id="btMsg"></p>
+      <div id="btResult" hidden>
+        <h3 class="gm-h3">이번 판 결과</h3>
+        <div class="gm-src" id="btSrc"></div>
+        <ol class="gm-rank" id="btRank"></ol>
+        <div id="btVoteBox" hidden><p class="cap">들어 보고, 다 같이 제일 닮았다고 생각하는 사람을 한 명 골라 주세요.</p><div class="sc-tags" id="btVotes"></div></div>
+        <div class="sc-ctl"><button type="button" class="primary-sm" id="btNextRound">다음 판 ▶</button><button type="button" id="btEnd">게임 끝내기</button></div>
+      </div>
+      <h3 class="gm-h3">누적 점수</h3>
+      <ol class="gm-rank board" id="btBoard"></ol>
+    </div>
+  </section>
+
+  <!-- 5. 고장난 전화기 (한 폰) -->
+  <section class="panel gm-box" id="rlBox" hidden>
+    <div class="chart-head"><h2>고장난 전화기</h2><span class="cap" style="margin:0" id="rlInfo"></span></div>
+    <div id="rlSetup">
+      <p class="cap" style="margin-top:0">첫 사람만 문제 카드를 보고 소리를 녹음해요. 다음 사람은 <b>바로 앞사람 녹음만</b> 듣고(2번까지) 따라 해요. 화면은 차례가 된 사람만 보세요! 마지막에 처음부터 끝까지 이어 듣고, 얼마나 변했는지 점수로 보여 줘요.</p>
+      <div class="sc-ctl"><button type="button" class="primary-sm" id="rlStart">시작</button></div>
+    </div>
+    <div id="rlPlay" hidden>
+      <div class="gm-turn" id="rlTurn"></div>
+      <div class="gm-card-draw" id="rlCard" hidden><span>비밀 문제 (첫 사람만 보기)</span><b id="rlCardTxt"></b><button type="button" class="linkbtn" id="rlCardNew">다른 카드</button></div>
+      <div class="sc-ctl" id="rlCtl">
+        <button type="button" id="rlHear">▶ 앞사람 소리 듣기 <small id="rlLeft"></small></button>
+        <button type="button" class="rec" id="rlRec">● 녹음</button>
+        <button type="button" class="primary-sm" id="rlNext" hidden>다음 사람에게 넘기기 ▶</button>
+      </div>
+      <p class="gm-msg" id="rlMsg"></p>
+      <div id="rlEnd" hidden>
+        <h3 class="gm-h3">처음부터 끝까지</h3>
+        <ol class="gm-chain" id="rlChain"></ol>
+        <div class="sc-ctl"><button type="button" class="primary-sm" id="rlAll">▶ 전부 이어 듣기</button><button type="button" id="rlFirstLast">▶ 처음 vs 마지막</button><button type="button" id="rlAgain">한 판 더</button></div>
+      </div>
+    </div>
   </section>
 
   <section class="panel">
@@ -105,223 +205,105 @@
   </section>
 </div>
 
-<script src="assets/core.js?v=202611260900"></script>
-<script src="assets/voicefeat.js?v=202611260900"></script>
+<script src="assets/core.js?v=202611281900"></script>
+<script src="assets/voicefeat.js?v=202611281900"></script>
+<script src="assets/game-core.js?v=202611281900"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
-const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const { esc, play, stopPlay, record, nn } = GM;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const KEY = 'moksori.game';
 let G = {}; try { G = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (_) {}
-G.sv = G.sv || { best: 0, bestLv: 0, plays: 0 }; G.fl = G.fl || { best: 0, plays: 0 }; G.pt = G.pt || { games: 0 };
+G.sv = G.sv || { best: 0, bestLv: 0, plays: 0 }; G.fl = G.fl || { best: 0, plays: 0 }; G.pt = G.pt || { games: 0 }; G.bw = G.bw || { best: {}, plays: 0 }; G.rl = G.rl || { games: 0 };
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(G)); } catch (_) {} };
 const tally = on => { $('tally').classList.toggle('on', !!on); $('tally').textContent = on ? on : 'STANDBY'; };
-const T = window.GameT = {};
-
-// ---- 공통: 소리 재생, 녹음 ----
-let actx = null;
-const ctx = () => { if (!actx) { const C = window.AudioContext || window.webkitAudioContext; actx = new C(); } if (actx.state === 'suspended') actx.resume(); return actx; };
-let playing = null;
-function play(x, rate = SR) {
-  stopPlay(); const c = ctx(), b = c.createBuffer(1, x.length, rate); b.getChannelData(0).set(x);
-  const s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(); playing = s;
-  return new Promise(r => { s.onended = () => { if (playing === s) playing = null; r(); }; });
-}
-function stopPlay() { if (playing) { try { playing.stop(); } catch (_) {} playing = null; } }
-async function to16k(buf, maxSec = 20) {
-  const dur = Math.min(buf.duration, maxSec), off = new OfflineAudioContext(1, Math.max(1, Math.ceil(dur * SR)), SR);
-  const s = off.createBufferSource(); s.buffer = buf; s.connect(off.destination); s.start();
-  const x = Float32Array.from((await off.startRendering()).getChannelData(0));
-  let pk = 0; for (const v of x) pk = Math.max(pk, Math.abs(v));
-  if (pk < 1e-4) throw new Error('silent');
-  if (pk < 0.3) for (let i = 0; i < x.length; i++) x[i] *= 0.3 / pk;
+GM.onRec = on => tally(on ? 'REC' : null);
+const T = window.GameT = { pattern: GM.pattern, synth: GM.synth, svScore: GM.svScore, battlePoints: GM.battlePoints };
+const errHtml = e => `<span class="err">${esc(e && e.message || e)}</span>`;
+// 녹음 버튼 공통: 누르면 녹음, 다시 누르면 멈춤
+async function recBtn(btn, msgEl, label, opts = {}) {
+  if (GM.recording()) { GM.stopRec(); return null; }
+  btn.textContent = '■ 멈춤'; btn.classList.add('on');
+  let x = null;
+  try { x = await record({ maxSec: 10, ...opts, onLevel: (s, lv, sp, mx) => { msgEl.innerHTML = GM.levelHtml(s, lv, sp, mx); } }); }
+  catch (e) { msgEl.innerHTML = errHtml(e); }
+  btn.textContent = label; btn.classList.remove('on');
+  if (!x && !msgEl.querySelector('.err')) msgEl.innerHTML = '<span class="err">너무 짧거나 소리가 작았어요. 다시 해 보세요.</span>';
   return x;
 }
-// 녹음: 말이 끝나고 조용해지면 저절로 멈춤. 결과는 16 kHz Float32Array
-let rec = null;
-async function record({ maxSec = 8, onLevel } = {}) {
-  if (rec) { rec.stop(); return null; }
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('이 브라우저에서는 마이크를 쓸 수 없어요.');
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
-  catch (_) { throw new Error('마이크 권한이 없어요. 주소창 자물쇠 아이콘에서 마이크를 허용해 주세요.'); }
-  stopPlay();
-  const c = ctx(), src = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(4096, 1, 1), mute = c.createGain(); mute.gain.value = 0;
-  const chunks = []; let n = 0, quiet = 0, quietDb = 0, spoke = false, minDb = 0;
-  tally('REC');
-  return new Promise(resolve => {
-    const stop = async () => {
-      if (!rec) return; rec = null;
-      proc.onaudioprocess = null; try { src.disconnect(); proc.disconnect(); mute.disconnect(); } catch (_) {}
-      stream.getTracks().forEach(t => t.stop()); tally(null);
-      const len = chunks.reduce((a, b) => a + b.length, 0);
-      if (len < c.sampleRate * 0.4) return resolve(null);
-      const buf = c.createBuffer(1, len, c.sampleRate), ch = buf.getChannelData(0); let o = 0;
-      for (const k of chunks) { ch.set(k, o); o += k.length; }
-      try { resolve(await to16k(buf)); } catch (_) { resolve(null); }
-    };
-    proc.onaudioprocess = e => {
-      const d = e.inputBuffer.getChannelData(0); chunks.push(new Float32Array(d)); n += d.length;
-      let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i];
-      const db = 10 * Math.log10(s / d.length + 1e-12), sec = n / c.sampleRate, dt = d.length / c.sampleRate;
-      if (chunks.length <= 3) minDb = chunks.length === 1 ? db : Math.min(minDb, db);
-      const on = db > Math.max(minDb + 12, -55);
-      if (on) { spoke = true; quiet = 0; } else if (spoke) quiet += dt;
-      if (onLevel) onLevel(sec, Math.min(1, Math.max(0, (db + 60) / 50)), spoke);
-      if ((spoke && quiet > 1.1 && sec > 0.8) || sec >= maxSec) stop();
-    };
-    src.connect(proc); proc.connect(mute); mute.connect(c.destination);
-    rec = { stop };
-  });
-}
-async function fileTo16k(f) {
-  const ab = await f.arrayBuffer(), c = ctx();
-  const buf = await new Promise((res, rej) => { const p = c.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); });
-  return to16k(buf);
-}
+T.recBtn = recBtn;
 
 // ---- 게임 고르기 ----
-const BOX = { sv: 'svBox', pt: 'ptBox', fl: 'flBox' };
-function pick(g) {
-  if (rec) rec.stop(); stopPlay(); if (fly.on) flyStop(true);
+const BOX = { sv: ['svBox'], fl: ['flBox'], bw: ['bwBox'], bt: ['plBox', 'btBox'], rl: ['plBox', 'rlBox'] };
+const ALLBOX = ['svBox', 'flBox', 'bwBox', 'plBox', 'btBox', 'rlBox'];
+let soloFly = null;
+function pick(g, scroll) {
+  GM.stopRec(); stopPlay(); if (soloFly && soloFly.on) soloFly.stop(true);
   document.querySelectorAll('.gm-card').forEach(b => b.classList.toggle('on', b.dataset.g === g));
-  for (const k in BOX) $(BOX[k]).hidden = k !== g;
-  try { history.replaceState(null, '', '#' + g); } catch (_) {}
-  if (g === 'fl') flyDraw();
+  for (const id of ALLBOX) $(id).hidden = !BOX[g].includes(id);
+  if (g === 'bt' && !$('btPlay').hidden) $('plBox').hidden = true;
+  if (g === 'rl' && !$('rlPlay').hidden) $('plBox').hidden = true;
+  try { if (!new URLSearchParams(location.search).get('room')) history.replaceState(null, '', location.pathname + location.search + '#' + g); } catch (_) {}
+  if (g === 'fl' && soloFly) soloFly.draw();
+  if (scroll) $(BOX[g][0]).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-document.querySelectorAll('.gm-card').forEach(b => b.addEventListener('click', () => pick(b.dataset.g)));
+document.querySelectorAll('.gm-card').forEach(b => b.addEventListener('click', () => pick(b.dataset.g, true)));
 
 // =========================================================
-// 1. 따라 부르기 서바이벌
+// 1. 따라 부르기 서바이벌 (혼자)
 // =========================================================
-function rng(seed) { let s = (Math.imul(seed >>> 0, 2654435761) ^ 0x9e3779b9) >>> 0 || 1; const f = () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; for (let i = 0; i < 6; i++) f(); return f; }
-// 판 L의 가락: [모음, 길이초, 시작반음, 끝반음] 또는 ['_', 쉼]
-function pattern(L, seed) {
-  for (let k = 0; k < 20; k++) { const p = pattern1(L, seed + k * 7919), v = p.filter(q => q[0] !== '_').flatMap(q => [q[2], q[3]]); if (Math.max(...v) - Math.min(...v) >= Math.min(5, 3 + L)) return p; }
-  return pattern1(L, seed);
-}
-function pattern1(L, seed) {
-  const r = rng(seed), n = Math.min(2 + Math.floor((L + 1) / 2), 7), w = Math.min(5 + L, 10), V = 'aoeui', out = [];
-  const step = (from, min) => { let v = from; for (let k = 0; k < 8; k++) { v = Math.round(r() * w); if (Math.abs(v - from) >= min) break; } return v; };
-  let prev = Math.round(r() * w);
-  for (let i = 0; i < n; i++) {
-    const a = i === 0 ? prev : step(prev, 2);
-    const b = L >= 3 && r() < 0.45 ? step(a, 2) : a;
-    out.push([V[Math.floor(r() * (L < 3 ? 2 : 5))], 0.24 + r() * 0.2 + (L < 3 ? 0.1 : 0), a, b]);
-    prev = b;
-    if (i < n - 1 && r() < (L < 3 ? 0.5 : 0.3)) out.push(['_', 0.07 + r() * 0.1]);
-  }
-  return out;
-}
-const VOW = { a: [750, 1150, 2500], i: [300, 2200, 2950], u: [350, 750, 2350], e: [480, 1800, 2550], o: [470, 850, 2450] };
-function synth(seq, base, { tempo = 1, shift = 0 } = {}) {
-  const out = []; let ph = 0;
-  const env = (f, F) => { let a = 0; F.forEach((fc, k) => { const bw = 70 + k * 45; a += (k ? 0.55 : 1) / (1 + ((f - fc) / bw) ** 2); }); return a * Math.exp(-f / 3200); };
-  const pad = s => { for (let i = 0; i < s * SR; i++) out.push(0); };
-  pad(0.25);
-  for (const [v, dur, a0, b0] of seq) {
-    const n = Math.round(dur * tempo * SR);
-    if (v === '_') { for (let i = 0; i < n; i++) out.push(0); continue; }
-    for (let i = 0; i < n; i++) {
-      const t = i / n, sm = t < 0.15 ? 0 : t > 0.85 ? 1 : (t - 0.15) / 0.7, semi = a0 + (b0 - a0) * (sm * sm * (3 - 2 * sm)) + shift;
-      const f0 = base * 2 ** (semi / 12) * (1 + 0.012 * Math.sin(2 * Math.PI * 5.2 * i / SR) * Math.min(1, t * 3));
-      ph += 2 * Math.PI * f0 / SR;
-      let s = 0; for (let h = 1; h * f0 < 6500; h++) s += env(h * f0, VOW[v]) * Math.sin(h * ph);
-      out.push(0.11 * s * Math.min(1, t * 12, (1 - t) * 8) + (Math.random() * 2 - 1) * 0.0015);
-    }
-  }
-  pad(0.25);
-  return Float32Array.from(out);
-}
-// 높낮이 모양 + 길이로 채점 (옥타브·조 무관)
-function contourOf(x) {
-  const F = extract(x), fr = F.frames, v = [];
-  let t0 = -1, t1 = -1;
-  fr.forEach((f, i) => { if (f.f0 > 0) { v.push({ i, m: 12 * Math.log2(f.f0 / 440) }); if (t0 < 0) t0 = i; t1 = i; } });
-  // 옥타브 튐 정리: 가운데 높이에서 8.5반음 넘게 벗어나면 12반음씩 당겨 옴 (가락 폭은 10반음까지)
-  let med = median(v.map(p => p.m));
-  for (const p of v) { while (p.m - med > 8.5) p.m -= 12; while (med - p.m > 8.5) p.m += 12; }
-  med = median(v.map(p => p.m));
-  return { pts: v.map(p => ({ t: t1 > t0 ? (p.i - t0) / (t1 - t0) : 0, m: p.m - med })), voiced: v.length, span: t1 - t0 + 1, med };
-}
-const resample = (a, n) => { if (a.length <= n) return a.slice(); const o = []; for (let k = 0; k < n; k++) { const s = Math.floor(k * a.length / n), e = Math.max(s + 1, Math.floor((k + 1) * a.length / n)); let m = 0; for (let i = s; i < e; i++) m += a[i]; o.push(m / (e - s)); } return o; };
-function dtwMad(A, B) {
-  const n = A.length, m = B.length, band = Math.max(Math.abs(n - m) + 3, Math.round(Math.max(n, m) * 0.12)), INF = 1e9;
-  const C = new Float64Array((n + 1) * (m + 1)).fill(INF), L = new Uint16Array((n + 1) * (m + 1)); C[0] = 0;
-  for (let i = 1; i <= n; i++) { const c = Math.round(i * m / n), lo = Math.max(1, c - band), hi = Math.min(m, c + band);
-    for (let j = lo; j <= hi; j++) { const d = Math.abs(A[i - 1] - B[j - 1]), k = i * (m + 1) + j;
-      const a = C[(i - 1) * (m + 1) + j - 1], b = C[(i - 1) * (m + 1) + j], e = C[i * (m + 1) + j - 1];
-      if (a <= b && a <= e) { C[k] = a + d; L[k] = L[(i - 1) * (m + 1) + j - 1] + 1; } else if (b <= e) { C[k] = b + d; L[k] = L[(i - 1) * (m + 1) + j] + 1; } else { C[k] = e + d; L[k] = L[i * (m + 1) + j - 1] + 1; } } }
-  const k = n * (m + 1) + m; return C[k] >= INF ? 99 : C[k] / Math.max(1, L[k]);
-}
-function svScore(ref, me) {
-  const R = contourOf(ref), M = contourOf(me);
-  if (M.voiced < 15) return { total: 0, none: true, R, M };
-  const A = resample(R.pts.map(p => p.m), 100), B = resample(M.pts.map(p => p.m), 100);
-  const mad = dtwMad(A, B), shape = 100 * Math.exp(-((mad / 1.7) ** 2));
-  const ratio = M.span / Math.max(1, R.span), len = 100 * Math.exp(-((Math.log(ratio) / 0.45) ** 2));
-  const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
-  const wR = q(A, 0.95) - q(A, 0.05), wM = q(B, 0.95) - q(B, 0.05), wide = 100 * Math.exp(-(((wM - wR) / 3) ** 2));
-  return { total: 0.55 * shape + 0.2 * wide + 0.25 * len, shape, wide, len, mad, ratio, wR, wM, R, M };
-}
-T.pattern = pattern; T.synth = synth; T.svScore = svScore;
-
-const sv = { on: false, L: 1, life: 3, sum: 0, seq: null, x: null, left: 2, seed: 0 };
-const need = L => Math.min(78, 60 + (L - 1) * 3);
-const svHudDraw = () => { $('svLv').textContent = sv.L; $('svLife').textContent = '♥'.repeat(sv.life) + '♡'.repeat(3 - sv.life); $('svSum').textContent = Math.round(sv.sum); $('svNeed').textContent = Math.round(need(sv.L)); $('svLeft').textContent = sv.left ? `(${sv.left})` : ''; $('svListen').disabled = !sv.on || !sv.left; };
+const sv = { on: false, L: 1, life: 3, sum: 0, seq: null, x: null, left: 2 };
+const svHudDraw = () => { $('svLv').textContent = sv.L; $('svLife').textContent = '♥'.repeat(sv.life) + '♡'.repeat(3 - sv.life); $('svSum').textContent = Math.round(sv.sum); $('svNeed').textContent = Math.round(GM.need(sv.L)); $('svLeft').textContent = sv.left ? `(${sv.left})` : ''; $('svListen').disabled = !sv.on || !sv.left; };
 const svBestDraw = () => { $('svBest').textContent = G.sv.plays ? `최고 ${Math.round(G.sv.best)}점 · ${G.sv.bestLv}판까지 · ${G.sv.plays}번 함` : ''; };
 svBestDraw();
 async function svRound() {
-  sv.seed = (Date.now() ^ (sv.L * 2654435761)) >>> 0; sv.seq = pattern(sv.L, sv.seed);
-  sv.x = synth(sv.seq, +$('svVoice').value); sv.left = 2; svHudDraw();
+  const seed = (Date.now() ^ (sv.L * 2654435761)) >>> 0; sv.seq = GM.pattern(sv.L, seed);
+  sv.x = GM.synth(sv.seq, +$('svVoice').value); sv.left = 2; svHudDraw();
   $('svRec').disabled = true; $('svMsg').textContent = `${sv.L}판 — 잘 들어 보세요.`;
   await play(sv.x);
   if (!sv.on) return;
   $('svRec').disabled = false; $('svMsg').textContent = '● 따라 하기를 누르고 불러 보세요.';
 }
-$('svStart').addEventListener('click', async () => {
-  ctx(); Object.assign(sv, { on: true, L: 1, life: 3, sum: 0 });
+$('svStart').addEventListener('click', () => {
+  GM.ctx(); Object.assign(sv, { on: true, L: 1, life: 3, sum: 0 });
   $('svHud').hidden = false; $('svOpts').hidden = true; $('svStart').textContent = '처음부터'; $('svCv').hidden = true; $('svLegend').hidden = true;
   svHudDraw(); svRound();
 });
-$('svListen').addEventListener('click', async () => { if (!sv.on || !sv.left || rec) return; sv.left--; svHudDraw(); await play(sv.x); });
-$('svRec').addEventListener('click', async () => {
-  if (!sv.on) return;
-  if (rec) { rec.stop(); return; }
-  $('svRec').textContent = '■ 멈춤'; $('svRec').classList.add('on'); $('svListen').disabled = true;
-  let x = null;
-  try { x = await record({ maxSec: 10, onLevel: (s, lv, spoke) => { $('svMsg').innerHTML = `<b>듣는 중 ${s.toFixed(1)}초</b> <span class="lvl"><i style="width:${lv * 100}%"></i></span>${spoke ? '' : ' 불러 보세요'}`; } }); }
-  catch (e) { $('svMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
-  $('svRec').textContent = '● 따라 하기'; $('svRec').classList.remove('on'); svHudDraw();
-  if (!x) { if (!$('svMsg').querySelector('.err')) $('svMsg').innerHTML = '<span class="err">소리가 잘 안 들렸어요. 다시 해 보세요.</span>'; return; }
-  const r = svScore(sv.x, x); svDraw(r);
-  if (r.none) { $('svMsg').innerHTML = '<span class="err">높낮이가 잡히지 않았어요. 속삭이지 말고 "아~"처럼 소리를 내서 다시 해 보세요. (목숨은 그대로예요)</span>'; return; }
-  const sc = Math.round(r.total), pass = r.total >= need(sv.L);
+$('svListen').addEventListener('click', async () => { if (!sv.on || !sv.left || GM.recording()) return; sv.left--; svHudDraw(); await play(sv.x); });
+function svJudge(r) {
   const tips = [];
   if (r.wR - r.wM > 2) tips.push(`오르내림이 좁았어요 (문제 ${r.wR.toFixed(1)}반음, 나 ${r.wM.toFixed(1)}반음).`);
   else if (r.wM - r.wR > 2.5) tips.push(`오르내림이 너무 컸어요 (문제 ${r.wR.toFixed(1)}반음, 나 ${r.wM.toFixed(1)}반음).`);
   if (r.ratio > 1.25) tips.push('조금 느렸어요.'); else if (r.ratio < 0.8) tips.push('조금 빨랐어요.');
   if (!tips.length && r.mad > 1.3) tips.push('높낮이 모양이 군데군데 달랐어요. 그래프에서 벌어진 곳을 보세요.');
-  const tip = tips.join(' ');
+  return tips.join(' ');
+}
+$('svRec').addEventListener('click', async () => {
+  if (!sv.on) return;
+  if (GM.recording()) { GM.stopRec(); return; }
+  $('svListen').disabled = true;
+  const x = await recBtn($('svRec'), $('svMsg'), '● 따라 하기', { maxSec: 10 }); svHudDraw();
+  if (!x) return;
+  const r = GM.svScore(sv.x, x); svDraw($('svCv'), r); $('svLegend').hidden = false;
+  if (r.none) { $('svMsg').innerHTML = '<span class="err">높낮이가 잡히지 않았어요. 속삭이지 말고 "아~"처럼 소리를 내서 다시 해 보세요. (목숨은 그대로예요)</span>'; return; }
+  const sc = Math.round(r.total), pass = r.total >= GM.need(sv.L), tip = esc(svJudge(r)), detail = `(모양 ${Math.round(r.shape)} · 폭 ${Math.round(r.wide)} · 길이 ${Math.round(r.len)})`;
   if (pass) {
     sv.sum += r.total;
-    $('svMsg').innerHTML = `<b class="gm-ok">통과! ${sc}점</b> (모양 ${Math.round(r.shape)} · 폭 ${Math.round(r.wide)} · 길이 ${Math.round(r.len)}) ${esc(tip)}`;
+    $('svMsg').innerHTML = `<b class="gm-ok">통과! ${sc}점</b> ${detail} ${tip}`;
     sv.L++; svHudDraw(); setTimeout(() => sv.on && svRound(), 1600);
   } else {
     sv.life--; svHudDraw();
-    if (sv.life > 0) { $('svMsg').innerHTML = `<b class="gm-no">${sc}점 — 목숨 하나 잃었어요.</b> (모양 ${Math.round(r.shape)} · 폭 ${Math.round(r.wide)} · 길이 ${Math.round(r.len)}) ${esc(tip)} 같은 판을 새 가락으로 다시 해요.`; setTimeout(() => sv.on && svRound(), 2200); }
-    else svOver(tip);
+    if (sv.life > 0) { $('svMsg').innerHTML = `<b class="gm-no">${sc}점 — 목숨 하나 잃었어요.</b> ${detail} ${tip} 같은 판을 새 가락으로 다시 해요.`; setTimeout(() => sv.on && svRound(), 2200); }
+    else {
+      sv.on = false; $('svRec').disabled = true; $('svListen').disabled = true; $('svOpts').hidden = false; $('svStart').textContent = '다시 시작';
+      G.sv.plays++; const nb = sv.sum > G.sv.best; if (nb) G.sv.best = sv.sum; G.sv.bestLv = Math.max(G.sv.bestLv, sv.L - 1); save(); svBestDraw();
+      $('svMsg').innerHTML = `<b class="gm-no">게임 끝!</b> ${sv.L - 1}판 통과, 총점 <b>${Math.round(sv.sum)}</b>${nb ? ' — <b class="gm-ok">새 최고 기록!</b>' : ''} ${tip}`;
+    }
   }
 });
-function svOver(tip) {
-  sv.on = false; $('svRec').disabled = true; $('svListen').disabled = true; $('svOpts').hidden = false; $('svStart').textContent = '다시 시작';
-  G.sv.plays++; const rec1 = sv.sum > G.sv.best;
-  if (rec1) G.sv.best = sv.sum; G.sv.bestLv = Math.max(G.sv.bestLv, sv.L - 1); save(); svBestDraw();
-  $('svMsg').innerHTML = `<b class="gm-no">게임 끝!</b> ${sv.L - 1}판 통과, 총점 <b>${Math.round(sv.sum)}</b>${rec1 ? ' — <b class="gm-ok">새 최고 기록!</b>' : ''} ${esc(tip || '')}`;
-}
-function svDraw(r) {
-  const cv = $('svCv'); cv.hidden = false; $('svLegend').hidden = false;
+function svDraw(cv, r) {
+  cv.hidden = false;
   const w = cv.clientWidth || 600, h = 150, dpr = devicePixelRatio || 1; cv.width = w * dpr; cv.height = h * dpr;
   const g = cv.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
   const all = [...r.R.pts, ...r.M.pts].map(p => p.m), lo = Math.min(-3, ...all), hi = Math.max(3, ...all);
@@ -333,196 +315,298 @@ function svDraw(r) {
 }
 
 // =========================================================
-// 2. 돌려 하기
+// 2. 목소리 비행기 (혼자 · 레이스에서도 같이 씀)
 // =========================================================
-const pt = { names: [], score: [], round: 0, src: null, srcF: null, order: [], k: 0, takes: {}, vote: true, voted: false };
-function ptNamesDraw() {
-  const el = $('ptNames'); const vals = [...el.querySelectorAll('input')].map(i => i.value);
-  const n = Math.max(2, vals.length || 3);
-  el.innerHTML = Array.from({ length: n }, (_, i) => `<div class="gm-pl"><input type="text" maxlength="10" value="${esc(vals[i] != null ? vals[i] : '')}" placeholder="${i + 1}번 사람" aria-label="${i + 1}번 사람 이름">${n > 2 ? `<button type="button" data-del="${i}" aria-label="빼기">✕</button>` : ''}</div>`).join('');
-  el.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => { b.parentElement.remove(); ptNamesDraw(); }));
-  $('ptAdd').disabled = n >= 6;
-}
-$('ptNames').innerHTML = '<input><input>'; ptNamesDraw();
-$('ptAdd').addEventListener('click', () => { const d = document.createElement('div'); d.innerHTML = '<input>'; $('ptNames').appendChild(d.firstChild); ptNamesDraw(); });
-$('ptStart').addEventListener('click', () => {
-  ctx();
-  pt.names = [...$('ptNames').querySelectorAll('input')].map((i, k) => i.value.trim() || `${k + 1}번`);
-  pt.score = pt.names.map(() => 0); pt.round = 0; pt.vote = $('ptVote').checked;
-  $('ptSetup').hidden = true; $('ptPlay').hidden = false; ptNewRound();
-});
-const host = () => pt.round % pt.names.length;
-function ptNewRound() {
-  pt.src = null; pt.srcF = null; pt.takes = {}; pt.voted = false; pt.k = -1;
-  pt.order = pt.names.map((_, i) => i).filter(i => i !== host());
-  $('ptRound').textContent = `${pt.round + 1}판`; $('ptResult').hidden = true; $('ptCtl').hidden = false;
-  ptTurn(); ptBoard();
-}
-function ptTurn() {
-  const who = pt.k < 0 ? host() : pt.order[pt.k], isHost = pt.k < 0;
-  $('ptTurn').innerHTML = isHost ? `<span class="gm-who" style="--c:var(--ref)">${esc(pt.names[who])}</span> 님이 문제를 내요` : `<span class="gm-who" style="--c:var(--imi)">${esc(pt.names[who])}</span> 님 차례 <small>(${pt.k + 1}/${pt.order.length})</small>`;
-  $('ptFileBtn').hidden = !isHost; $('ptOrig').hidden = isHost; $('ptRedo').hidden = true; $('ptNext').hidden = true; $('ptRec').hidden = false;
-  $('ptRec').textContent = isHost ? '● 문제 녹음' : '● 따라 하기';
-  $('ptMsg').textContent = isHost ? '다른 사람이 못 듣게 멀리 가서 녹음해도 되고, 다 같이 들어도 돼요. 20초까지, 말이 끝나고 조용하면 저절로 멈춰요.' : '▶ 문제 듣기로 원본을 듣고, ● 따라 하기를 눌러 똑같이 흉내 내요.';
-}
-function ptAfter(x) {
-  const isHost = pt.k < 0, who = isHost ? host() : pt.order[pt.k];
-  if (isHost) {
-    pt.src = x; pt.srcF = extract(x);
-    $('ptMsg').innerHTML = `문제를 녹음했어요 (${(x.length / SR).toFixed(1)}초). ▶ 들어 보고 괜찮으면 다음으로 넘겨요.`;
-    $('ptOrig').hidden = false;
-  } else {
-    const F = extract(x), res = compare(pt.srcF, F);
-    pt.takes[who] = { x, score: isNaN(res.overall) ? 0 : res.overall, parts: res.parts };
-    const p = res.parts, f = v => isNaN(v) ? '–' : Math.round(v);
-    $('ptMsg').innerHTML = `<b>${Math.round(pt.takes[who].score)}점</b> · 음색 ${f(p.timbre)} · 높이 ${f(p.pitch)} · 억양 ${f(p.into)} · 발음 ${f(p.pron)} · 리듬 ${f(p.rhythm)} · 강세 ${f(p.stress)} <button type="button" class="linkbtn" id="ptPlayMe">▶ 내 것 듣기</button>`;
-    $('ptPlayMe').addEventListener('click', () => play(x));
-  }
-  $('ptRec').hidden = true; $('ptRedo').hidden = false; $('ptNext').hidden = false;
-  $('ptNext').textContent = isHost || pt.k < pt.order.length - 1 ? '다음 사람 ▶' : '결과 보기 ▶';
-}
-$('ptRec').addEventListener('click', async () => {
-  if (rec) { rec.stop(); return; }
-  if (pt.k >= 0 && !pt.src) return;
-  $('ptRec').textContent = '■ 멈춤'; $('ptRec').classList.add('on');
-  let x = null;
-  try { x = await record({ maxSec: 20, onLevel: (s, lv) => { $('ptMsg').innerHTML = `<b>녹음 중 ${s.toFixed(1)}초</b> <span class="lvl"><i style="width:${lv * 100}%"></i></span>`; } }); }
-  catch (e) { $('ptMsg').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
-  $('ptRec').classList.remove('on'); $('ptRec').textContent = pt.k < 0 ? '● 문제 녹음' : '● 따라 하기';
-  if (!x) { if (!$('ptMsg').querySelector('.err')) $('ptMsg').innerHTML = '<span class="err">너무 짧거나 소리가 작았어요. 다시 녹음해 주세요.</span>'; return; }
-  ptAfter(x);
-});
-$('ptFile').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  try { ptAfter(await fileTo16k(f)); } catch (_) { $('ptMsg').innerHTML = '<span class="err">이 파일을 읽지 못했어요. wav나 mp3로 바꿔 보세요.</span>'; }
-});
-$('ptOrig').addEventListener('click', () => pt.src && play(pt.src));
-$('ptRedo').addEventListener('click', () => { if (pt.k < 0) pt.src = null; else delete pt.takes[pt.order[pt.k]]; ptTurn(); if (pt.k < 0 && pt.src) $('ptOrig').hidden = false; });
-$('ptNext').addEventListener('click', () => { stopPlay(); if (pt.k < pt.order.length - 1) { pt.k++; ptTurn(); } else ptShow(); });
-const PTS = [3, 2, 1];
-function ptShow() {
-  $('ptCtl').hidden = true; $('ptMsg').textContent = ''; $('ptTurn').innerHTML = `<span class="gm-who" style="--c:var(--ref)">${esc(pt.names[host()])}</span> 님 문제 결과`;
-  const ranked = pt.order.filter(i => pt.takes[i]).sort((a, b) => pt.takes[b].score - pt.takes[a].score);
-  ranked.forEach((i, r) => { pt.score[i] += PTS[r] || 0; });
-  $('ptRank').innerHTML = `<li class="src"><button type="button" data-pl="src">▶</button> 문제 · ${esc(pt.names[host()])}</li>` + ranked.map((i, r) => `<li><button type="button" data-pl="${i}">▶</button> <b>${esc(pt.names[i])}</b> <span class="gm-sc">${Math.round(pt.takes[i].score)}점</span> <small>+${PTS[r] || 0}</small></li>`).join('');
-  $('ptRank').querySelectorAll('[data-pl]').forEach(b => b.addEventListener('click', () => play(b.dataset.pl === 'src' ? pt.src : pt.takes[b.dataset.pl].x)));
-  $('ptVoteBox').hidden = !pt.vote || ranked.length < 2;
-  $('ptVotes').innerHTML = ranked.map(i => `<button type="button" class="sc-tag" data-v="${i}">${esc(pt.names[i])}</button>`).join('');
-  $('ptVotes').querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => {
-    if (pt.voted) return; pt.voted = true; pt.score[+b.dataset.v] += 2; b.classList.add('on'); b.textContent += ' +2'; ptBoard();
-  }));
-  $('ptResult').hidden = false; ptBoard();
-}
-function ptBoard() {
-  const ord = pt.names.map((_, i) => i).sort((a, b) => pt.score[b] - pt.score[a]);
-  $('ptBoard').innerHTML = ord.map(i => `<li><b>${esc(pt.names[i])}</b> <span class="gm-sc">${pt.score[i]}점</span></li>`).join('');
-}
-$('ptNextRound').addEventListener('click', () => { pt.round++; ptNewRound(); });
-$('ptEnd').addEventListener('click', () => {
-  const top = Math.max(...pt.score), win = pt.names.filter((_, i) => pt.score[i] === top);
-  G.pt.games++; save();
-  $('ptResult').hidden = true; $('ptCtl').hidden = true;
-  $('ptTurn').innerHTML = `🏆 <span class="gm-who" style="--c:var(--good)">${win.map(esc).join(', ')}</span> 님 우승! <small>(${pt.round + 1}판, ${top}점)</small>`;
-  $('ptMsg').innerHTML = '<button type="button" class="primary-sm" id="ptAgain">새 게임</button>';
-  $('ptAgain').addEventListener('click', () => { $('ptPlay').hidden = true; $('ptSetup').hidden = false; $('ptRound').textContent = ''; });
-});
-T.pt = pt;
-
-// =========================================================
-// 3. 목소리 비행기
-// =========================================================
-const NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const nn = m => NOTE[((Math.round(m) % 12) + 12) % 12] + (Math.floor(Math.round(m) / 12) - 1);
 const RANGES = [];
 try { const R = JSON.parse(localStorage.getItem('moksori.range') || '{}').results || [], r = R[R.length - 1]; if (r && r.low && (r.chest || r.fals)) { const lo = Math.round(r.low) + 2, hi = Math.round(Math.min(r.chest || r.fals, r.low + 22)) - 1; if (hi - lo >= 7) RANGES.push({ k: 'me', lo, hi, t: `내 음역대 기록 (${nn(lo)}–${nn(hi)})` }); } } catch (_) {}
 RANGES.push({ k: 'low', lo: 43, hi: 60, t: '낮은 목소리 (G2–C4)' }, { k: 'mid', lo: 50, hi: 67, t: '중간 (D3–G4)' }, { k: 'high', lo: 57, hi: 74, t: '높은 목소리 · 여목 (A3–D5)' });
-$('flRange').innerHTML = RANGES.map((r, i) => `<option value="${i}">${esc(r.t)}</option>`).join('');
-$('flRange').value = String(RANGES[0].k === 'me' ? 0 : RANGES.findIndex(r => r.k === 'mid'));
-const fly = { on: false, y: 0.5, vy: 0, walls: [], score: 0, t: 0, dist: 0, hz: 0, mic: null, raf: 0, lastT: 0, voicedT: 0 };
-T.fly = fly;
-const flBestDraw = () => { $('flBest').textContent = G.fl.plays ? `최고 ${G.fl.best}개 · ${G.fl.plays}번 함` : ''; };
-flBestDraw();
-const rangeNow = () => RANGES[+$('flRange').value] || RANGES[0];
-async function flyStart() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('flMsg').innerHTML = '<span class="err">이 브라우저에서는 마이크를 쓸 수 없어요.</span>'; return; }
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
-  catch (_) { $('flMsg').innerHTML = '<span class="err">마이크 권한이 없어요. 주소창 자물쇠 아이콘에서 마이크를 허용해 주세요.</span>'; return; }
-  const c = ctx(), src = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(2048, 1, 1), mute = c.createGain(); mute.gain.value = 0;
-  const st = new VF.Stream16k(c.sampleRate); let quiet = -60;
-  proc.onaudioprocess = e => {
-    st.push(e.inputBuffer.getChannelData(0)); const fr = VF.analyze(st.last(VF.N));
-    if (fr.db < quiet + 3) quiet = 0.9 * quiet + 0.1 * fr.db; else quiet += 0.02;
-    fly.hz = fr.f0 > 0 && fr.clarity > 0.55 && fr.db > Math.max(quiet + 10, -58) ? fr.f0 : 0;
+const fillRange = sel => { sel.innerHTML = RANGES.map((r, i) => `<option value="${i}">${esc(r.t)}</option>`).join(''); sel.value = String(RANGES[0].k === 'me' ? 0 : RANGES.findIndex(r => r.k === 'mid')); };
+fillRange($('flRange'));
+// 같은 seed면 벽과 별이 똑같이 나와요 (레이스용)
+function createFly({ cv, scoreEl, nowEl, rangeSel, speedSel, H = 300 }) {
+  const F = { on: false, y: 0.5, vy: 0, walls: [], stars: [], score: 0, t: 0, hz: 0, mic: null, raf: 0, lastT: 0, voicedT: 0, wi: 0, r: Math.random, ghosts: new Map(), onEnd: null, onTick: null };
+  const PX = 0.18, PR = 0.035;
+  const rangeNow = () => RANGES[+rangeSel.value] || RANGES[0];
+  F.start = async ({ seed, onEnd, onTick } = {}) => {
+    if (F.on) F.stop(true);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('이 브라우저에서는 마이크를 쓸 수 없어요.');
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+    catch (_) { throw new Error('마이크 권한이 없어요. 주소창 자물쇠 아이콘에서 마이크를 허용해 주세요.'); }
+    const c = GM.ctx(), src = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(2048, 1, 1), mute = c.createGain(); mute.gain.value = 0;
+    const st = new VF.Stream16k(c.sampleRate); let quiet = -60;
+    proc.onaudioprocess = e => {
+      st.push(e.inputBuffer.getChannelData(0)); const fr = VF.analyze(st.last(VF.N));
+      if (fr.db < quiet + 3) quiet = 0.9 * quiet + 0.1 * fr.db; else quiet += 0.02;
+      F.hz = fr.f0 > 0 && fr.clarity > 0.55 && fr.db > Math.max(quiet + 10, -58) ? fr.f0 : 0;
+    };
+    src.connect(proc); proc.connect(mute); mute.connect(c.destination);
+    F.mic = { stream, src, proc, mute };
+    Object.assign(F, { on: true, y: 0.85, vy: 0, walls: [], stars: [], score: 0, t: 0, lastT: performance.now(), voicedT: 0, wi: 0, r: GM.rng(seed != null ? seed : (Date.now() >>> 0)), onEnd, onTick });
+    if (rangeSel) rangeSel.disabled = true; if (speedSel) speedSel.disabled = true; tally('ON AIR');
+    F.raf = requestAnimationFrame(tick);
   };
-  src.connect(proc); proc.connect(mute); mute.connect(c.destination);
-  fly.mic = { stream, src, proc, mute };
-  Object.assign(fly, { on: true, y: 0.85, vy: 0, walls: [], score: 0, t: 0, dist: 0, lastT: performance.now(), voicedT: 0 });
-  $('flStart').textContent = '■ 그만'; $('flStart').classList.add('on'); $('flRange').disabled = true; $('flSpeed').disabled = true; tally('ON AIR');
-  $('flMsg').textContent = '소리를 내서 떠올라 보세요!';
-  fly.raf = requestAnimationFrame(flyTick);
-}
-function flyStop(silent) {
-  if (fly.mic) { const m = fly.mic; m.proc.onaudioprocess = null; try { m.src.disconnect(); m.proc.disconnect(); m.mute.disconnect(); } catch (_) {} m.stream.getTracks().forEach(t => t.stop()); fly.mic = null; }
-  cancelAnimationFrame(fly.raf); const was = fly.on; fly.on = false; fly.hz = 0;
-  $('flStart').textContent = '● 다시 시작'; $('flStart').classList.remove('on'); $('flRange').disabled = false; $('flSpeed').disabled = false; tally(null);
-  if (was && !silent && fly.t > 2) {
-    G.fl.plays++; const nb = fly.score > G.fl.best; if (nb) G.fl.best = fly.score; save(); flBestDraw();
-    $('flMsg').innerHTML = `<b class="gm-no">쾅!</b> 벽 <b>${fly.score}개</b> 통과${nb && fly.score ? ' — <b class="gm-ok">새 최고 기록!</b>' : ''}. 소리 낸 시간 ${fly.voicedT.toFixed(0)}초.`;
-  }
-}
-$('flStart').addEventListener('click', () => fly.on ? flyStop() : flyStart());
-const PX = 0.18, PR = 0.035; // 비행기 가로 위치(비율), 반지름(높이 비율)
-function flyTick(now) {
-  if (!fly.on) return;
-  const dt = Math.min(0.05, (now - fly.lastT) / 1000); fly.lastT = now; fly.t += dt;
-  const R = rangeNow(), sp = +$('flSpeed').value;
-  if (fly.hz > 0) {
-    fly.voicedT += dt;
-    const m = 12 * Math.log2(fly.hz / 440) + 69, tgt = 1 - Math.max(0, Math.min(1, (m - R.lo) / (R.hi - R.lo)));
-    fly.y += (tgt - fly.y) * Math.min(1, dt * 9); fly.vy = 0;
-    $('flNow').textContent = `지금 ${nn(m)} (${Math.round(fly.hz)} Hz)`;
-  } else { fly.vy = Math.min(0.55, fly.vy + dt * 0.9); fly.y = Math.min(1 - PR, fly.y + fly.vy * dt); $('flNow').textContent = '조용함 — 내려가는 중'; }
-  fly.y = Math.max(PR, Math.min(1 - PR, fly.y));
-  // 벽: 처음 3초는 없음
-  const cv = $('flCv'), W = cv.clientWidth || 600, H = 300, aspect = W / H;
-  const speed = (0.22 + Math.min(0.12, fly.score * 0.006)) * sp; // 화면 너비 비율/초
-  fly.walls.forEach(w => { w.x -= speed * dt; });
-  const lastW = fly.walls[fly.walls.length - 1];
-  if (fly.t > 2.5 && (!lastW || lastW.x < 1 - Math.max(0.42, 0.62 - fly.score * 0.01))) {
-    const gap = Math.max(0.27, 0.42 - fly.score * 0.008), prev = lastW ? lastW.c : 0.5;
-    let c = prev + (Math.random() * 2 - 1) * 0.32; c = Math.max(gap / 2 + 0.04, Math.min(1 - gap / 2 - 0.04, c));
-    fly.walls.push({ x: 1.05, w: 0.07, c, gap, passed: false });
-  }
-  fly.walls = fly.walls.filter(w => w.x + w.w > -0.05);
-  for (const w of fly.walls) {
+  F.stop = silent => {
+    if (F.mic) { const m = F.mic; m.proc.onaudioprocess = null; try { m.src.disconnect(); m.proc.disconnect(); m.mute.disconnect(); } catch (_) {} m.stream.getTracks().forEach(t => t.stop()); F.mic = null; }
+    cancelAnimationFrame(F.raf); const was = F.on; F.on = false; F.hz = 0;
+    if (rangeSel) rangeSel.disabled = false; if (speedSel) speedSel.disabled = false; tally(null);
+    if (was && F.onEnd) F.onEnd({ score: F.score, t: F.t, voicedT: F.voicedT, silent });
+  };
+  function tick(now) {
+    if (!F.on) return;
+    const dt = Math.min(0.05, (now - F.lastT) / 1000); F.lastT = now; F.t += dt;
+    const R = rangeNow(), sp = speedSel ? +speedSel.value : 1;
+    if (F.hz > 0) {
+      F.voicedT += dt;
+      const m = 12 * Math.log2(F.hz / 440) + 69, tgt = 1 - Math.max(0, Math.min(1, (m - R.lo) / (R.hi - R.lo)));
+      F.y += (tgt - F.y) * Math.min(1, dt * 9); F.vy = 0;
+      if (nowEl) nowEl.textContent = `지금 ${nn(m)} (${Math.round(F.hz)} Hz)`;
+    } else { F.vy = Math.min(0.55, F.vy + dt * 0.9); F.y = Math.min(1 - PR, F.y + F.vy * dt); if (nowEl) nowEl.textContent = '조용함 — 내려가는 중'; }
+    F.y = Math.max(PR, Math.min(1 - PR, F.y));
+    const W = cv.clientWidth || 600, aspect = W / H;
+    const speed = (0.22 + Math.min(0.12, F.t * 0.002)) * sp;
+    F.walls.forEach(w => { w.x -= speed * dt; }); F.stars.forEach(s => { s.x -= speed * dt; });
+    const lastW = F.walls[F.walls.length - 1];
+    if (F.t > 2.5 && (!lastW || lastW.x < 1 - Math.max(0.42, 0.62 - F.wi * 0.01))) {
+      const gap = Math.max(0.27, 0.42 - F.wi * 0.008), prev = lastW ? lastW.c : 0.5;
+      let c = prev + (F.r() * 2 - 1) * 0.32; c = Math.max(gap / 2 + 0.04, Math.min(1 - gap / 2 - 0.04, c));
+      F.walls.push({ x: 1.05, w: 0.07, c, gap, passed: false }); F.wi++;
+      if (F.r() < 0.45) F.stars.push({ x: 1.05 + 0.2 + F.r() * 0.08, y: Math.max(0.08, Math.min(0.92, c + (F.r() * 2 - 1) * 0.3)), got: false });
+    }
+    F.walls = F.walls.filter(w => w.x + w.w > -0.05); F.stars = F.stars.filter(s => s.x > -0.05 && !s.got);
     const rX = PR / aspect;
-    if (!w.passed && w.x + w.w < PX - rX) { w.passed = true; fly.score++; }
-    if (PX + rX > w.x && PX - rX < w.x + w.w && (fly.y - PR < w.c - w.gap / 2 || fly.y + PR > w.c + w.gap / 2)) { flyDraw(); flyStop(); return; }
+    for (const s of F.stars) if (Math.abs(s.x - PX) < rX * 1.6 && Math.abs(s.y - F.y) < PR * 1.6) { s.got = true; F.score++; }
+    for (const w of F.walls) {
+      if (!w.passed && w.x + w.w < PX - rX) { w.passed = true; F.score++; }
+      if (PX + rX > w.x && PX - rX < w.x + w.w && (F.y - PR < w.c - w.gap / 2 || F.y + PR > w.c + w.gap / 2)) { F.draw(); F.stop(); return; }
+    }
+    if (F.onTick) F.onTick(F);
+    F.draw();
+    F.raf = requestAnimationFrame(tick);
   }
-  flyDraw();
-  fly.raf = requestAnimationFrame(flyTick);
+  F.draw = () => {
+    const W = cv.clientWidth || 600, dpr = devicePixelRatio || 1;
+    if (cv.width !== Math.round(W * dpr)) { cv.width = W * dpr; cv.height = H * dpr; }
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    const R = rangeNow();
+    g.font = '11px "IBM Plex Mono", monospace'; g.fillStyle = css('--muted'); g.strokeStyle = css('--line'); g.lineWidth = 1;
+    for (let m = Math.ceil(R.lo / 3) * 3; m <= R.hi; m += 3) { const y = (1 - (m - R.lo) / (R.hi - R.lo)) * H; g.beginPath(); g.moveTo(34, y); g.lineTo(W, y); g.stroke(); g.fillText(nn(m), 2, Math.max(11, Math.min(H - 3, y + 4))); }
+    g.fillStyle = css('--ref');
+    for (const w of F.walls) { const x = w.x * W, ww = w.w * W, t = (w.c - w.gap / 2) * H, b = (w.c + w.gap / 2) * H; g.fillRect(x, 0, ww, t); g.fillRect(x, b, ww, H - b); }
+    g.font = '18px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const s of F.stars) g.fillText('⭐', s.x * W, s.y * H);
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    const plane = (y, col, alpha, label) => { const px = PX * W, py = y * H, r = PR * H; g.globalAlpha = alpha; g.fillStyle = col;
+      g.beginPath(); g.moveTo(px + r * 1.4, py); g.lineTo(px - r, py - r * 0.9); g.lineTo(px - r * 0.5, py); g.lineTo(px - r, py + r * 0.9); g.closePath(); g.fill();
+      if (label) { g.font = '11px "IBM Plex Sans KR", sans-serif'; g.fillText(label, px + r * 1.6, py + 4); } g.globalAlpha = 1; };
+    const GC = ['#7b61ff', '#e08a00', '#1f9bd1', '#c2408a', '#5a8f00', '#8a5a2b', '#0f8f7f'];
+    let gi = 0; for (const [, gh] of F.ghosts) { plane(gh.y, GC[gi++ % GC.length], gh.alive ? 0.55 : 0.18, `${gh.name}${gh.alive ? '' : ' 💥'} ${gh.score}`); }
+    plane(F.y, F.hz > 0 ? css('--imi') : css('--muted'), 1, F.ghosts.size ? '나' : '');
+    if (scoreEl) scoreEl.textContent = F.score;
+  };
+  return F;
 }
-function flyDraw() {
-  const cv = $('flCv'), W = cv.clientWidth || 600, H = 300, dpr = devicePixelRatio || 1;
-  if (cv.width !== Math.round(W * dpr)) { cv.width = W * dpr; cv.height = H * dpr; }
-  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  const R = rangeNow();
-  g.font = '11px "IBM Plex Mono", monospace'; g.fillStyle = css('--muted'); g.strokeStyle = css('--line'); g.lineWidth = 1;
-  for (let m = Math.ceil(R.lo / 3) * 3; m <= R.hi; m += 3) { const y = (1 - (m - R.lo) / (R.hi - R.lo)) * H; g.beginPath(); g.moveTo(34, y); g.lineTo(W, y); g.stroke(); g.fillText(nn(m), 2, Math.max(11, Math.min(H - 3, y + 4))); }
-  g.fillStyle = css('--ref');
-  for (const w of fly.walls) { const x = w.x * W, ww = w.w * W, t = (w.c - w.gap / 2) * H, b = (w.c + w.gap / 2) * H; g.fillRect(x, 0, ww, t); g.fillRect(x, b, ww, H - b); }
-  const px = PX * W, py = fly.y * H, r = PR * H;
-  g.fillStyle = fly.hz > 0 ? css('--imi') : css('--muted');
-  g.beginPath(); g.moveTo(px + r * 1.4, py); g.lineTo(px - r, py - r * 0.9); g.lineTo(px - r * 0.5, py); g.lineTo(px - r, py + r * 0.9); g.closePath(); g.fill();
-  $('flScore').textContent = fly.score;
+soloFly = createFly({ cv: $('flCv'), scoreEl: $('flScore'), nowEl: $('flNow'), rangeSel: $('flRange'), speedSel: $('flSpeed') });
+T.fly = soloFly;
+const flBestDraw = () => { $('flBest').textContent = G.fl.plays ? `최고 ${G.fl.best}점 · ${G.fl.plays}번 함` : ''; };
+flBestDraw();
+$('flStart').addEventListener('click', async () => {
+  if (soloFly.on) { soloFly.stop(); return; }
+  try {
+    await soloFly.start({ onEnd: ({ score, t, voicedT, silent }) => {
+      $('flStart').textContent = '● 다시 시작'; $('flStart').classList.remove('on');
+      if (silent || t < 2) return;
+      G.fl.plays++; const nb = score > G.fl.best; if (nb) G.fl.best = score; save(); flBestDraw();
+      $('flMsg').innerHTML = `<b class="gm-no">쾅!</b> <b>${score}점</b> (벽 + ⭐)${nb && score ? ' — <b class="gm-ok">새 최고 기록!</b>' : ''}. 소리 낸 시간 ${voicedT.toFixed(0)}초.`;
+    } });
+    $('flStart').textContent = '■ 그만'; $('flStart').classList.add('on'); $('flMsg').textContent = '소리를 내서 떠올라 보세요!';
+  } catch (e) { $('flMsg').innerHTML = errHtml(e); }
+});
+window.addEventListener('resize', () => { if (!$('flBox').hidden) soloFly.draw(); });
+
+// =========================================================
+// 3. 거꾸로 말하기
+// =========================================================
+const bw = { word: GM.pick(GM.BACKWARD), orig: null, rev: null, mine: null, tries: [] };
+const bwBestDraw = () => { const b = G.bw.best[bw.word]; $('bwBest').textContent = b ? `「${bw.word}」 최고 ${b}점` : (G.bw.plays ? `${G.bw.plays}번 함` : ''); };
+function bwStep(n) { ['bwS1', 'bwS2', 'bwS3'].forEach((id, i) => $(id).classList.toggle('dim', i + 1 > n)); $('bwRev').disabled = $('bwRec2').disabled = n < 2; $('bwFlip').disabled = $('bwMine').disabled = $('bwOrig').disabled = n < 3; }
+function bwSetWord(w) { bw.word = w; bw.orig = bw.rev = bw.mine = null; bw.tries = []; $('bwWord').textContent = w; $('bwRank').innerHTML = ''; $('bwMsg').textContent = ''; bwStep(1); bwBestDraw(); }
+bwSetWord(bw.word);
+$('bwNewWord').addEventListener('click', () => { let w; do { w = GM.pick(GM.BACKWARD); } while (w === bw.word && GM.BACKWARD.length > 1); bwSetWord(w); });
+function bwGotOrig(x) { bw.orig = x; bw.rev = GM.reverse(x); bw.mine = null; bwStep(2); $('bwMsg').textContent = ''; play(bw.rev); }
+$('bwRec1').addEventListener('click', async () => { const x = await recBtn($('bwRec1'), $('bwMsg'), '● 그냥 말하기', { maxSec: 6 }); if (x) bwGotOrig(x); });
+$('bwFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { bwGotOrig(await GM.fileTo16k(f)); } catch (_) { $('bwMsg').innerHTML = '<span class="err">이 파일을 읽지 못했어요.</span>'; } });
+$('bwRev').addEventListener('click', () => bw.rev && play(bw.rev));
+$('bwRec2').addEventListener('click', async () => {
+  if (!bw.orig) return;
+  const x = await recBtn($('bwRec2'), $('bwMsg'), '● 거꾸로 흉내', { maxSec: 8 }); if (!x) return;
+  bw.mine = x; bwStep(3);
+  const r = GM.backScore(bw.orig, x), who = $('bwWho').value.trim() || '나';
+  bw.tries.push({ who, score: r.score, x }); G.bw.plays++;
+  const nb = !G.bw.best[bw.word] || r.score > G.bw.best[bw.word]; if (nb) G.bw.best[bw.word] = r.score; save(); bwBestDraw();
+  const tier = r.score >= 80 ? '거꾸로 장인! 원래 낱말이 그대로 들려요.' : r.score >= 65 ? '오, 꽤 알아들을 수 있어요!' : r.score >= 50 ? '비슷한 느낌은 나요. 거꾸로 소리를 한 번 더 듣고 끝부분을 신경 써 보세요.' : '외계어가 됐어요 😂 거꾸로 소리를 천천히 끊어서 따라 해 보세요.';
+  $('bwMsg').innerHTML = `<b>${r.score}점</b> — ${tier}${nb ? ' <b class="gm-ok">이 낱말 최고 기록!</b>' : ''}<br><span class="cap">${esc(GM.tipOf(r.parts))}</span>`;
+  const ord = bw.tries.map((t, i) => [t, i]).sort((a, b) => b[0].score - a[0].score);
+  $('bwRank').innerHTML = ord.map(([t, i]) => `<li><button type="button" data-i="${i}">▶</button> <b>${esc(t.who)}</b> <span class="gm-sc">${t.score}점</span></li>`).join('');
+  $('bwRank').querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => play(GM.reverse(bw.tries[+b.dataset.i].x))));
+  play(GM.reverse(x));
+});
+$('bwFlip').addEventListener('click', () => bw.mine && play(GM.reverse(bw.mine)));
+$('bwMine').addEventListener('click', () => bw.mine && play(bw.mine));
+$('bwOrig').addEventListener('click', () => bw.orig && play(bw.orig));
+T.bw = bw;
+
+// =========================================================
+// 한 폰 여럿: 사람 목록
+// =========================================================
+let saved = []; try { saved = JSON.parse(localStorage.getItem('moksori.game.names') || '[]'); } catch (_) {}
+function plDraw(vals) {
+  const el = $('plNames'); vals = vals || [...el.querySelectorAll('input')].map(i => i.value);
+  const n = Math.min(8, Math.max(2, vals.length));
+  el.innerHTML = Array.from({ length: n }, (_, i) => `<div class="gm-pl"><input type="text" maxlength="10" value="${esc(vals[i] != null ? vals[i] : '')}" placeholder="${i + 1}번 사람" aria-label="${i + 1}번 사람 이름">${n > 2 ? `<button type="button" data-del="${i}" aria-label="빼기">✕</button>` : ''}</div>`).join('');
+  el.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => { const v = [...el.querySelectorAll('input')].map(i => i.value); v.splice(+b.dataset.del, 1); plDraw(v); }));
+  $('plAdd').disabled = n >= 8;
 }
+plDraw(saved.length >= 2 ? saved : ['', '', '']);
+$('plAdd').addEventListener('click', () => { const v = [...$('plNames').querySelectorAll('input')].map(i => i.value); v.push(''); plDraw(v); });
+const plNames = () => { const v = [...$('plNames').querySelectorAll('input')].map(i => i.value.trim()); try { localStorage.setItem('moksori.game.names', JSON.stringify(v)); } catch (_) {} return v.map((s, k) => s || `${k + 1}번`); };
+
+// =========================================================
+// 4. 흉내 배틀 (한 폰)
+// =========================================================
+const bt = { names: [], score: [], round: 0, src: null, order: [], k: -1, takes: {}, voted: false, heard: 0, maxRounds: 0 };
+T.bt = bt;
+$('btStart').addEventListener('click', () => {
+  GM.ctx(); bt.names = plNames(); bt.score = bt.names.map(() => 0); bt.round = 0;
+  bt.maxRounds = +$('btRounds').value * bt.names.length;
+  $('btSetup').hidden = true; $('plBox').hidden = true; $('btPlay').hidden = false; btNewRound();
+});
+const btHost = () => bt.round % bt.names.length;
+const btCard = () => { $('btCardTxt').textContent = GM.pick(GM.CARDS); };
+$('btCardNew').addEventListener('click', btCard);
+function btNewRound() {
+  bt.src = null; bt.takes = {}; bt.voted = false; bt.k = -1;
+  bt.order = bt.names.map((_, i) => i).filter(i => i !== btHost());
+  $('btRound').textContent = `${bt.round + 1}판${bt.maxRounds ? ` / ${bt.maxRounds}판` : ''}`; $('btResult').hidden = true; $('btCtl').hidden = false;
+  btCard(); btTurn(); btBoard();
+}
+function btTurn() {
+  const isHost = bt.k < 0, who = isHost ? btHost() : bt.order[bt.k];
+  bt.heard = 0;
+  $('btTurn').innerHTML = isHost ? `<span class="gm-who" style="--c:var(--ref)">${esc(bt.names[who])}</span> 님이 문제를 내요` : `<span class="gm-who" style="--c:var(--imi)">${esc(bt.names[who])}</span> 님 차례 <small>(${bt.k + 1}/${bt.order.length})</small>`;
+  $('btCard').hidden = !isHost; $('btFileBtn').hidden = !isHost; $('btOrig').hidden = isHost; $('btRedo').hidden = true; $('btNext').hidden = true; $('btRec').hidden = false;
+  $('btRec').textContent = isHost ? '● 문제 녹음' : '● 따라 하기'; btListenLabel();
+  $('btMsg').textContent = isHost ? '카드를 참고해도 되고, 아무 소리나 내도 돼요. 너무 쉬우면 점수를 못 받아요! 10초까지, 끝나고 조용하면 저절로 멈춰요.' : '▶ 문제 듣기로 원본을 듣고, ● 따라 하기를 눌러 똑같이 흉내 내요.';
+}
+function btListenLabel() { const max = +$('btListens').value; $('btOrig').textContent = `▶ 문제 듣기${max && bt.k >= 0 ? ` (${Math.max(0, max - bt.heard)})` : ''}`; $('btOrig').disabled = !!(max && bt.k >= 0 && bt.heard >= max); }
+function btAfter(x) {
+  const isHost = bt.k < 0, who = isHost ? btHost() : bt.order[bt.k];
+  if (isHost) { bt.src = x; $('btMsg').innerHTML = `문제를 녹음했어요 (${(x.length / SR).toFixed(1)}초). 혼자 들어 보고 괜찮으면 폰을 넘겨요.`; $('btOrig').hidden = false; $('btOrig').textContent = '▶ 내 문제 듣기'; $('btOrig').disabled = false; }
+  else {
+    const r = GM.mimicScore(bt.src, x); bt.takes[who] = { x, ...r };
+    const f = v => v == null ? '–' : v;
+    $('btMsg').innerHTML = `<b>${r.score}점</b> · 음색 ${f(r.parts.timbre)} · 높이 ${f(r.parts.pitch)} · 억양 ${f(r.parts.into)} · 발음 ${f(r.parts.pron)} · 리듬 ${f(r.parts.rhythm)} · 강세 ${f(r.parts.stress)} <button type="button" class="linkbtn" id="btPlayMe">▶ 내 것 듣기</button>`;
+    $('btPlayMe').addEventListener('click', () => play(x));
+  }
+  $('btRec').hidden = true; $('btRedo').hidden = false; $('btNext').hidden = false; $('btFileBtn').hidden = true;
+  $('btNext').textContent = isHost || bt.k < bt.order.length - 1 ? '다음 사람 ▶' : '결과 보기 ▶';
+}
+$('btRec').addEventListener('click', async () => {
+  if (bt.k >= 0 && !bt.src) return;
+  const x = await recBtn($('btRec'), $('btMsg'), bt.k < 0 ? '● 문제 녹음' : '● 따라 하기', { maxSec: bt.k < 0 ? 10 : 12 }); if (x) btAfter(x);
+});
+$('btFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { btAfter(await GM.fileTo16k(f)); } catch (_) { $('btMsg').innerHTML = '<span class="err">이 파일을 읽지 못했어요. wav나 mp3로 바꿔 보세요.</span>'; } });
+$('btOrig').addEventListener('click', () => { if (!bt.src) return; const max = +$('btListens').value; if (bt.k >= 0 && max) { if (bt.heard >= max) return; bt.heard++; btListenLabel(); } play(bt.src); });
+$('btRedo').addEventListener('click', () => { if (bt.k < 0) bt.src = null; else delete bt.takes[bt.order[bt.k]]; const h = bt.heard; btTurn(); bt.heard = h; btListenLabel(); });
+$('btNext').addEventListener('click', () => { stopPlay(); if (bt.k < bt.order.length - 1) { bt.k++; btTurn(); } else btShow(); });
+function btShow() {
+  $('btCtl').hidden = true; $('btCard').hidden = true; $('btMsg').textContent = '';
+  $('btTurn').innerHTML = `<span class="gm-who" style="--c:var(--ref)">${esc(bt.names[btHost()])}</span> 님 문제 결과`;
+  const sc = {}; for (const i of bt.order) if (bt.takes[i]) sc[i] = bt.takes[i].score;
+  const P = GM.battlePoints(String(btHost()), sc);
+  for (const id in P.pts) bt.score[+id] += P.pts[id];
+  $('btSrc').innerHTML = `<button type="button" data-pl="src">▶</button> 문제 · <b>${esc(bt.names[btHost()])}</b> <small>+${P.pts[btHost()] || 0}</small> <span class="cap">${esc(P.why[btHost()] || '')}</span>`;
+  $('btSrc').querySelector('[data-pl]').addEventListener('click', () => play(bt.src));
+  $('btRank').innerHTML =
+    P.order.map(id => `<li><button type="button" data-pl="${id}">▶</button> <b>${esc(bt.names[+id])}</b> <span class="gm-sc">${bt.takes[+id].score}점</span> <small>+${P.pts[id]}</small> <span class="cap">${esc(P.why[id])} · ${esc(GM.tipOf(bt.takes[+id].parts))}</span></li>`).join('');
+  $('btRank').querySelectorAll('[data-pl]').forEach(b => b.addEventListener('click', () => play(bt.takes[+b.dataset.pl].x)));
+  const canVote = $('btVote').checked && P.order.length >= 2;
+  $('btVoteBox').hidden = !canVote;
+  $('btVotes').innerHTML = P.order.map(id => `<button type="button" class="sc-tag" data-v="${id}">${esc(bt.names[+id])}</button>`).join('');
+  $('btVotes').querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => {
+    if (bt.voted) return; bt.voted = true; bt.score[+b.dataset.v] += GM.RULE.vote; b.classList.add('on'); b.textContent += ` +${GM.RULE.vote}`; btBoard();
+  }));
+  const last = bt.maxRounds && bt.round + 1 >= bt.maxRounds;
+  $('btNextRound').hidden = !!last; $('btEnd').textContent = last ? '최종 결과 보기 🏆' : '게임 끝내기';
+  $('btResult').hidden = false; btBoard();
+}
+function btBoard() {
+  const ord = bt.names.map((_, i) => i).sort((a, b) => bt.score[b] - bt.score[a]);
+  $('btBoard').innerHTML = ord.map(i => `<li><b>${esc(bt.names[i])}</b> <span class="gm-sc">${bt.score[i]}점</span></li>`).join('');
+}
+$('btNextRound').addEventListener('click', () => { bt.round++; btNewRound(); });
+$('btEnd').addEventListener('click', () => {
+  const top = Math.max(...bt.score), win = bt.names.filter((_, i) => bt.score[i] === top);
+  G.pt.games++; save();
+  $('btResult').hidden = true; $('btCtl').hidden = true;
+  $('btTurn').innerHTML = `🏆 <span class="gm-who" style="--c:var(--good)">${win.map(esc).join(', ')}</span> 님 우승! <small>(${bt.round + 1}판, ${top}점)</small>`;
+  $('btMsg').innerHTML = '<button type="button" class="primary-sm" id="btAgain">새 게임</button>';
+  $('btAgain').addEventListener('click', () => { $('btPlay').hidden = true; $('btSetup').hidden = false; $('plBox').hidden = false; $('btRound').textContent = ''; $('btMsg').textContent = ''; });
+});
+
+// =========================================================
+// 5. 고장난 전화기 (한 폰)
+// =========================================================
+const rl = { names: [], k: 0, clips: [], card: '', heard: 0 };
+T.rl = rl;
+$('rlCardNew').addEventListener('click', () => { rl.card = GM.pick(GM.CARDS); $('rlCardTxt').textContent = rl.card; });
+$('rlStart').addEventListener('click', () => {
+  GM.ctx(); rl.names = plNames(); rl.k = 0; rl.clips = []; rl.card = GM.pick(GM.CARDS);
+  $('rlSetup').hidden = true; $('plBox').hidden = true; $('rlPlay').hidden = false; $('rlEnd').hidden = true; rlTurn();
+});
+function rlTurn() {
+  rl.heard = 0; const first = rl.k === 0;
+  $('rlInfo').textContent = `${rl.k + 1} / ${rl.names.length}번째`;
+  $('rlTurn').innerHTML = `<span class="gm-who" style="--c:var(--imi)">${esc(rl.names[rl.k])}</span> 님 차례${first ? ' — 문제를 내요' : ''}`;
+  $('rlCard').hidden = !first; $('rlCardTxt').textContent = rl.card; $('rlCtl').hidden = false;
+  $('rlHear').hidden = first; $('rlLeft').textContent = '(2)'; $('rlHear').disabled = false; $('rlRec').hidden = false; $('rlRec').textContent = '● 녹음'; $('rlNext').hidden = true;
+  $('rlMsg').textContent = first ? '카드 내용을 소리로 내서 녹음해요. 다른 사람은 화면을 보면 안 돼요!' : '앞사람 소리를 듣고(2번까지) 똑같이 따라 해요.';
+}
+$('rlHear').addEventListener('click', () => { if (rl.heard >= 2 || !rl.clips.length) return; rl.heard++; $('rlLeft').textContent = `(${2 - rl.heard})`; $('rlHear').disabled = rl.heard >= 2; play(rl.clips[rl.k - 1].x); });
+$('rlRec').addEventListener('click', async () => {
+  if (rl.k > 0 && !rl.heard) { $('rlMsg').innerHTML = '<span class="err">먼저 앞사람 소리를 들어요.</span>'; return; }
+  const x = await recBtn($('rlRec'), $('rlMsg'), '● 다시 녹음', { maxSec: 10 }); if (!x) return;
+  rl.clips[rl.k] = { who: rl.names[rl.k], x };
+  $('rlMsg').textContent = '녹음했어요. 화면을 끄고 다음 사람에게 넘겨요.';
+  $('rlNext').hidden = false; $('rlNext').textContent = rl.k < rl.names.length - 1 ? '다음 사람에게 넘기기 ▶' : '결과 보기 ▶';
+});
+$('rlNext').addEventListener('click', () => { stopPlay(); if (rl.k < rl.names.length - 1) { rl.k++; rlTurn(); } else rlShow(); });
+function relayChain(clips) {
+  return clips.map((c, i) => ({ ...c, prev: i ? GM.mimicScore(clips[i - 1].x, c.x).score : null, first: i ? GM.mimicScore(clips[0].x, c.x).score : null }));
+}
+function chainHtml(ch, card) {
+  const keep = ch.length > 1 ? ch[ch.length - 1].first : null;
+  const best = ch.slice(1).reduce((b, c) => !b || c.prev > b.prev ? c : b, null);
+  return `${card ? `<li class="src">문제 카드: <b>${esc(card)}</b></li>` : ''}` + ch.map((c, i) => `<li><button type="button" data-ci="${i}">▶</button> <b>${esc(c.who)}</b> ${i ? `<span class="gm-sc">앞사람과 ${c.prev}점</span> <span class="cap">처음과 ${c.first}점</span>` : '<span class="cap">처음 소리</span>'}</li>`).join('') +
+    (keep != null ? `<li class="src">끝까지 살아남은 정도: <b>${keep}점</b> ${keep >= 70 ? '— 거의 그대로 전해졌어요! 👏' : keep >= 50 ? '— 조금씩 변했어요.' : '— 완전히 다른 소리가 됐어요 😂'}${best ? ` · 제일 잘 전한 사람: <b>${esc(best.who)}</b>` : ''}</li>` : '');
+}
+function rlShow() {
+  $('rlCtl').hidden = true; $('rlCard').hidden = true; $('rlMsg').textContent = ''; $('rlTurn').textContent = '결과 공개!'; $('rlInfo').textContent = '';
+  const ch = relayChain(rl.clips); rl.chain = ch; G.rl.games++; save();
+  $('rlChain').innerHTML = chainHtml(ch, rl.card);
+  $('rlChain').querySelectorAll('[data-ci]').forEach(b => b.addEventListener('click', () => play(ch[+b.dataset.ci].x)));
+  $('rlEnd').hidden = false;
+}
+$('rlAll').addEventListener('click', async () => { const t = rl.tok = Math.random(); for (const c of rl.clips) { if (rl.tok !== t) return; await play(c.x); await new Promise(r => setTimeout(r, 400)); } });
+$('rlFirstLast').addEventListener('click', async () => { const t = rl.tok = Math.random(); await play(rl.clips[0].x); await new Promise(r => setTimeout(r, 600)); if (rl.tok === t) play(rl.clips[rl.clips.length - 1].x); });
+$('rlAgain').addEventListener('click', () => { $('rlPlay').hidden = true; $('rlSetup').hidden = false; $('plBox').hidden = false; $('rlInfo').textContent = ''; });
 
 // ---- 시작 ----
 const h = (location.hash || '').slice(1);
 pick(BOX[h] ? h : 'sv');
-window.addEventListener('resize', () => { if (!$('flBox').hidden) flyDraw(); });
+window.GameUI = { createFly, RANGES, fillRange, recBtn, svDraw, svJudge, relayChain, chainHtml, tally, errHtml, G, save };
 })();
 </script>
+<script src="assets/game-room.js?v=202611281900"></script>
 </body>
 </html>
